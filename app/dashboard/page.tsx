@@ -4,7 +4,7 @@ import React, { useMemo, useState, useRef, useCallback, useEffect } from "react"
 import {
   ArrowDownCircle, ArrowUpCircle, BedDouble, CalendarDays, ClipboardList,
   Home, LayoutGrid, LogOut, User, Search, DollarSign, ChevronLeft,
-  Download, RefreshCw, ChevronRight, Settings, Bell, X, Map,
+  Download, RefreshCw, ChevronRight, Settings, Bell, X, MapIcon,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────
@@ -321,12 +321,13 @@ function RoomPlanTab(){
 
   // Bookings map by room
   const bookingsByRoom=useMemo(()=>{
-    const map=new Map<number,Booking[]>();
+    // @ts-ignore — 'Map' here refers to the global JS Map, not the lucide icon
+    const roomMap=new Map<number,Booking[]>();
     bookings.forEach(b=>{
-      if(!map.has(b.roomId)) map.set(b.roomId,[]);
-      map.get(b.roomId)!.push(b);
+      if(!roomMap.has(b.roomId)) roomMap.set(b.roomId,[]);
+      roomMap.get(b.roomId)!.push(b);
     });
-    return map;
+    return roomMap;
   },[bookings]);
 
   // Check collision
@@ -857,7 +858,7 @@ export default function AvantiPMS(){
                   <div className="flex border border-[#e5e7eb] rounded-[2px] overflow-hidden">
                     <button onClick={()=>setMapViewMode("hotelmap")}
                       className={`flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium transition-colors border-r border-[#e5e7eb] ${mapViewMode==="hotelmap"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}>
-                      <Map size={13} strokeWidth={1.5}/> Hotel Map
+                      <MapIcon size={13} strokeWidth={1.5}/> Hotel Map
                     </button>
                     <button onClick={()=>setMapViewMode("block")}
                       className={`flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium transition-colors ${mapViewMode==="block"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}>
