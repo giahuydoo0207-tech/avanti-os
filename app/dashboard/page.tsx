@@ -5,6 +5,7 @@ import {
   ArrowDownCircle, ArrowUpCircle, BedDouble, CalendarDays, ClipboardList,
   Home, LayoutGrid, LogOut, User, Search, DollarSign, ChevronLeft,
   Download, RefreshCw, ChevronRight, Settings, Bell, X, MapIcon, Globe, Printer,
+  AlertCircle, CheckCircle, Clock, Send, Plus, Trash2,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────
@@ -15,6 +16,8 @@ type RoomStatus = "clean"|"occupied"|"dirty";
 type MapViewMode = "hotelmap"|"block";
 type BookingStatus = "definite"|"tentative"|"group"|"checkedIn"|"waitlist";
 type GuestType = "vietnamese"|"foreign";
+type ShiftName = "Ca sáng"|"Ca chiều"|"Ca tối";
+type TaskPriority = "urgent"|"normal"|"info";
 
 type Guest = { name:string; folio:string; arrival:string; departure:string; rate:number; balance:number; pax:number; plan:string };
 type HotelRoom = { id:number; status:RoomStatus; roomType:string; pax:number; guest?:Guest };
@@ -22,6 +25,24 @@ type Floor = { name:string; rooms:HotelRoom[] };
 type WaitingCustomer = { id:number; folio:string; name:string; roomType:string; checkIn:string; checkOut:string };
 type Booking = { id:string; guestName:string; folio:string; roomId:number; startDay:number; nights:number; status:BookingStatus; pax:number; note?:string };
 type PlanRoom = { id:number; type:string; floor:number };
+
+type ShiftTask = { id:string; content:string; priority:TaskPriority; done:boolean };
+type PendingArrival = { folio:string; name:string; roomType:string; eta:string; pax:number; note:string };
+type ShiftReport = {
+  id: string;
+  date: string;
+  shift: ShiftName;
+  reporter: string;
+  handoverTo: string;
+  confirmedBy: string;
+  confirmedAt: string;
+  status: "draft"|"submitted"|"confirmed";
+  tasks: ShiftTask[];
+  pendingArrivals: PendingArrival[];
+  generalNote: string;
+  cashBalance: number;
+  incidentNote: string;
+};
 
 // ─────────────────────────────────────────────
 // STATUS CONFIGS
@@ -40,13 +61,18 @@ const BOOKING_COLOR: Record<BookingStatus,{bg:string;border:string;text:string;l
   waitlist:  { bg:"#94a3b8", border:"#64748b", text:"#fff", label:"Waitlist"  },
 };
 
+const PRIORITY_CONFIG: Record<TaskPriority,{label:string;color:string;bg:string;icon:React.ElementType}> = {
+  urgent: { label:"Khẩn",   color:"#c1121f", bg:"#fff1f2", icon:AlertCircle },
+  normal: { label:"Bình thường", color:"#374151", bg:"#f3f4f6", icon:Clock },
+  info:   { label:"Thông tin",   color:"#1d4ed8", bg:"#eff6ff", icon:CheckCircle },
+};
+
 // ─────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────
 const COL_W = 48;
 const ROW_H = 32;
 const LABEL_W = 128;
-
 const ALL_ROOM_TYPES = ["ALL","PRETM","PREPM","AVTFM","SUPTN","SUPDN","DLXTC","DLXDDC","PREKM","PREMDM","AVTDM"];
 
 const MENU_ITEMS: Array<{name:TabName;icon:React.ElementType}> = [
@@ -66,7 +92,6 @@ const WAITING_CUSTOMERS: WaitingCustomer[] = [
 ];
 
 const TODAY_STATS = { checkInToday:15, checkOutToday:8, totalRooms:105, available:45, occupied:30, dirty:10 };
-
 const HOTEL_ROOM_TYPES = ["PIRETM","PREPM","AVITFM","SUPTN","SUPDN","DLXTC","DLXDDC","PRETM","PREKM","PREMDM","AVTDM","AVTFM"];
 
 const CASHIER_FUNCTIONS = [
@@ -106,65 +131,80 @@ const SAMPLE_GUESTS: Guest[] = [
   {name:"DO THI HIEN",   folio:"247424",arrival:"03/05/2026",departure:"05/05/2026",rate:680000, balance:0,      pax:1,plan:"RO"},
 ];
 
+// Mock shift reports history
+const MOCK_REPORTS: ShiftReport[] = [
+  {
+    id:"SR001", date:"11/05/2026", shift:"Ca sáng", reporter:"NGUYỄN THỊ HOA",
+    handoverTo:"TRẦN VĂN MINH", confirmedBy:"TRẦN VĂN MINH", confirmedAt:"14:05",
+    status:"confirmed", cashBalance:12500000, incidentNote:"",
+    generalNote:"Ca sáng suôn sẻ, khách đoàn Nhật check-out hài lòng.",
+    pendingArrivals:[
+      {folio:"247430",name:"YAMAMOTO KENJI",roomType:"DLXTC",eta:"15:00",pax:2,note:"Yêu cầu tầng cao"},
+      {folio:"247431",name:"PARK JI-WOO",   roomType:"SUPDN",eta:"16:30",pax:1,note:"Early check-in nếu được"},
+    ],
+    tasks:[
+      {id:"T1",content:"Phòng 305 vòi sen bị yếu — đã báo kỹ thuật, chờ xử lý",priority:"urgent",done:false},
+      {id:"T2",content:"Khách phòng 208 gửi hành lý, lấy lúc 18:00",priority:"normal",done:false},
+      {id:"T3",content:"Đoàn 15 khách Hàn Quốc check-in lúc 14:00, cần hỗ trợ dẫn phòng",priority:"urgent",done:false},
+      {id:"T4",content:"Minibar phòng 412 đã được bổ sung",priority:"info",done:true},
+    ],
+  },
+  {
+    id:"SR002", date:"10/05/2026", shift:"Ca tối", reporter:"LÊ HOÀNG ANH",
+    handoverTo:"NGUYỄN THỊ HOA", confirmedBy:"NGUYỄN THỊ HOA", confirmedAt:"07:12",
+    status:"confirmed", cashBalance:8200000, incidentNote:"Khách phòng 511 phàn nàn tiếng ồn từ phòng bên — đã xử lý.",
+    generalNote:"Ca tối yên tĩnh, không có sự cố lớn.",
+    pendingArrivals:[],
+    tasks:[
+      {id:"T5",content:"Khách phòng 101 yêu cầu thêm chăn — đã cung cấp",priority:"info",done:true},
+    ],
+  },
+];
+
 // ─────────────────────────────────────────────
-// ROOM PLAN — 9 tầng đầy đủ
+// ROOM PLAN DATA — 9 tầng
 // ─────────────────────────────────────────────
 const PLAN_ROOMS: PlanRoom[] = [
-  // Tầng 1 — 9 phòng
-  {id:101,type:"PRETM", floor:1},{id:102,type:"PREPM", floor:1},{id:103,type:"AVTFM", floor:1},
-  {id:104,type:"SUPTN", floor:1},{id:105,type:"SUPDN", floor:1},{id:106,type:"SUPDN", floor:1},
-  {id:107,type:"SUPDN", floor:1},{id:108,type:"SUPDN", floor:1},{id:109,type:"SUPTN", floor:1},
-  // Tầng 2 — 12 phòng
-  {id:201,type:"PREDM", floor:2},{id:202,type:"PREPM", floor:2},{id:203,type:"AVTFM", floor:2},
-  {id:204,type:"SUPTN", floor:2},{id:205,type:"SUPDN", floor:2},{id:206,type:"SUPDN", floor:2},
-  {id:207,type:"SUPDN", floor:2},{id:208,type:"SUPDN", floor:2},{id:209,type:"SUPTN", floor:2},
-  {id:210,type:"SUPTN", floor:2},{id:211,type:"SUPDN", floor:2},{id:212,type:"SUPDN", floor:2},
-  // Tầng 3 — 12 phòng
-  {id:301,type:"PREDM", floor:3},{id:302,type:"PREPM", floor:3},{id:303,type:"AVTFM", floor:3},
-  {id:304,type:"SUPDN", floor:3},{id:305,type:"SUPDN", floor:3},{id:306,type:"DLXTC", floor:3},
-  {id:307,type:"DLXDDC",floor:3},{id:308,type:"PRETM", floor:3},{id:309,type:"PREKM", floor:3},
-  {id:310,type:"SUPTN", floor:3},{id:311,type:"SUPDN", floor:3},{id:312,type:"SUPDN", floor:3},
-  // Tầng 4 — 12 phòng
-  {id:401,type:"PREDM", floor:4},{id:402,type:"PREPM", floor:4},{id:403,type:"AVTFM", floor:4},
-  {id:404,type:"SUPTN", floor:4},{id:405,type:"SUPDN", floor:4},{id:406,type:"DLXTC", floor:4},
-  {id:407,type:"DLXDDC",floor:4},{id:408,type:"PRETM", floor:4},{id:409,type:"PREKM", floor:4},
-  {id:410,type:"PREMDM",floor:4},{id:411,type:"AVTDM", floor:4},{id:412,type:"AVTFM", floor:4},
-  // Tầng 5 — 12 phòng
-  {id:501,type:"PRETM", floor:5},{id:502,type:"PREPM", floor:5},{id:503,type:"AVTFM", floor:5},
-  {id:504,type:"SUPTN", floor:5},{id:505,type:"SUPDN", floor:5},{id:506,type:"DLXTC", floor:5},
-  {id:507,type:"DLXDDC",floor:5},{id:508,type:"PRETM", floor:5},{id:509,type:"PREKM", floor:5},
-  {id:510,type:"PREMDM",floor:5},{id:511,type:"AVTDM", floor:5},{id:512,type:"SUPDN", floor:5},
-  // Tầng 6 — 12 phòng
-  {id:601,type:"PREDM", floor:6},{id:602,type:"PREPM", floor:6},{id:603,type:"AVTFM", floor:6},
-  {id:604,type:"SUPTN", floor:6},{id:605,type:"SUPDN", floor:6},{id:606,type:"DLXTC", floor:6},
-  {id:607,type:"DLXDDC",floor:6},{id:608,type:"PRETM", floor:6},{id:609,type:"PREKM", floor:6},
-  {id:610,type:"SUPDN", floor:6},{id:611,type:"SUPDN", floor:6},{id:612,type:"SUPTN", floor:6},
-  // Tầng 7 — 12 phòng
-  {id:701,type:"PRETM", floor:7},{id:702,type:"AVTDM", floor:7},{id:703,type:"AVTDM", floor:7},
-  {id:704,type:"DLXTC", floor:7},{id:705,type:"DLXDDC",floor:7},{id:706,type:"DLXDDC",floor:7},
-  {id:707,type:"DLXDDC",floor:7},{id:708,type:"DLXTC", floor:7},{id:709,type:"DLXTC", floor:7},
-  {id:710,type:"DLXTC", floor:7},{id:711,type:"DLXDDC",floor:7},{id:712,type:"SUPDN", floor:7},
-  // Tầng 8 — 12 phòng
-  {id:801,type:"PRETM", floor:8},{id:802,type:"PREDM", floor:8},{id:803,type:"PREKM", floor:8},
+  {id:101,type:"PRETM",floor:1},{id:102,type:"PREPM",floor:1},{id:103,type:"AVTFM",floor:1},
+  {id:104,type:"SUPTN",floor:1},{id:105,type:"SUPDN",floor:1},{id:106,type:"SUPDN",floor:1},
+  {id:107,type:"SUPDN",floor:1},{id:108,type:"SUPDN",floor:1},{id:109,type:"SUPTN",floor:1},
+  {id:201,type:"PREDM",floor:2},{id:202,type:"PREPM",floor:2},{id:203,type:"AVTFM",floor:2},
+  {id:204,type:"SUPTN",floor:2},{id:205,type:"SUPDN",floor:2},{id:206,type:"SUPDN",floor:2},
+  {id:207,type:"SUPDN",floor:2},{id:208,type:"SUPDN",floor:2},{id:209,type:"SUPTN",floor:2},
+  {id:210,type:"SUPTN",floor:2},{id:211,type:"SUPDN",floor:2},{id:212,type:"SUPDN",floor:2},
+  {id:301,type:"PREDM",floor:3},{id:302,type:"PREPM",floor:3},{id:303,type:"AVTFM",floor:3},
+  {id:304,type:"SUPDN",floor:3},{id:305,type:"SUPDN",floor:3},{id:306,type:"DLXTC",floor:3},
+  {id:307,type:"DLXDDC",floor:3},{id:308,type:"PRETM",floor:3},{id:309,type:"PREKM",floor:3},
+  {id:310,type:"SUPTN",floor:3},{id:311,type:"SUPDN",floor:3},{id:312,type:"SUPDN",floor:3},
+  {id:401,type:"PREDM",floor:4},{id:402,type:"PREPM",floor:4},{id:403,type:"AVTFM",floor:4},
+  {id:404,type:"SUPTN",floor:4},{id:405,type:"SUPDN",floor:4},{id:406,type:"DLXTC",floor:4},
+  {id:407,type:"DLXDDC",floor:4},{id:408,type:"PRETM",floor:4},{id:409,type:"PREKM",floor:4},
+  {id:410,type:"PREMDM",floor:4},{id:411,type:"AVTDM",floor:4},{id:412,type:"AVTFM",floor:4},
+  {id:501,type:"PRETM",floor:5},{id:502,type:"PREPM",floor:5},{id:503,type:"AVTFM",floor:5},
+  {id:504,type:"SUPTN",floor:5},{id:505,type:"SUPDN",floor:5},{id:506,type:"DLXTC",floor:5},
+  {id:507,type:"DLXDDC",floor:5},{id:508,type:"PRETM",floor:5},{id:509,type:"PREKM",floor:5},
+  {id:510,type:"PREMDM",floor:5},{id:511,type:"AVTDM",floor:5},{id:512,type:"SUPDN",floor:5},
+  {id:601,type:"PREDM",floor:6},{id:602,type:"PREPM",floor:6},{id:603,type:"AVTFM",floor:6},
+  {id:604,type:"SUPTN",floor:6},{id:605,type:"SUPDN",floor:6},{id:606,type:"DLXTC",floor:6},
+  {id:607,type:"DLXDDC",floor:6},{id:608,type:"PRETM",floor:6},{id:609,type:"PREKM",floor:6},
+  {id:610,type:"SUPDN",floor:6},{id:611,type:"SUPDN",floor:6},{id:612,type:"SUPTN",floor:6},
+  {id:701,type:"PRETM",floor:7},{id:702,type:"AVTDM",floor:7},{id:703,type:"AVTDM",floor:7},
+  {id:704,type:"DLXTC",floor:7},{id:705,type:"DLXDDC",floor:7},{id:706,type:"DLXDDC",floor:7},
+  {id:707,type:"DLXDDC",floor:7},{id:708,type:"DLXTC",floor:7},{id:709,type:"DLXTC",floor:7},
+  {id:710,type:"DLXTC",floor:7},{id:711,type:"DLXDDC",floor:7},{id:712,type:"SUPDN",floor:7},
+  {id:801,type:"PRETM",floor:8},{id:802,type:"PREDM",floor:8},{id:803,type:"PREKM",floor:8},
   {id:804,type:"DLXDDC",floor:8},{id:805,type:"DLXDDC",floor:8},{id:806,type:"DLXDDC",floor:8},
-  {id:807,type:"DLXDDC",floor:8},{id:808,type:"DLXDDC",floor:8},{id:809,type:"DLXTC", floor:8},
-  {id:810,type:"DLXTC", floor:8},{id:811,type:"DLXDDC",floor:8},{id:812,type:"SUPDN", floor:8},
-  // Tầng 9 — 12 phòng
-  {id:901,type:"PRETM", floor:9},{id:902,type:"PREDM", floor:9},{id:903,type:"PREKM", floor:9},
-  {id:904,type:"DLXTC", floor:9},{id:905,type:"DLXDDC",floor:9},{id:906,type:"DLXDDC",floor:9},
-  {id:907,type:"DLXDDC",floor:9},{id:908,type:"DLXDDC",floor:9},{id:909,type:"DLXTC", floor:9},
-  {id:910,type:"DLXTC", floor:9},{id:911,type:"DLXDDC",floor:9},{id:912,type:"SUPDN", floor:9},
+  {id:807,type:"DLXDDC",floor:8},{id:808,type:"DLXDDC",floor:8},{id:809,type:"DLXTC",floor:8},
+  {id:810,type:"DLXTC",floor:8},{id:811,type:"DLXDDC",floor:8},{id:812,type:"SUPDN",floor:8},
+  {id:901,type:"PRETM",floor:9},{id:902,type:"PREDM",floor:9},{id:903,type:"PREKM",floor:9},
+  {id:904,type:"DLXTC",floor:9},{id:905,type:"DLXDDC",floor:9},{id:906,type:"DLXDDC",floor:9},
+  {id:907,type:"DLXDDC",floor:9},{id:908,type:"DLXDDC",floor:9},{id:909,type:"DLXTC",floor:9},
+  {id:910,type:"DLXTC",floor:9},{id:911,type:"DLXDDC",floor:9},{id:912,type:"SUPDN",floor:9},
 ];
 
 function makeSeedBookings(): Booking[] {
   const statuses: BookingStatus[] = ["definite","tentative","group","checkedIn","waitlist"];
-  const names = [
-    "Soprapol,","Phattranan N.","Maximillian ANG,","YOKOTA/K,","Tetsuya Tokuoka,",
-    "CO MYLAM","Bui Thi Minh","FT-050126-HCM,","XUAN THANH","CHE LAL","HAN DUL",
-    "Dilhani Rupika","Che Yee Khoo,","Brenda,","Ms. Iqbal Riyadi,","Samantha Quek,",
-    "VU DINH DUC,","Fadhl Muhammad","MR.TAN/CH","HCM_ONG0526,","HANG VO,","Mindy Nguyen,",
-    "Tanaka H.","Kim Ji-woo","Wang Fang","Smith J.","Müller K.","Dupont M.",
-  ];
+  const names = ["Soprapol,","Phattranan N.","Maximillian ANG,","YOKOTA/K,","Tetsuya Tokuoka,","CO MYLAM","Bui Thi Minh","FT-050126-HCM,","XUAN THANH","CHE LAL","HAN DUL","Dilhani Rupika","Che Yee Khoo,","Brenda,","Ms. Iqbal Riyadi,","Samantha Quek,","VU DINH DUC,","Fadhl Muhammad","MR.TAN/CH","HCM_ONG0526,","HANG VO,","Mindy Nguyen,","Tanaka H.","Kim Ji-woo","Wang Fang","Smith J.","Müller K.","Dupont M."];
   const bookings: Booking[] = [];
   let bid = 1;
   PLAN_ROOMS.forEach((room, ri) => {
@@ -173,16 +213,7 @@ function makeSeedBookings(): Booking[] {
     for (let b = 0; b < count; b++) {
       const nights = ((ri + b) * 4 + 2) % 8 + 1;
       if (cursor + nights > 30) break;
-      bookings.push({
-        id: `B${bid++}`,
-        guestName: names[(ri + b * 3) % names.length],
-        folio: `${240000 + bid}`,
-        roomId: room.id,
-        startDay: cursor,
-        nights,
-        status: statuses[(ri + b) % statuses.length],
-        pax: (b % 3) + 1,
-      });
+      bookings.push({ id:`B${bid++}`, guestName:names[(ri+b*3)%names.length], folio:`${240000+bid}`, roomId:room.id, startDay:cursor, nights, status:statuses[(ri+b)%statuses.length], pax:(b%3)+1 });
       cursor += nights + ((ri + b) % 3);
     }
   });
@@ -196,19 +227,14 @@ function buildDates(start: Date, count: number): Date[] {
   return Array.from({length:count},(_,i)=>{const d=new Date(start);d.setDate(d.getDate()+i);return d;});
 }
 function isWeekend(d:Date){return d.getDay()===0||d.getDay()===6;}
-function availBg(val:number){
-  if(val<0) return "bg-[#fde8e8] text-[#c1121f]";
-  if(val===0) return "bg-[#fff8e1] text-[#7a5800]";
-  return "text-[#1a1a1a]";
-}
+function availBg(val:number){ if(val<0)return "bg-[#fde8e8] text-[#c1121f]"; if(val===0)return "bg-[#fff8e1] text-[#7a5800]"; return "text-[#1a1a1a]"; }
 function getRoomStatus(id:number):RoomStatus{const s=(id*7+13)%10;if(s<4)return "occupied";if(s<7)return "clean";return "dirty";}
 function buildFloors(){
   return Array.from({length:9},(_,fi)=>{
     const fn=fi+1,count=fn===1?9:12;
     return {name:`Tầng ${fn}`,rooms:Array.from({length:count},(_,ri)=>{
       const id=fn*100+ri+1,status=getRoomStatus(id),pax=status==="occupied"?((id*3+1)%3)+1:0;
-      return {id,status,roomType:HOTEL_ROOM_TYPES[ri%HOTEL_ROOM_TYPES.length],pax,
-        guest:status==="occupied"?{...SAMPLE_GUESTS[id%SAMPLE_GUESTS.length],pax}:undefined};
+      return {id,status,roomType:HOTEL_ROOM_TYPES[ri%HOTEL_ROOM_TYPES.length],pax,guest:status==="occupied"?{...SAMPLE_GUESTS[id%SAMPLE_GUESTS.length],pax}:undefined};
     })};
   });
 }
@@ -217,8 +243,7 @@ function buildFloors(){
 // MICRO COMPONENTS
 // ─────────────────────────────────────────────
 function StatusDot({status}:{status:RoomStatus}){
-  return <span className="inline-block rounded-full shrink-0"
-    style={{width:8,height:8,backgroundColor:ROOM_STATUS[status].dotColor,boxShadow:"0 0 0 1.5px rgba(0,0,0,0.12)"}}/>;
+  return <span className="inline-block rounded-full shrink-0" style={{width:8,height:8,backgroundColor:ROOM_STATUS[status].dotColor,boxShadow:"0 0 0 1.5px rgba(0,0,0,0.12)"}}/>;
 }
 function WalkIcon({color}:{color:string}){
   return <svg width={10} height={10} viewBox="0 0 24 24" fill="none">
@@ -233,56 +258,35 @@ function GuestTooltip({guest,roomType}:{guest:Guest;roomType:string}){
   return <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none" style={{minWidth:270}}>
     <div className="text-[11px] text-[#1a1a1a] p-3 rounded-[2px] shadow-2xl" style={{background:"#fffef0",border:"1px solid #d4c87a"}}>
       <div className="space-y-0.5 pb-2 mb-2" style={{borderBottom:"1px solid #e8dfa0"}}>
-        <div className="flex flex-wrap gap-x-3">
-          <span><span className="text-[#9ca3af]">Folio: </span><span className="mono font-semibold">{guest.folio}</span></span>
-          <span><span className="text-[#9ca3af]">RmType: </span><span className="mono font-semibold">{roomType}</span></span>
-        </div>
-        <div className="flex flex-wrap gap-x-3">
-          <span><span className="text-[#9ca3af]">Rate: </span><span className="mono font-semibold">{guest.rate.toLocaleString()}NETT</span></span>
-          <span><span className="text-[#9ca3af]">Balance: </span><span className={`mono font-semibold ${guest.balance>0?"text-[#c1121f]":""}`}>{guest.balance}</span></span>
-        </div>
-        <div className="flex flex-wrap gap-x-3 text-[#9ca3af]">
-          <span>Arrival: <span className="mono text-[#374151]">{guest.arrival}</span></span>
-          <span>Departure: <span className="mono text-[#374151]">{guest.departure}</span></span>
-        </div>
+        <div className="flex flex-wrap gap-x-3"><span><span className="text-[#9ca3af]">Folio: </span><span className="mono font-semibold">{guest.folio}</span></span><span><span className="text-[#9ca3af]">RmType: </span><span className="mono font-semibold">{roomType}</span></span></div>
+        <div className="flex flex-wrap gap-x-3"><span><span className="text-[#9ca3af]">Rate: </span><span className="mono font-semibold">{guest.rate.toLocaleString()}NETT</span></span><span><span className="text-[#9ca3af]">Balance: </span><span className={`mono font-semibold ${guest.balance>0?"text-[#c1121f]":""}`}>{guest.balance}</span></span></div>
+        <div className="flex flex-wrap gap-x-3 text-[#9ca3af]"><span>Arrival: <span className="mono text-[#374151]">{guest.arrival}</span></span><span>Departure: <span className="mono text-[#374151]">{guest.departure}</span></span></div>
       </div>
       <div className="font-semibold text-[12px]">+ {guest.name}</div>
       <div className="text-[#9ca3af] mt-1" style={{borderTop:"1px dashed #d4c87a",paddingTop:4}}>{guest.plan}</div>
     </div>
-    <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 rotate-45"
-      style={{background:"#fffef0",borderRight:"1px solid #d4c87a",borderBottom:"1px solid #d4c87a"}}/>
+    <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 rotate-45" style={{background:"#fffef0",borderRight:"1px solid #d4c87a",borderBottom:"1px solid #d4c87a"}}/>
   </div>;
 }
 function HotelCell({room,selected,onClick}:{room:HotelRoom;selected:boolean;onClick:()=>void}){
-  const [hover,setHover]=useState(false);
-  const cfg=ROOM_STATUS[room.status];
+  const [hover,setHover]=useState(false);const cfg=ROOM_STATUS[room.status];
   return <div className="relative" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}>
     <div onClick={onClick} className={`cursor-pointer select-none transition-shadow ${selected?"ring-2 ring-[#0f0f0e] ring-offset-1 z-20 relative":"hover:shadow-md hover:z-10 relative"}`}
       style={{width:96,minHeight:68,background:cfg.mapBg,border:`1.5px solid ${hover||selected?"#374151":cfg.mapBorder}`,borderRadius:2}}>
       <div className="flex items-center justify-between px-1.5 pt-1.5 pb-0.5">
         <StatusDot status={room.status}/>
-        {room.pax>0&&<div className="flex items-center gap-0.5">
-          {Array.from({length:Math.min(room.pax,3)}).map((_,i)=><WalkIcon key={i} color={cfg.mapPaxColor}/>)}
-          <span className="mono text-[10px] font-semibold ml-0.5" style={{color:cfg.mapPaxColor}}>{room.pax}</span>
-        </div>}
+        {room.pax>0&&<div className="flex items-center gap-0.5">{Array.from({length:Math.min(room.pax,3)}).map((_,i)=><WalkIcon key={i} color={cfg.mapPaxColor}/>)}<span className="mono text-[10px] font-semibold ml-0.5" style={{color:cfg.mapPaxColor}}>{room.pax}</span></div>}
       </div>
-      <div className="px-1.5 pb-1.5">
-        <div className="mono font-semibold text-[13px] leading-tight" style={{color:cfg.mapText}}>{room.id}</div>
-        <div className="text-[9px] font-medium tracking-wide uppercase leading-tight" style={{color:cfg.mapSubText}}>{room.roomType}</div>
-      </div>
+      <div className="px-1.5 pb-1.5"><div className="mono font-semibold text-[13px] leading-tight" style={{color:cfg.mapText}}>{room.id}</div><div className="text-[9px] font-medium tracking-wide uppercase leading-tight" style={{color:cfg.mapSubText}}>{room.roomType}</div></div>
     </div>
     {hover&&room.guest&&<GuestTooltip guest={room.guest} roomType={room.roomType}/>}
   </div>;
 }
 function BlockCell({room,selected,onClick}:{room:HotelRoom;selected:boolean;onClick:()=>void}){
-  const [hover,setHover]=useState(false);
-  const cfg=ROOM_STATUS[room.status];
+  const [hover,setHover]=useState(false);const cfg=ROOM_STATUS[room.status];
   return <div className="relative" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}>
-    <div onClick={onClick} className={`cursor-pointer border rounded-[2px] flex flex-col items-center justify-center transition-transform text-white hover:scale-[1.07] hover:shadow-md hover:z-10 relative ${cfg.cell} ${selected?"ring-2 ring-[#0f0f0e] ring-offset-1 z-20":""}`}
-      style={{width:52,height:44}} title={`${room.id}·${room.roomType}·${cfg.labelVi}`}>
-      {room.pax>0&&<div className="absolute top-0.5 right-0.5 flex items-center gap-0.5">
-        <WalkIcon color="rgba(255,255,255,0.75)"/><span className="mono text-[8px] opacity-75">{room.pax}</span>
-      </div>}
+    <div onClick={onClick} className={`cursor-pointer border rounded-[2px] flex flex-col items-center justify-center transition-transform text-white hover:scale-[1.07] hover:shadow-md hover:z-10 relative ${cfg.cell} ${selected?"ring-2 ring-[#0f0f0e] ring-offset-1 z-20":""}`} style={{width:52,height:44}} title={`${room.id}·${room.roomType}·${cfg.labelVi}`}>
+      {room.pax>0&&<div className="absolute top-0.5 right-0.5 flex items-center gap-0.5"><WalkIcon color="rgba(255,255,255,0.75)"/><span className="mono text-[8px] opacity-75">{room.pax}</span></div>}
       <span className="mono text-[10px] font-semibold leading-tight">{room.id}</span>
       <span className="text-[7px] opacity-70 uppercase tracking-wide leading-tight">{room.roomType}</span>
     </div>
@@ -294,18 +298,13 @@ function BlockCell({room,selected,onClick}:{room:HotelRoom;selected:boolean;onCl
 // SHARED UI
 // ─────────────────────────────────────────────
 function SectionTitle({children}:{children:React.ReactNode}){
-  return <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
-    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>{children}
-  </h3>;
+  return <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2"><span className="w-4 h-px bg-[#d1d5db] inline-block"/>{children}</h3>;
 }
 function Card({children,className=""}:{children:React.ReactNode;className?:string}){
   return <div className={`bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] ${className}`}>{children}</div>;
 }
 function FieldRow({label,children}:{label:string;children:React.ReactNode}){
-  return <div className="grid grid-cols-5 items-center gap-3">
-    <label className="col-span-2 text-[11px] text-[#9ca3af] font-medium">{label}</label>
-    <div className="col-span-3">{children}</div>
-  </div>;
+  return <div className="grid grid-cols-5 items-center gap-3"><label className="col-span-2 text-[11px] text-[#9ca3af] font-medium">{label}</label><div className="col-span-3">{children}</div></div>;
 }
 const inputCls="w-full border border-[#e5e7eb] rounded-[2px] px-3 py-1.5 text-[12px] outline-none focus:border-[#6b7280] transition-colors bg-[#fafafa]";
 const selectCls="w-full border border-[#e5e7eb] rounded-[2px] px-3 py-1.5 text-[12px] outline-none focus:border-[#6b7280] transition-colors bg-[#fafafa]";
@@ -315,28 +314,11 @@ const selectCls="w-full border border-[#e5e7eb] rounded-[2px] px-3 py-1.5 text-[
 // ─────────────────────────────────────────────
 function RateTable({nights,roomType}:{nights:number;roomType:string}){
   const base=850000;
-  const rows=Array.from({length:nights},(_,i)=>{
-    const d=new Date(2026,4,10+i);
-    return {date:d.toLocaleDateString("en-GB",{day:"2-digit",month:"2-digit"}),type:roomType,code:"RACK",rate:base};
-  });
+  const rows=Array.from({length:nights},(_,i)=>{const d=new Date(2026,4,10+i);return {date:d.toLocaleDateString("en-GB",{day:"2-digit",month:"2-digit"}),type:roomType,code:"RACK",rate:base};});
   return <div>
     <table className="w-full text-left border-collapse text-[11px]">
-      <thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
-        {["Ngày","Loại phòng","Rate code","Đơn giá","Thành tiền"].map(h=>(
-          <th key={h} className="px-3 py-2 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium">{h}</th>
-        ))}
-      </tr></thead>
-      <tbody className="divide-y divide-[#f9f9f7]">
-        {rows.map((r,i)=>(
-          <tr key={i} className="hover:bg-[#fafafa]">
-            <td className="px-3 py-2 mono">{r.date}</td>
-            <td className="px-3 py-2 text-[#6b7280]">{r.type}</td>
-            <td className="px-3 py-2 mono text-[#9ca3af]">{r.code}</td>
-            <td className="px-3 py-2 mono">{r.rate.toLocaleString()}</td>
-            <td className="px-3 py-2 mono font-medium">{r.rate.toLocaleString()}</td>
-          </tr>
-        ))}
-      </tbody>
+      <thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">{["Ngày","Loại phòng","Rate code","Đơn giá","Thành tiền"].map(h=><th key={h} className="px-3 py-2 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium">{h}</th>)}</tr></thead>
+      <tbody className="divide-y divide-[#f9f9f7]">{rows.map((r,i)=><tr key={i} className="hover:bg-[#fafafa]"><td className="px-3 py-2 mono">{r.date}</td><td className="px-3 py-2 text-[#6b7280]">{r.type}</td><td className="px-3 py-2 mono text-[#9ca3af]">{r.code}</td><td className="px-3 py-2 mono">{r.rate.toLocaleString()}</td><td className="px-3 py-2 mono font-medium">{r.rate.toLocaleString()}</td></tr>)}</tbody>
     </table>
     <div className="flex justify-between items-center px-3 py-2.5 border-t border-[#e5e7eb] bg-[#fafafa]">
       <span className="text-[11px] text-[#9ca3af] uppercase tracking-wide">Tổng tiền phòng</span>
@@ -346,21 +328,13 @@ function RateTable({nights,roomType}:{nights:number;roomType:string}){
 }
 
 // ─────────────────────────────────────────────
-// VIETNAMESE GUEST FORM
+// RESERVATION FORMS
 // ─────────────────────────────────────────────
 function VietnameseForm(){
   return <div className="grid grid-cols-2 gap-x-8 gap-y-3">
     <div className="space-y-3">
       <SectionTitle>Thông tin khách Việt Nam</SectionTitle>
-      {[
-        {label:"Họ và tên",ph:"NGUYỄN VĂN A"},
-        {label:"Số CMND / CCCD",ph:"0xx xxxx xxxx"},
-        {label:"Nơi cấp",ph:"Công an TP. HCM"},
-        {label:"Số điện thoại",ph:"09xx xxx xxx"},
-        {label:"Email",ph:""},
-        {label:"Địa chỉ thường trú",ph:"Quận, TP..."},
-        {label:"Công ty / TA",ph:""},
-      ].map(({label,ph})=><FieldRow key={label} label={label}><input className={inputCls} placeholder={ph}/></FieldRow>)}
+      {[{label:"Họ và tên",ph:"NGUYỄN VĂN A"},{label:"Số CMND / CCCD",ph:"0xx xxxx xxxx"},{label:"Nơi cấp",ph:"Công an TP. HCM"},{label:"Số điện thoại",ph:"09xx xxx xxx"},{label:"Email",ph:""},{label:"Địa chỉ thường trú",ph:"Quận, TP..."},{label:"Công ty / TA",ph:""}].map(({label,ph})=><FieldRow key={label} label={label}><input className={inputCls} placeholder={ph}/></FieldRow>)}
       <FieldRow label="Ngày cấp"><input type="date" className={inputCls}/></FieldRow>
       <FieldRow label="Ngày sinh"><input type="date" className={inputCls}/></FieldRow>
       <FieldRow label="Giới tính"><select className={selectCls}><option>Nam</option><option>Nữ</option></select></FieldRow>
@@ -383,20 +357,12 @@ function VietnameseForm(){
   </div>;
 }
 
-// ─────────────────────────────────────────────
-// FOREIGN GUEST FORM
-// ─────────────────────────────────────────────
 const COUNTRIES=[
-  {code:"JP",name:"Japan",flag:"🇯🇵"},{code:"KR",name:"South Korea",flag:"🇰🇷"},
-  {code:"CN",name:"China",flag:"🇨🇳"},{code:"US",name:"United States",flag:"🇺🇸"},
-  {code:"GB",name:"United Kingdom",flag:"🇬🇧"},{code:"FR",name:"France",flag:"🇫🇷"},
-  {code:"DE",name:"Germany",flag:"🇩🇪"},{code:"AU",name:"Australia",flag:"🇦🇺"},
-  {code:"SG",name:"Singapore",flag:"🇸🇬"},{code:"TH",name:"Thailand",flag:"🇹🇭"},
-  {code:"MY",name:"Malaysia",flag:"🇲🇾"},{code:"IN",name:"India",flag:"🇮🇳"},
-  {code:"TW",name:"Taiwan",flag:"🇹🇼"},{code:"HK",name:"Hong Kong",flag:"🇭🇰"},
-  {code:"RU",name:"Russia",flag:"🇷🇺"},{code:"IT",name:"Italy",flag:"🇮🇹"},
-  {code:"ES",name:"Spain",flag:"🇪🇸"},{code:"CA",name:"Canada",flag:"🇨🇦"},
-  {code:"OTHER",name:"Other",flag:"🌐"},
+  {code:"JP",name:"Japan",flag:"🇯🇵"},{code:"KR",name:"South Korea",flag:"🇰🇷"},{code:"CN",name:"China",flag:"🇨🇳"},{code:"US",name:"United States",flag:"🇺🇸"},
+  {code:"GB",name:"United Kingdom",flag:"🇬🇧"},{code:"FR",name:"France",flag:"🇫🇷"},{code:"DE",name:"Germany",flag:"🇩🇪"},{code:"AU",name:"Australia",flag:"🇦🇺"},
+  {code:"SG",name:"Singapore",flag:"🇸🇬"},{code:"TH",name:"Thailand",flag:"🇹🇭"},{code:"MY",name:"Malaysia",flag:"🇲🇾"},{code:"IN",name:"India",flag:"🇮🇳"},
+  {code:"TW",name:"Taiwan",flag:"🇹🇼"},{code:"HK",name:"Hong Kong",flag:"🇭🇰"},{code:"RU",name:"Russia",flag:"🇷🇺"},{code:"IT",name:"Italy",flag:"🇮🇹"},
+  {code:"ES",name:"Spain",flag:"🇪🇸"},{code:"CA",name:"Canada",flag:"🇨🇦"},{code:"OTHER",name:"Other",flag:"🌐"},
 ];
 const VISA_TYPES=["E-visa (30 ngày)","Visa on Arrival","Visa exempt (15 ngày)","Visa exempt (45 ngày)","Diplomatic visa","Business visa","Tourist visa"];
 
@@ -452,72 +418,306 @@ function ForeignForm(){
   </div>;
 }
 
-// ─────────────────────────────────────────────
-// RESERVATION TAB — toggle Việt Nam / Nước ngoài
-// ─────────────────────────────────────────────
 function ReservationTab(){
   const [guestType,setGuestType]=useState<GuestType>("vietnamese");
   return <div className="p-7 max-w-6xl mx-auto">
-    {/* Header + toggle */}
     <div className="flex items-center justify-between mb-5">
-      <div>
-        <h2 className="text-[15px] font-semibold text-[#1a1a1a]">Đặt phòng mới</h2>
-        <div className="text-[11px] text-[#9ca3af] mt-0.5 mono">New Reservation</div>
-      </div>
-      {/* Toggle — same mechanism as Hotel Map / Block View */}
+      <div><h2 className="text-[15px] font-semibold text-[#1a1a1a]">Đặt phòng mới</h2><div className="text-[11px] text-[#9ca3af] mt-0.5 mono">New Reservation</div></div>
       <div className="flex border border-[#e5e7eb] rounded-[2px] overflow-hidden">
-        <button onClick={()=>setGuestType("vietnamese")}
-          className={`flex items-center gap-2 px-5 py-2.5 text-[12px] font-medium transition-colors border-r border-[#e5e7eb]
-            ${guestType==="vietnamese"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}>
-          <span style={{fontSize:16}}>🇻🇳</span> Khách Việt Nam
-        </button>
-        <button onClick={()=>setGuestType("foreign")}
-          className={`flex items-center gap-2 px-5 py-2.5 text-[12px] font-medium transition-colors
-            ${guestType==="foreign"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}>
-          <Globe size={15} strokeWidth={1.5}/> Foreign Guest
-        </button>
+        <button onClick={()=>setGuestType("vietnamese")} className={`flex items-center gap-2 px-5 py-2.5 text-[12px] font-medium transition-colors border-r border-[#e5e7eb] ${guestType==="vietnamese"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}><span style={{fontSize:16}}>🇻🇳</span> Khách Việt Nam</button>
+        <button onClick={()=>setGuestType("foreign")} className={`flex items-center gap-2 px-5 py-2.5 text-[12px] font-medium transition-colors ${guestType==="foreign"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}><Globe size={15} strokeWidth={1.5}/> Foreign Guest</button>
       </div>
     </div>
-
-    {/* Indicator strip */}
-    <div className="flex items-center gap-3 px-4 py-2.5 mb-5 rounded-[2px] text-[12px] font-medium"
-      style={{background:guestType==="vietnamese"?"#f0fdf4":"#eff6ff",border:`1px solid ${guestType==="vietnamese"?"#86efac":"#bfdbfe"}`,color:guestType==="vietnamese"?"#15803d":"#1d4ed8"}}>
-      {guestType==="vietnamese"
-        ?<><span style={{fontSize:16}}>🇻🇳</span> Form dành cho khách Việt Nam — CMND / CCCD bắt buộc</>
-        :<><Globe size={14} strokeWidth={1.5}/> Foreign Guest Form — Passport &amp; PC06 declaration required</>
-      }
+    <div className="flex items-center gap-3 px-4 py-2.5 mb-5 rounded-[2px] text-[12px] font-medium" style={{background:guestType==="vietnamese"?"#f0fdf4":"#eff6ff",border:`1px solid ${guestType==="vietnamese"?"#86efac":"#bfdbfe"}`,color:guestType==="vietnamese"?"#15803d":"#1d4ed8"}}>
+      {guestType==="vietnamese"?<><span style={{fontSize:16}}>🇻🇳</span> Form dành cho khách Việt Nam — CMND / CCCD bắt buộc</>:<><Globe size={14} strokeWidth={1.5}/> Foreign Guest Form — Passport &amp; PC06 declaration required</>}
     </div>
-
-    {/* Form */}
-    <Card className="p-6 mb-4">
-      {guestType==="vietnamese"?<VietnameseForm/>:<ForeignForm/>}
-    </Card>
-
-    {/* Rate table */}
-    <Card className="mb-4">
-      <div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Rate &amp; Folio</SectionTitle></div>
-      <RateTable nights={3} roomType="SUPDN"/>
-    </Card>
-
-    {/* Bottom toolbar */}
+    <Card className="p-6 mb-4">{guestType==="vietnamese"?<VietnameseForm/>:<ForeignForm/>}</Card>
+    <Card className="mb-4"><div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Rate &amp; Folio</SectionTitle></div><RateTable nights={3} roomType="SUPDN"/></Card>
     <div className="flex items-center gap-2 flex-wrap">
       <button className="px-5 py-2.5 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Lưu — Definite</button>
       <button className="px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Lưu — Tentative</button>
       <button className="px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Group Booking</button>
       <div className="w-px h-5 bg-[#e5e7eb] mx-1"/>
-      {guestType==="foreign"&&(
-        <button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
-          <Download size={13} strokeWidth={1.5}/> Xuất PC06
-        </button>
-      )}
-      <button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
-        <Printer size={13} strokeWidth={1.5}/> In xác nhận
-      </button>
+      {guestType==="foreign"&&<button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors"><Download size={13} strokeWidth={1.5}/> Xuất PC06</button>}
+      <button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={13} strokeWidth={1.5}/> In xác nhận</button>
       <button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Gửi email</button>
       <div className="flex-1"/>
       <button className="px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors">Hủy</button>
     </div>
   </div>;
+}
+
+// ─────────────────────────────────────────────
+// SHIFT HANDOVER REPORT TAB (Báo cáo giao ca)
+// ─────────────────────────────────────────────
+function ShiftReportTab() {
+  const [view, setView] = useState<"new"|"history">("new");
+  const [selectedReport, setSelectedReport] = useState<ShiftReport|null>(null);
+
+  // New report state
+  const [reporter, setReporter] = useState("NGUYỄN THỊ HOA");
+  const [handoverTo, setHandoverTo] = useState("");
+  const [shift, setShift] = useState<ShiftName>("Ca chiều");
+  const [cashBalance, setCashBalance] = useState("");
+  const [generalNote, setGeneralNote] = useState("");
+  const [incidentNote, setIncidentNote] = useState("");
+  const [tasks, setTasks] = useState<ShiftTask[]>([
+    {id:"t1", content:"", priority:"normal", done:false},
+  ]);
+  const [pendingArrivals, setPendingArrivals] = useState<PendingArrival[]>([
+    {folio:"247430", name:"YAMAMOTO KENJI", roomType:"DLXTC", eta:"15:00", pax:2, note:"Yêu cầu tầng cao"},
+    {folio:"247431", name:"PARK JI-WOO",    roomType:"SUPDN", eta:"16:30", pax:1, note:""},
+  ]);
+  const [submitted, setSubmitted] = useState(false);
+
+  const addTask = () => setTasks(prev => [...prev, {id:`t${Date.now()}`, content:"", priority:"normal", done:false}]);
+  const removeTask = (id:string) => setTasks(prev => prev.filter(t => t.id !== id));
+  const updateTask = (id:string, patch:Partial<ShiftTask>) => setTasks(prev => prev.map(t => t.id===id ? {...t,...patch} : t));
+
+  const addArrival = () => setPendingArrivals(prev => [...prev, {folio:"", name:"", roomType:"SUPDN", eta:"", pax:1, note:""}]);
+  const removeArrival = (i:number) => setPendingArrivals(prev => prev.filter((_,idx)=>idx!==i));
+  const updateArrival = (i:number, patch:Partial<PendingArrival>) => setPendingArrivals(prev => prev.map((a,idx) => idx===i ? {...a,...patch} : a));
+
+  const handleSubmit = () => setSubmitted(true);
+
+  const statusBadge = (status:ShiftReport["status"]) => {
+    if(status==="confirmed") return <span className="px-2 py-0.5 text-[10px] font-medium rounded-[2px] bg-[#f0fdf4] text-[#15803d] border border-[#86efac]">✓ Đã xác nhận</span>;
+    if(status==="submitted") return <span className="px-2 py-0.5 text-[10px] font-medium rounded-[2px] bg-[#fff8e1] text-[#7a5800] border border-[#fcd34d]">⏳ Chờ xác nhận</span>;
+    return <span className="px-2 py-0.5 text-[10px] font-medium rounded-[2px] bg-[#f3f4f6] text-[#6b7280] border border-[#e5e7eb]">Nháp</span>;
+  };
+
+  // ── HISTORY VIEW ──
+  if(view === "history" && !selectedReport) return (
+    <div className="p-7 max-w-4xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-[15px] font-semibold">Lịch sử báo cáo giao ca</h2><div className="mono text-[11px] text-[#9ca3af] mt-0.5">Shift Handover History</div></div>
+        <div className="flex border border-[#e5e7eb] rounded-[2px] overflow-hidden">
+          <button onClick={()=>setView("new")} className="px-4 py-2 text-[12px] font-medium border-r border-[#e5e7eb] bg-white text-[#6b7280] hover:bg-[#f9f9f7] transition-colors">+ Tạo báo cáo</button>
+          <button onClick={()=>setView("history")} className="px-4 py-2 text-[12px] font-medium bg-[#0f0f0e] text-white">Lịch sử</button>
+        </div>
+      </div>
+      <Card className="overflow-hidden">
+        <table className="w-full text-left">
+          <thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
+            {["Ngày","Ca","Người bàn giao","Người nhận","Tồn quỹ","Trạng thái",""].map(h=><th key={h} className="px-5 py-3 text-[9px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium">{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {MOCK_REPORTS.map(r=>(
+              <tr key={r.id} className="border-b border-[#f9f9f7] hover:bg-[#fafafa] transition-colors cursor-pointer" onClick={()=>setSelectedReport(r)}>
+                <td className="px-5 py-3 mono text-[12px] text-[#9ca3af]">{r.date}</td>
+                <td className="px-5 py-3 text-[12px] font-medium">{r.shift}</td>
+                <td className="px-5 py-3 text-[12px]">{r.reporter}</td>
+                <td className="px-5 py-3 text-[12px] text-[#6b7280]">{r.handoverTo}</td>
+                <td className="px-5 py-3 mono text-[12px]">{r.cashBalance.toLocaleString()} ₫</td>
+                <td className="px-5 py-3">{statusBadge(r.status)}</td>
+                <td className="px-5 py-3 text-right"><button className="text-[11px] text-[#9ca3af] hover:text-[#1a1a1a]">Xem →</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+
+  // ── DETAIL VIEW ──
+  if(view === "history" && selectedReport) {
+    const r = selectedReport;
+    return (
+      <div className="p-7 max-w-4xl mx-auto space-y-4">
+        <button onClick={()=>setSelectedReport(null)} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors"><ChevronLeft size={13} strokeWidth={1.5}/> Quay lại lịch sử</button>
+        <div className="flex items-center justify-between">
+          <div><h2 className="text-[15px] font-semibold">Báo cáo giao ca — {r.shift}</h2><div className="mono text-[11px] text-[#9ca3af] mt-0.5">{r.date}</div></div>
+          {statusBadge(r.status)}
+        </div>
+
+        {/* Header info */}
+        <Card className="p-5">
+          <div className="grid grid-cols-3 gap-4 text-[12px]">
+            {[["Người bàn giao",r.reporter],["Người nhận ca",r.handoverTo],["Tồn quỹ",r.cashBalance.toLocaleString()+" ₫"],["Ca làm việc",r.shift],["Xác nhận bởi",r.confirmedBy||"—"],["Giờ xác nhận",r.confirmedAt||"—"]].map(([label,val])=>(
+              <div key={label}><div className="text-[10px] text-[#9ca3af] uppercase tracking-wide mb-0.5">{label}</div><div className="font-medium mono">{val}</div></div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Pending arrivals */}
+        {r.pendingArrivals.length > 0 && (
+          <Card className="overflow-hidden">
+            <div className="px-5 py-3 border-b border-[#f3f4f6]"><SectionTitle>Khách chưa tới — {r.pendingArrivals.length} đặt phòng</SectionTitle></div>
+            <table className="w-full text-left text-[12px]">
+              <thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">{["Folio","Tên khách","Loại phòng","ETA","Khách","Ghi chú"].map(h=><th key={h} className="px-4 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium">{h}</th>)}</tr></thead>
+              <tbody>{r.pendingArrivals.map((a,i)=>(
+                <tr key={i} className="border-b border-[#f9f9f7] hover:bg-[#fafafa]">
+                  <td className="px-4 py-3 mono text-[#9ca3af]">{a.folio}</td>
+                  <td className="px-4 py-3 font-medium">{a.name}</td>
+                  <td className="px-4 py-3"><span className="mono text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded-[2px]">{a.roomType}</span></td>
+                  <td className="px-4 py-3 mono">{a.eta}</td>
+                  <td className="px-4 py-3 mono">{a.pax}</td>
+                  <td className="px-4 py-3 text-[#6b7280]">{a.note||"—"}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </Card>
+        )}
+
+        {/* Tasks */}
+        <Card className="p-5">
+          <SectionTitle>Việc cần xử lý — {r.tasks.filter(t=>!t.done).length} còn lại</SectionTitle>
+          <div className="space-y-2">
+            {r.tasks.map(t=>{
+              const cfg=PRIORITY_CONFIG[t.priority];
+              const Icon=cfg.icon;
+              return <div key={t.id} className="flex items-start gap-3 p-3 rounded-[2px]" style={{background:t.done?"#fafafa":cfg.bg,opacity:t.done?0.6:1}}>
+                <Icon size={14} strokeWidth={1.5} style={{color:cfg.color,marginTop:1,flexShrink:0}}/>
+                <span className={`text-[12px] flex-1 ${t.done?"line-through text-[#9ca3af]":""}`}>{t.content}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium shrink-0" style={{background:cfg.bg,color:cfg.color}}>{cfg.label}</span>
+                {t.done && <span className="text-[10px] text-[#2d6a4f] shrink-0">✓ Xong</span>}
+              </div>;
+            })}
+          </div>
+        </Card>
+
+        {/* Notes */}
+        {(r.generalNote || r.incidentNote) && (
+          <div className="grid grid-cols-2 gap-4">
+            {r.generalNote && <Card className="p-5"><SectionTitle>Ghi chú chung</SectionTitle><p className="text-[12px] text-[#374151]">{r.generalNote}</p></Card>}
+            {r.incidentNote && <Card className="p-5"><SectionTitle>Sự cố / Phàn nàn</SectionTitle><p className="text-[12px] text-[#c1121f]">{r.incidentNote}</p></Card>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── NEW REPORT FORM ──
+  if(submitted) return (
+    <div className="p-7 max-w-4xl mx-auto flex flex-col items-center justify-center" style={{minHeight:400}}>
+      <div className="w-14 h-14 rounded-full bg-[#f0fdf4] flex items-center justify-center mb-4">
+        <CheckCircle size={28} className="text-[#2d6a4f]" strokeWidth={1.5}/>
+      </div>
+      <h2 className="text-[15px] font-semibold mb-2">Báo cáo đã gửi thành công!</h2>
+      <p className="text-[12px] text-[#9ca3af] mb-5 text-center">Ca nhận sẽ thấy báo cáo này khi đăng nhập.<br/>Họ cần xác nhận để hoàn tất bàn giao.</p>
+      <div className="flex gap-2">
+        <button onClick={()=>setSubmitted(false)} className="px-5 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Tạo báo cáo mới</button>
+        <button onClick={()=>{setView("history");setSubmitted(false);}} className="px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Xem lịch sử</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="p-7 max-w-4xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-[15px] font-semibold">Báo cáo giao ca</h2><div className="mono text-[11px] text-[#9ca3af] mt-0.5">Shift Handover Report</div></div>
+        <div className="flex border border-[#e5e7eb] rounded-[2px] overflow-hidden">
+          <button onClick={()=>setView("new")} className="px-4 py-2 text-[12px] font-medium border-r border-[#e5e7eb] bg-[#0f0f0e] text-white">+ Tạo báo cáo</button>
+          <button onClick={()=>setView("history")} className="px-4 py-2 text-[12px] font-medium bg-white text-[#6b7280] hover:bg-[#f9f9f7] transition-colors">Lịch sử</button>
+        </div>
+      </div>
+
+      {/* Basic info */}
+      <Card className="p-5">
+        <SectionTitle>Thông tin ca bàn giao</SectionTitle>
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+          <FieldRow label="Người bàn giao"><input className={inputCls} value={reporter} onChange={e=>setReporter(e.target.value)}/></FieldRow>
+          <FieldRow label="Người nhận ca"><input className={inputCls} value={handoverTo} onChange={e=>setHandoverTo(e.target.value)} placeholder="Tên lễ tân ca sau..."/></FieldRow>
+          <FieldRow label="Ca làm việc">
+            <select className={selectCls} value={shift} onChange={e=>setShift(e.target.value as ShiftName)}>
+              <option>Ca sáng</option><option>Ca chiều</option><option>Ca tối</option>
+            </select>
+          </FieldRow>
+          <FieldRow label="Ngày"><input type="date" className={inputCls} defaultValue="2026-05-11"/></FieldRow>
+          <FieldRow label="Tồn quỹ (₫)"><input className={inputCls} value={cashBalance} onChange={e=>setCashBalance(e.target.value)} placeholder="0" type="number"/></FieldRow>
+          <FieldRow label="Giờ bàn giao"><input type="time" className={inputCls} defaultValue="14:00"/></FieldRow>
+        </div>
+      </Card>
+
+      {/* Pending arrivals */}
+      <Card className="overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#f3f4f6] flex items-center justify-between">
+          <SectionTitle>Khách chưa tới hôm nay</SectionTitle>
+          <button onClick={addArrival} className="flex items-center gap-1 text-[11px] text-[#6b7280] hover:text-[#1a1a1a] font-medium transition-colors">
+            <Plus size={12} strokeWidth={2}/> Thêm
+          </button>
+        </div>
+        {pendingArrivals.length === 0 ? (
+          <div className="px-5 py-6 text-center text-[12px] text-[#9ca3af]">Không có khách chờ tới</div>
+        ) : (
+          <div className="divide-y divide-[#f9f9f7]">
+            {pendingArrivals.map((a,i)=>(
+              <div key={i} className="px-5 py-3 grid grid-cols-6 gap-2 items-center">
+                <input className={`${inputCls} col-span-1`} placeholder="Folio" value={a.folio} onChange={e=>updateArrival(i,{folio:e.target.value})}/>
+                <input className={`${inputCls} col-span-1`} placeholder="Tên khách" value={a.name} onChange={e=>updateArrival(i,{name:e.target.value})}/>
+                <select className={`${selectCls} col-span-1`} value={a.roomType} onChange={e=>updateArrival(i,{roomType:e.target.value})}>
+                  {["SUPDN","DLXTC","PRETM","AVTFM","PREKM"].map(t=><option key={t}>{t}</option>)}
+                </select>
+                <input className={`${inputCls} col-span-1`} placeholder="ETA" type="time" value={a.eta} onChange={e=>updateArrival(i,{eta:e.target.value})}/>
+                <input className={`${inputCls} col-span-1`} placeholder="Ghi chú" value={a.note} onChange={e=>updateArrival(i,{note:e.target.value})}/>
+                <button onClick={()=>removeArrival(i)} className="flex justify-center text-[#d1d5db] hover:text-[#c1121f] transition-colors"><Trash2 size={13} strokeWidth={1.5}/></button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Tasks */}
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <SectionTitle>Việc cần xử lý cho ca sau</SectionTitle>
+          <button onClick={addTask} className="flex items-center gap-1 text-[11px] text-[#6b7280] hover:text-[#1a1a1a] font-medium transition-colors">
+            <Plus size={12} strokeWidth={2}/> Thêm việc
+          </button>
+        </div>
+        <div className="space-y-2">
+          {tasks.map(t=>{
+            const cfg=PRIORITY_CONFIG[t.priority];
+            return (
+              <div key={t.id} className="flex items-center gap-2 p-2.5 rounded-[2px]" style={{background:cfg.bg}}>
+                <input type="checkbox" checked={t.done} onChange={e=>updateTask(t.id,{done:e.target.checked})} className="w-3.5 h-3.5 accent-[#0f0f0e] shrink-0"/>
+                <input
+                  className="flex-1 bg-transparent outline-none text-[12px] placeholder:text-[#9ca3af]"
+                  placeholder="Mô tả việc cần làm..."
+                  value={t.content}
+                  onChange={e=>updateTask(t.id,{content:e.target.value})}
+                />
+                <select
+                  className="border border-[#e5e7eb] rounded-[2px] px-2 py-1 text-[11px] outline-none bg-white shrink-0"
+                  value={t.priority}
+                  onChange={e=>updateTask(t.id,{priority:e.target.value as TaskPriority})}
+                >
+                  <option value="urgent">🔴 Khẩn</option>
+                  <option value="normal">⚪ Bình thường</option>
+                  <option value="info">🔵 Thông tin</option>
+                </select>
+                <button onClick={()=>removeTask(t.id)} className="text-[#d1d5db] hover:text-[#c1121f] transition-colors shrink-0"><Trash2 size={13} strokeWidth={1.5}/></button>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Notes */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="p-5">
+          <SectionTitle>Ghi chú chung</SectionTitle>
+          <textarea className="w-full border border-[#e5e7eb] rounded-[2px] px-3 py-2 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] resize-none h-24" placeholder="Tình hình ca, khách đặc biệt, lưu ý chung..." value={generalNote} onChange={e=>setGeneralNote(e.target.value)}/>
+        </Card>
+        <Card className="p-5">
+          <SectionTitle>Sự cố / Phàn nàn (nếu có)</SectionTitle>
+          <textarea className="w-full border border-[#e5e7eb] rounded-[2px] px-3 py-2 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] resize-none h-24" placeholder="Ghi lại sự cố, phàn nàn của khách trong ca..." value={incidentNote} onChange={e=>setIncidentNote(e.target.value)}/>
+        </Card>
+      </div>
+
+      {/* Submit */}
+      <div className="flex items-center gap-3 pt-1">
+        <button onClick={handleSubmit} className="flex items-center gap-2 px-6 py-2.5 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">
+          <Send size={13} strokeWidth={1.5}/> Gửi báo cáo giao ca
+        </button>
+        <button className="px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Lưu nháp</button>
+        <button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={13} strokeWidth={1.5}/> In báo cáo</button>
+        <div className="flex-1"/>
+        <span className="text-[11px] text-[#9ca3af]">Ca nhận sẽ thấy báo cáo này khi đăng nhập</span>
+      </div>
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────
@@ -535,164 +735,69 @@ function RoomPlanTab(){
   const [selected,setSelected]=useState<string|null>(null);
   const [tooltip,setTooltip]=useState<{booking:Booking;x:number;y:number}|null>(null);
   const gridRef=useRef<HTMLDivElement>(null);
-
   const dates=useMemo(()=>buildDates(startDate,NUM_DAYS),[startDate]);
-
   const filteredRooms=useMemo(()=>{
     let rooms=PLAN_ROOMS;
     if(filterType!=="ALL") rooms=rooms.filter(r=>r.type===filterType);
     if(filterFloor!=="ALL") rooms=rooms.filter(r=>r.floor===Number(filterFloor));
-    if(searchName.trim()){
-      const q=searchName.toLowerCase();
-      const matchIds=new Set(bookings.filter(b=>b.guestName.toLowerCase().includes(q)).map(b=>b.roomId));
-      rooms=rooms.filter(r=>matchIds.has(r.id));
-    }
+    if(searchName.trim()){const q=searchName.toLowerCase();const matchIds=new Set(bookings.filter(b=>b.guestName.toLowerCase().includes(q)).map(b=>b.roomId));rooms=rooms.filter(r=>matchIds.has(r.id));}
     return rooms;
   },[filterType,filterFloor,searchName,bookings]);
-
   const bookingsByRoom=useMemo(()=>{
     // @ts-ignore
     const roomMap=new Map<number,Booking[]>();
-    bookings.forEach(b=>{
-      if(!roomMap.has(b.roomId)) roomMap.set(b.roomId,[]);
-      roomMap.get(b.roomId)!.push(b);
-    });
+    bookings.forEach(b=>{if(!roomMap.has(b.roomId))roomMap.set(b.roomId,[]);roomMap.get(b.roomId)!.push(b);});
     return roomMap;
   },[bookings]);
-
   const hasCollision=useCallback((roomId:number,startDay:number,nights:number,excludeId:string)=>{
     const rb=(bookingsByRoom.get(roomId)||[]).filter(b=>b.id!==excludeId);
     return rb.some(b=>startDay<b.startDay+b.nights&&startDay+nights>b.startDay);
   },[bookingsByRoom]);
-
-  const onDragStart=(e:React.DragEvent,bk:Booking,clickedDay:number)=>{
-    setDragging({bookingId:bk.id,offsetDay:clickedDay-bk.startDay});
-    setSelected(bk.id);
-    e.dataTransfer.effectAllowed="move";
-  };
+  const onDragStart=(e:React.DragEvent,bk:Booking,clickedDay:number)=>{setDragging({bookingId:bk.id,offsetDay:clickedDay-bk.startDay});setSelected(bk.id);e.dataTransfer.effectAllowed="move";};
   const onCellDragOver=(e:React.DragEvent,roomId:number,day:number)=>{e.preventDefault();e.dataTransfer.dropEffect="move";setDragOver({roomId,day});};
   const onDrop=(e:React.DragEvent,targetRoomId:number,day:number)=>{
-    e.preventDefault();
-    if(!dragging) return;
-    const bk=bookings.find(b=>b.id===dragging.bookingId);
-    if(!bk) return;
+    e.preventDefault();if(!dragging)return;
+    const bk=bookings.find(b=>b.id===dragging.bookingId);if(!bk)return;
     const newStart=day-dragging.offsetDay;
-    if(newStart<0||newStart+bk.nights>NUM_DAYS) return;
-    if(hasCollision(targetRoomId,newStart,bk.nights,bk.id)) return;
+    if(newStart<0||newStart+bk.nights>NUM_DAYS)return;
+    if(hasCollision(targetRoomId,newStart,bk.nights,bk.id))return;
     setBookings(prev=>prev.map(b=>b.id===dragging.bookingId?{...b,roomId:targetRoomId,startDay:newStart}:b));
     setDragging(null);setDragOver(null);
   };
   const onDragEnd=()=>{setDragging(null);setDragOver(null);};
-
   const goBack=()=>{const d=new Date(startDate);d.setDate(d.getDate()-7);setStartDate(d);};
   const goFwd=()=>{const d=new Date(startDate);d.setDate(d.getDate()+7);setStartDate(d);};
   const floors=[...new Set(PLAN_ROOMS.map(r=>r.floor))].sort((a,b)=>a-b);
 
   return <div className="flex flex-col bg-[#f2f2ef]" style={{height:"calc(100vh - 52px)"}}>
-    {/* Filter bar */}
     <div className="bg-white border-b border-[#e5e7eb] px-5 py-2.5 flex items-center gap-4 shrink-0 flex-wrap">
-      <div className="flex items-center gap-1.5 text-[12px]">
-        <span className="font-medium text-[#374151]">Start Date</span>
-        <input type="date" value={startDate.toISOString().split("T")[0]}
-          onChange={e=>{const d=new Date(e.target.value);if(!isNaN(d.getTime()))setStartDate(d);}}
-          className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1 outline-none focus:border-[#6b7280] bg-[#fafafa]"/>
-      </div>
+      <div className="flex items-center gap-1.5 text-[12px]"><span className="font-medium text-[#374151]">Start Date</span><input type="date" value={startDate.toISOString().split("T")[0]} onChange={e=>{const d=new Date(e.target.value);if(!isNaN(d.getTime()))setStartDate(d);}} className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1 outline-none focus:border-[#6b7280] bg-[#fafafa]"/></div>
       <div className="w-px h-4 bg-[#e5e7eb]"/>
-      <div className="flex items-center gap-1.5 text-[12px]">
-        <span className="font-medium text-[#374151]">Rm Type</span>
-        <select value={filterType} onChange={e=>setFilterType(e.target.value)}
-          className="border border-[#e5e7eb] rounded-[2px] px-2 py-1 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] mono">
-          {ALL_ROOM_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-      <div className="flex items-center gap-1.5 text-[12px]">
-        <span className="font-medium text-[#374151]">Floor</span>
-        <select value={filterFloor} onChange={e=>setFilterFloor(e.target.value)}
-          className="border border-[#e5e7eb] rounded-[2px] px-2 py-1 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] mono">
-          <option value="ALL">ALL</option>
-          {floors.map(f=><option key={f} value={f}>Tầng {f}</option>)}
-        </select>
-      </div>
+      <div className="flex items-center gap-1.5 text-[12px]"><span className="font-medium text-[#374151]">Rm Type</span><select value={filterType} onChange={e=>setFilterType(e.target.value)} className="border border-[#e5e7eb] rounded-[2px] px-2 py-1 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] mono">{ALL_ROOM_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+      <div className="flex items-center gap-1.5 text-[12px]"><span className="font-medium text-[#374151]">Floor</span><select value={filterFloor} onChange={e=>setFilterFloor(e.target.value)} className="border border-[#e5e7eb] rounded-[2px] px-2 py-1 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] mono"><option value="ALL">ALL</option>{floors.map(f=><option key={f} value={f}>Tầng {f}</option>)}</select></div>
       <div className="w-px h-4 bg-[#e5e7eb]"/>
-      <div className="flex items-center gap-1.5 text-[12px]">
-        <span className="font-medium text-[#374151]">Name</span>
-        <div className="flex items-center gap-1 border border-[#e5e7eb] rounded-[2px] px-2 py-1 bg-[#fafafa]">
-          <Search size={11} strokeWidth={1.5} className="text-[#d1d5db]"/>
-          <input value={searchName} onChange={e=>setSearchName(e.target.value)}
-            className="outline-none bg-transparent text-[12px] w-28 mono" placeholder="Tìm tên khách..."/>
-        </div>
-      </div>
+      <div className="flex items-center gap-1.5 text-[12px]"><span className="font-medium text-[#374151]">Name</span><div className="flex items-center gap-1 border border-[#e5e7eb] rounded-[2px] px-2 py-1 bg-[#fafafa]"><Search size={11} strokeWidth={1.5} className="text-[#d1d5db]"/><input value={searchName} onChange={e=>setSearchName(e.target.value)} className="outline-none bg-transparent text-[12px] w-28 mono" placeholder="Tìm tên khách..."/></div></div>
       <div className="flex-1"/>
-      <div className="flex items-center gap-3">
-        {(Object.entries(BOOKING_COLOR) as [BookingStatus,typeof BOOKING_COLOR[BookingStatus]][]).map(([k,c])=>(
-          <div key={k} className="flex items-center gap-1 text-[10px] text-[#6b7280]">
-            <span className="w-3 h-3 rounded-[2px] inline-block" style={{background:c.bg}}/>{c.label}
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center gap-1 border border-[#e5e7eb] rounded-[2px] overflow-hidden">
-        <button onClick={goBack} className="px-2 py-1.5 hover:bg-[#f3f4f6] transition-colors border-r border-[#e5e7eb]"><ChevronLeft size={13} strokeWidth={1.5}/></button>
-        <button onClick={()=>setStartDate(new Date(2026,4,1))} className="px-3 py-1.5 text-[11px] font-medium hover:bg-[#f3f4f6] transition-colors border-r border-[#e5e7eb]">Today</button>
-        <button onClick={goFwd} className="px-2 py-1.5 hover:bg-[#f3f4f6] transition-colors"><ChevronRight size={13} strokeWidth={1.5}/></button>
-      </div>
+      <div className="flex items-center gap-3">{(Object.entries(BOOKING_COLOR) as [BookingStatus,typeof BOOKING_COLOR[BookingStatus]][]).map(([k,c])=><div key={k} className="flex items-center gap-1 text-[10px] text-[#6b7280]"><span className="w-3 h-3 rounded-[2px] inline-block" style={{background:c.bg}}/>{c.label}</div>)}</div>
+      <div className="flex items-center gap-1 border border-[#e5e7eb] rounded-[2px] overflow-hidden"><button onClick={goBack} className="px-2 py-1.5 hover:bg-[#f3f4f6] transition-colors border-r border-[#e5e7eb]"><ChevronLeft size={13} strokeWidth={1.5}/></button><button onClick={()=>setStartDate(new Date(2026,4,1))} className="px-3 py-1.5 text-[11px] font-medium hover:bg-[#f3f4f6] transition-colors border-r border-[#e5e7eb]">Today</button><button onClick={goFwd} className="px-2 py-1.5 hover:bg-[#f3f4f6] transition-colors"><ChevronRight size={13} strokeWidth={1.5}/></button></div>
     </div>
-
-    {/* Gantt grid */}
     <div className="flex-1 overflow-auto" ref={gridRef}>
       <div style={{minWidth:LABEL_W+COL_W*NUM_DAYS}}>
-        {/* Date header */}
         <div className="flex sticky top-0 z-30 bg-white border-b-2 border-[#e5e7eb]" style={{height:44}}>
-          <div className="shrink-0 flex items-end px-3 pb-2 border-r border-[#e5e7eb]" style={{width:LABEL_W,background:"#fafafa"}}>
-            <span className="mono text-[10px] text-[#9ca3af] font-medium tracking-widest uppercase">Room</span>
-          </div>
-          {dates.map((d,i)=>{
-            const weekend=isWeekend(d);
-            const isToday=d.toDateString()===new Date(2026,4,1).toDateString();
-            return <div key={i} style={{width:COL_W,minWidth:COL_W}}
-              className={`shrink-0 flex flex-col items-center justify-end pb-1 border-r border-[#f0f0ed] ${weekend?"bg-[#fdf8f0]":""}`}>
-              <div className={`mono text-[10px] font-semibold ${isToday?"text-[#c1121f]":weekend?"text-[#b45309]":"text-[#374151]"}`}>
-                {d.getDate()}/{d.getMonth()+1}
-              </div>
-              <div className={`text-[8px] uppercase tracking-wide ${weekend?"text-[#b45309]":"text-[#9ca3af]"}`}>
-                {d.toLocaleDateString("en-GB",{weekday:"short"})}
-              </div>
-            </div>;
-          })}
+          <div className="shrink-0 flex items-end px-3 pb-2 border-r border-[#e5e7eb]" style={{width:LABEL_W,background:"#fafafa"}}><span className="mono text-[10px] text-[#9ca3af] font-medium tracking-widest uppercase">Room</span></div>
+          {dates.map((d,i)=>{const weekend=isWeekend(d),isToday=d.toDateString()===new Date(2026,4,1).toDateString();return <div key={i} style={{width:COL_W,minWidth:COL_W}} className={`shrink-0 flex flex-col items-center justify-end pb-1 border-r border-[#f0f0ed] ${weekend?"bg-[#fdf8f0]":""}`}><div className={`mono text-[10px] font-semibold ${isToday?"text-[#c1121f]":weekend?"text-[#b45309]":"text-[#374151]"}`}>{d.getDate()}/{d.getMonth()+1}</div><div className={`text-[8px] uppercase tracking-wide ${weekend?"text-[#b45309]":"text-[#9ca3af]"}`}>{d.toLocaleDateString("en-GB",{weekday:"short"})}</div></div>;})}
         </div>
-
-        {/* Room rows */}
         {filteredRooms.map((room,ri)=>{
-          const roomBookings=bookingsByRoom.get(room.id)||[];
-          const isEven=ri%2===0;
+          const roomBookings=bookingsByRoom.get(room.id)||[],isEven=ri%2===0;
           return <div key={room.id} className="flex relative" style={{height:ROW_H}} onDragOver={e=>e.preventDefault()}>
-            <div className={`shrink-0 flex items-center gap-2 px-3 border-r border-b border-[#e5e7eb] sticky left-0 z-20 ${isEven?"bg-white":"bg-[#fafafa]"}`}
-              style={{width:LABEL_W}}>
-              <span className="mono text-[11px] font-semibold text-[#374151]">{room.id}</span>
-              <span className="text-[9px] text-[#9ca3af] uppercase tracking-wide">{room.type}</span>
-            </div>
+            <div className={`shrink-0 flex items-center gap-2 px-3 border-r border-b border-[#e5e7eb] sticky left-0 z-20 ${isEven?"bg-white":"bg-[#fafafa]"}`} style={{width:LABEL_W}}><span className="mono text-[11px] font-semibold text-[#374151]">{room.id}</span><span className="text-[9px] text-[#9ca3af] uppercase tracking-wide">{room.type}</span></div>
             <div className="relative flex flex-1 border-b border-[#f0f0ed]">
-              {dates.map((d,di)=>{
-                const weekend=isWeekend(d);
-                const isDrop=dragOver?.roomId===room.id&&dragOver?.day===di;
-                return <div key={di} style={{width:COL_W,minWidth:COL_W}}
-                  className={`shrink-0 h-full border-r border-[#f0f0ed] ${weekend?"bg-[#fdf8f0]":isEven?"bg-white":"bg-[#fafafa]"} ${isDrop?"!bg-blue-50":""}`}
-                  onDragOver={e=>onCellDragOver(e,room.id,di)}
-                  onDrop={e=>onDrop(e,room.id,di)}/>;
-              })}
+              {dates.map((d,di)=>{const weekend=isWeekend(d),isDrop=dragOver?.roomId===room.id&&dragOver?.day===di;return <div key={di} style={{width:COL_W,minWidth:COL_W}} className={`shrink-0 h-full border-r border-[#f0f0ed] ${weekend?"bg-[#fdf8f0]":isEven?"bg-white":"bg-[#fafafa]"} ${isDrop?"!bg-blue-50":""}`} onDragOver={e=>onCellDragOver(e,room.id,di)} onDrop={e=>onDrop(e,room.id,di)}/>;} )}
               {roomBookings.map(bk=>{
-                if(bk.startDay>=NUM_DAYS||bk.startDay+bk.nights<=0) return null;
+                if(bk.startDay>=NUM_DAYS||bk.startDay+bk.nights<=0)return null;
                 const cs=Math.max(0,bk.startDay),ce=Math.min(NUM_DAYS,bk.startDay+bk.nights),cn=ce-cs;
-                const c=BOOKING_COLOR[bk.status];
-                const isSel=selected===bk.id,isDrag=dragging?.bookingId===bk.id;
-                return <div key={bk.id} draggable
-                  onDragStart={e=>onDragStart(e,bk,cs)} onDragEnd={onDragEnd}
-                  onClick={e=>{e.stopPropagation();setSelected(isSel?null:bk.id);}}
-                  onMouseEnter={e=>setTooltip({booking:bk,x:e.clientX,y:e.clientY})}
-                  onMouseLeave={()=>setTooltip(null)}
-                  className={`absolute top-[3px] rounded-[3px] cursor-grab active:cursor-grabbing flex items-center px-2 overflow-hidden select-none ${isDrag?"opacity-40":""}`}
-                  style={{left:cs*COL_W+1,width:cn*COL_W-2,height:ROW_H-6,background:c.bg,
-                    border:`1.5px solid ${isSel?"#1a1a1a":c.border}`,
-                    boxShadow:isSel?"0 0 0 2px #1a1a1a":"0 1px 3px rgba(0,0,0,0.2)",zIndex:isSel?25:15}}>
+                const c=BOOKING_COLOR[bk.status],isSel=selected===bk.id,isDrag=dragging?.bookingId===bk.id;
+                return <div key={bk.id} draggable onDragStart={e=>onDragStart(e,bk,cs)} onDragEnd={onDragEnd} onClick={e=>{e.stopPropagation();setSelected(isSel?null:bk.id);}} onMouseEnter={e=>setTooltip({booking:bk,x:e.clientX,y:e.clientY})} onMouseLeave={()=>setTooltip(null)} className={`absolute top-[3px] rounded-[3px] cursor-grab active:cursor-grabbing flex items-center px-2 overflow-hidden select-none ${isDrag?"opacity-40":""}`} style={{left:cs*COL_W+1,width:cn*COL_W-2,height:ROW_H-6,background:c.bg,border:`1.5px solid ${isSel?"#1a1a1a":c.border}`,boxShadow:isSel?"0 0 0 2px #1a1a1a":"0 1px 3px rgba(0,0,0,0.2)",zIndex:isSel?25:15}}>
                   <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-[3px]" style={{background:c.border}}/>
                   <span className="mono text-[10px] font-semibold pl-2 truncate" style={{color:c.text}}>{bk.guestName}</span>
                 </div>;
@@ -700,59 +805,17 @@ function RoomPlanTab(){
             </div>
           </div>;
         })}
-        {filteredRooms.length===0&&(
-          <div className="flex items-center justify-center py-16 text-[13px] text-[#9ca3af]">Không tìm thấy phòng phù hợp</div>
-        )}
+        {filteredRooms.length===0&&<div className="flex items-center justify-center py-16 text-[13px] text-[#9ca3af]">Không tìm thấy phòng phù hợp</div>}
       </div>
     </div>
-
-    {/* Tooltip */}
-    {tooltip&&(()=>{
-      const bk=tooltip.booking,c=BOOKING_COLOR[bk.status],room=PLAN_ROOMS.find(r=>r.id===bk.roomId);
-      return <div className="fixed z-50 pointer-events-none text-[11px] bg-white border border-[#e5e7eb] rounded-[2px] shadow-xl p-3"
-        style={{left:tooltip.x+12,top:tooltip.y-8,minWidth:220}}>
-        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[#f3f4f6]">
-          <span className="w-2.5 h-2.5 rounded-[2px]" style={{background:c.bg}}/>
-          <span className="font-semibold text-[12px]">{bk.guestName}</span>
-          <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium text-white" style={{background:c.bg}}>{c.label}</span>
-        </div>
-        <div className="space-y-0.5 text-[#6b7280]">
-          <div><span className="text-[#9ca3af]">Folio: </span><span className="mono font-medium text-[#374151]">{bk.folio}</span></div>
-          <div><span className="text-[#9ca3af]">Phòng: </span><span className="mono font-medium text-[#374151]">{bk.roomId}·{room?.type}</span></div>
-          <div><span className="text-[#9ca3af]">Check-in: </span><span className="mono text-[#374151]">{dates[Math.max(0,bk.startDay)]?.toLocaleDateString("en-GB")}</span></div>
-          <div><span className="text-[#9ca3af]">Check-out: </span><span className="mono text-[#374151]">{dates[Math.min(NUM_DAYS-1,bk.startDay+bk.nights-1)]?.toLocaleDateString("en-GB")}</span></div>
-          <div><span className="text-[#9ca3af]">Số đêm: </span><span className="mono font-medium text-[#374151]">{bk.nights}</span></div>
-        </div>
-        <div className="mt-2 pt-2 border-t border-[#f3f4f6] text-[10px] text-[#9ca3af] italic">Kéo thả để đổi phòng</div>
-      </div>;
-    })()}
-
-    {/* Bottom bar */}
+    {tooltip&&(()=>{const bk=tooltip.booking,c=BOOKING_COLOR[bk.status],room=PLAN_ROOMS.find(r=>r.id===bk.roomId);return <div className="fixed z-50 pointer-events-none text-[11px] bg-white border border-[#e5e7eb] rounded-[2px] shadow-xl p-3" style={{left:tooltip.x+12,top:tooltip.y-8,minWidth:220}}><div className="flex items-center gap-2 mb-2 pb-2 border-b border-[#f3f4f6]"><span className="w-2.5 h-2.5 rounded-[2px]" style={{background:c.bg}}/><span className="font-semibold text-[12px]">{bk.guestName}</span><span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium text-white" style={{background:c.bg}}>{c.label}</span></div><div className="space-y-0.5 text-[#6b7280]"><div><span className="text-[#9ca3af]">Folio: </span><span className="mono font-medium text-[#374151]">{bk.folio}</span></div><div><span className="text-[#9ca3af]">Phòng: </span><span className="mono font-medium text-[#374151]">{bk.roomId}·{room?.type}</span></div><div><span className="text-[#9ca3af]">Check-in: </span><span className="mono text-[#374151]">{dates[Math.max(0,bk.startDay)]?.toLocaleDateString("en-GB")}</span></div><div><span className="text-[#9ca3af]">Check-out: </span><span className="mono text-[#374151]">{dates[Math.min(NUM_DAYS-1,bk.startDay+bk.nights-1)]?.toLocaleDateString("en-GB")}</span></div><div><span className="text-[#9ca3af]">Số đêm: </span><span className="mono font-medium text-[#374151]">{bk.nights}</span></div></div><div className="mt-2 pt-2 border-t border-[#f3f4f6] text-[10px] text-[#9ca3af] italic">Kéo thả để đổi phòng</div></div>;})()}
     <div className="bg-white border-t border-[#e5e7eb] px-5 py-2.5 flex items-center gap-2 shrink-0">
       <button className="toolbar-btn" onClick={()=>setSearchName("")}><RefreshCw size={11} strokeWidth={1.5} className="inline mr-1"/>Reset</button>
       <div className="w-px h-4 bg-[#e5e7eb] mx-1"/>
-      <button className="toolbar-btn">Availability</button>
-      <button className="toolbar-btn">Print</button>
-      <button className="toolbar-btn">Notes</button>
+      <button className="toolbar-btn">Availability</button><button className="toolbar-btn">Print</button><button className="toolbar-btn">Notes</button>
       <div className="flex-1"/>
-      {selected&&(()=>{
-        const bk=bookings.find(b=>b.id===selected);
-        if(!bk) return null;
-        const c=BOOKING_COLOR[bk.status];
-        return <div className="flex items-center gap-3 text-[12px]">
-          <span className="w-2 h-2 rounded-[2px]" style={{background:c.bg}}/>
-          <span className="font-medium">{bk.guestName}</span>
-          <span className="text-[#9ca3af]">Phòng <span className="mono text-[#374151]">{bk.roomId}</span></span>
-          <span className="text-[#9ca3af]">{bk.nights} đêm</span>
-          <div className="w-px h-4 bg-[#e5e7eb]"/>
-          <button className="px-3 py-1 border border-[#e5e7eb] rounded-[2px] text-[11px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Xem folio</button>
-          <button className="px-3 py-1 border border-[#e5e7eb] rounded-[2px] text-[11px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Đổi phòng</button>
-          <button onClick={()=>setSelected(null)} className="text-[#9ca3af] hover:text-[#1a1a1a] text-[13px]">✕</button>
-        </div>;
-      })()}
-      <button className="toolbar-btn flex items-center gap-1 text-[#9ca3af] hover:text-[#c1121f]">
-        <X size={11} strokeWidth={1.5}/> Close
-      </button>
+      {selected&&(()=>{const bk=bookings.find(b=>b.id===selected);if(!bk)return null;const c=BOOKING_COLOR[bk.status];return <div className="flex items-center gap-3 text-[12px]"><span className="w-2 h-2 rounded-[2px]" style={{background:c.bg}}/><span className="font-medium">{bk.guestName}</span><span className="text-[#9ca3af]">Phòng <span className="mono text-[#374151]">{bk.roomId}</span></span><span className="text-[#9ca3af]">{bk.nights} đêm</span><div className="w-px h-4 bg-[#e5e7eb]"/><button className="px-3 py-1 border border-[#e5e7eb] rounded-[2px] text-[11px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Xem folio</button><button className="px-3 py-1 border border-[#e5e7eb] rounded-[2px] text-[11px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Đổi phòng</button><button onClick={()=>setSelected(null)} className="text-[#9ca3af] hover:text-[#1a1a1a] text-[13px]">✕</button></div>;})()}
+      <button className="toolbar-btn flex items-center gap-1 text-[#9ca3af] hover:text-[#c1121f]"><X size={11} strokeWidth={1.5}/> Close</button>
     </div>
   </div>;
 }
@@ -770,26 +833,15 @@ export default function AvantiPMS(){
   const [availStartDate,setAvailStartDate]=useState(new Date(2026,4,1));
 
   useEffect(()=>{
-    if(currentTab==="Sơ đồ phòng") setMapViewMode("hotelmap");
-    if(currentTab==="Thu ngân") setCashierView("menu");
+    if(currentTab==="Sơ đồ phòng")setMapViewMode("hotelmap");
+    if(currentTab==="Thu ngân")setCashierView("menu");
     setSelectedRoom(null);
   },[currentTab]);
 
   const floors=useMemo(()=>buildFloors(),[]);
   const allRooms=useMemo(()=>floors.flatMap(f=>f.rooms),[floors]);
-  const mapStats=useMemo(()=>({
-    clean:allRooms.filter(r=>r.status==="clean").length,
-    occupied:allRooms.filter(r=>r.status==="occupied").length,
-    dirty:allRooms.filter(r=>r.status==="dirty").length,
-  }),[allRooms]);
-  const simpleFloors=useMemo(()=>Array.from({length:9},(_,fi)=>{
-    const fn=fi+1,count=fn===1?9:12;
-    return {name:`Tầng ${fn}`,rooms:Array.from({length:count},(_,ri)=>{
-      const id=fn*100+ri+1;
-      return {id,status:getRoomStatus(id),roomType:HOTEL_ROOM_TYPES[ri%HOTEL_ROOM_TYPES.length]};
-    })};
-  }),[]);
-
+  const mapStats=useMemo(()=>({clean:allRooms.filter(r=>r.status==="clean").length,occupied:allRooms.filter(r=>r.status==="occupied").length,dirty:allRooms.filter(r=>r.status==="dirty").length}),[allRooms]);
+  const simpleFloors=useMemo(()=>Array.from({length:9},(_,fi)=>{const fn=fi+1,count=fn===1?9:12;return {name:`Tầng ${fn}`,rooms:Array.from({length:count},(_,ri)=>{const id=fn*100+ri+1;return {id,status:getRoomStatus(id),roomType:HOTEL_ROOM_TYPES[ri%HOTEL_ROOM_TYPES.length]};})};}),[]);
   const availDates=useMemo(()=>buildDates(availStartDate,availNumDays),[availStartDate,availNumDays]);
   const dailyTotals=useMemo(()=>Array.from({length:availNumDays},(_,i)=>ROOM_TYPES_AVAILABILITY.reduce((s,rt)=>s+(rt.available[i]??0),0)),[availNumDays]);
   const dailyDefinite=useMemo(()=>Array.from({length:availNumDays},(_,i)=>ROOM_TYPES_AVAILABILITY.reduce((s,rt)=>s+(rt.definite[i]??0),0)),[availNumDays]);
@@ -800,27 +852,13 @@ export default function AvantiPMS(){
     const hdr=["Description","Type","Total",...availDates.map(d=>d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"}))];
     const rows=ROOM_TYPES_AVAILABILITY.map(rt=>[rt.description,rt.type,rt.total,...availDates.map((_,i)=>rt.available[i]??0)]);
     const csv=[hdr,...rows].map(r=>r.join(",")).join("\n");
-    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-    const url=URL.createObjectURL(blob);
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);
     const a=document.createElement("a");a.href=url;a.download="room_availability.csv";
     document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   };
 
-  const SimpleLegend=()=><div className="flex gap-5">
-    {(Object.entries(ROOM_STATUS) as [RoomStatus,typeof ROOM_STATUS[RoomStatus]][]).map(([k,c])=>(
-      <div key={k} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]">
-        <span className={`w-2.5 h-2.5 rounded-[2px] border inline-block ${c.cell}`}/>{c.labelVi}
-      </div>
-    ))}
-  </div>;
-
-  const MapLegend=()=><div className="flex gap-4">
-    {(Object.entries(ROOM_STATUS) as [RoomStatus,typeof ROOM_STATUS[RoomStatus]][]).map(([k,c])=>(
-      <div key={k} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]">
-        <span className="inline-block rounded-full" style={{width:8,height:8,backgroundColor:c.dotColor,boxShadow:"0 0 0 1.5px rgba(0,0,0,0.1)"}}/>{c.labelVi}
-      </div>
-    ))}
-  </div>;
+  const SimpleLegend=()=><div className="flex gap-5">{(Object.entries(ROOM_STATUS) as [RoomStatus,typeof ROOM_STATUS[RoomStatus]][]).map(([k,c])=><div key={k} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]"><span className={`w-2.5 h-2.5 rounded-[2px] border inline-block ${c.cell}`}/>{c.labelVi}</div>)}</div>;
+  const MapLegend=()=><div className="flex gap-4">{(Object.entries(ROOM_STATUS) as [RoomStatus,typeof ROOM_STATUS[RoomStatus]][]).map(([k,c])=><div key={k} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]"><span className="inline-block rounded-full" style={{width:8,height:8,backgroundColor:c.dotColor,boxShadow:"0 0 0 1.5px rgba(0,0,0,0.1)"}}/>{c.labelVi}</div>)}</div>;
 
   return (
     <div className="flex min-h-screen bg-[#f2f2ef] text-[#1a1a1a]" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
@@ -846,18 +884,11 @@ export default function AvantiPMS(){
 
       {/* SIDEBAR */}
       <aside className="w-52 shrink-0 flex flex-col bg-[#0f0f0e] text-white">
-        <div className="px-5 py-5 border-b border-[#252523]">
-          <div className="text-[9px] tracking-[0.22em] text-[#5c5c58] uppercase mb-1">Property Management</div>
-          <div className="text-[16px] font-semibold tracking-tight">Avanti OS</div>
-        </div>
-        <div className="px-5 py-2.5 border-b border-[#252523]">
-          <div className="mono text-[10px] text-[#5c5c58]">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})}</div>
-        </div>
+        <div className="px-5 py-5 border-b border-[#252523]"><div className="text-[9px] tracking-[0.22em] text-[#5c5c58] uppercase mb-1">Property Management</div><div className="text-[16px] font-semibold tracking-tight">Avanti OS</div></div>
+        <div className="px-5 py-2.5 border-b border-[#252523]"><div className="mono text-[10px] text-[#5c5c58]">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})}</div></div>
         <nav className="flex-1 py-2">
           {MENU_ITEMS.map(({name,icon:Icon})=>(
-            <button key={name} onClick={()=>setCurrentTab(name)}
-              className={`flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors text-[12.5px]
-                ${currentTab===name?"text-white bg-[#252523] border-l-2 border-white":"text-[#7a7a75] hover:text-white hover:bg-[#1c1c1a] border-l-2 border-transparent"}`}>
+            <button key={name} onClick={()=>setCurrentTab(name)} className={`flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors text-[12.5px] ${currentTab===name?"text-white bg-[#252523] border-l-2 border-white":"text-[#7a7a75] hover:text-white hover:bg-[#1c1c1a] border-l-2 border-transparent"}`}>
               <Icon size={14} strokeWidth={1.5}/><span className="font-medium">{name}</span>
             </button>
           ))}
@@ -871,11 +902,7 @@ export default function AvantiPMS(){
       {/* MAIN */}
       <div className="flex flex-col flex-1 overflow-hidden">
         <header className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0" style={{height:52}}>
-          <div className="flex items-center gap-2 text-[12px]">
-            <span className="text-[#9ca3af]">Avanti OS</span>
-            <ChevronRight size={11} className="text-[#d1d5db]" strokeWidth={1.5}/>
-            <span className="font-medium text-[#1a1a1a]">{currentTab}</span>
-          </div>
+          <div className="flex items-center gap-2 text-[12px]"><span className="text-[#9ca3af]">Avanti OS</span><ChevronRight size={11} className="text-[#d1d5db]" strokeWidth={1.5}/><span className="font-medium text-[#1a1a1a]">{currentTab}</span></div>
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-3 text-[11px] text-[#6b7280]">
               <span className="flex items-center gap-1.5"><ArrowDownCircle size={12} strokeWidth={1.5} className="text-[#2d6a4f]"/><span className="mono font-medium">{TODAY_STATS.checkInToday}</span> Arrivals</span>
@@ -893,78 +920,30 @@ export default function AvantiPMS(){
           {currentTab==="Tổng quan"&&(
             <div className="p-7 max-w-6xl mx-auto space-y-5">
               <div className="grid grid-cols-5 gap-3">
-                {[
-                  {label:"Tổng phòng",      value:TODAY_STATS.totalRooms,    sub:"Total rooms",    accent:"#374151"},
-                  {label:"Đang có khách",   value:TODAY_STATS.occupied,      sub:"Occupied",       accent:"#7a5800",bar:"#e9c46a"},
-                  {label:"Đã dọn sạch",     value:TODAY_STATS.available,     sub:"Clean & ready",  accent:"#1b4332",bar:"#2d6a4f"},
-                  {label:"Chờ dọn phòng",   value:TODAY_STATS.dirty,         sub:"Needs cleaning", accent:"#8b0000",bar:"#c1121f"},
-                  {label:"Check-in hôm nay",value:TODAY_STATS.checkInToday,  sub:"Arrivals today", accent:"#374151"},
-                ].map(({label,value,sub,accent,bar})=>(
-                  <Card key={label} className="p-5">
-                    <div className="text-[9px] tracking-[0.14em] uppercase text-[#9ca3af] mb-3 font-medium">{label}</div>
-                    <div className="mono text-[28px] font-light leading-none mb-1" style={{color:accent}}>{value}</div>
-                    <div className="text-[11px] text-[#9ca3af] mb-3">{sub}</div>
-                    {bar&&<div className="h-0.5 bg-[#f3f4f6] rounded-full"><div className="h-full rounded-full w-2/3" style={{backgroundColor:bar}}/></div>}
-                  </Card>
+                {[{label:"Tổng phòng",value:TODAY_STATS.totalRooms,sub:"Total rooms",accent:"#374151"},{label:"Đang có khách",value:TODAY_STATS.occupied,sub:"Occupied",accent:"#7a5800",bar:"#e9c46a"},{label:"Đã dọn sạch",value:TODAY_STATS.available,sub:"Clean & ready",accent:"#1b4332",bar:"#2d6a4f"},{label:"Chờ dọn phòng",value:TODAY_STATS.dirty,sub:"Needs cleaning",accent:"#8b0000",bar:"#c1121f"},{label:"Check-in hôm nay",value:TODAY_STATS.checkInToday,sub:"Arrivals today",accent:"#374151"}].map(({label,value,sub,accent,bar})=>(
+                  <Card key={label} className="p-5"><div className="text-[9px] tracking-[0.14em] uppercase text-[#9ca3af] mb-3 font-medium">{label}</div><div className="mono text-[28px] font-light leading-none mb-1" style={{color:accent}}>{value}</div><div className="text-[11px] text-[#9ca3af] mb-3">{sub}</div>{bar&&<div className="h-0.5 bg-[#f3f4f6] rounded-full"><div className="h-full rounded-full w-2/3" style={{backgroundColor:bar}}/></div>}</Card>
                 ))}
               </div>
               <div className="flex gap-2 items-center">
                 {[{label:"Walk In",icon:User},{label:"New Reservation",icon:BedDouble},{label:"Find Guest",icon:Search,action:()=>setCurrentTab("Khách hàng")}].map(({label,icon:Icon,action})=>(
-                  <button key={label} onClick={action} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#374151] hover:border-[#9ca3af] hover:bg-[#f9f9f7] transition-colors">
-                    <Icon size={12} strokeWidth={1.5}/> {label}
-                  </button>
+                  <button key={label} onClick={action} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#374151] hover:border-[#9ca3af] hover:bg-[#f9f9f7] transition-colors"><Icon size={12} strokeWidth={1.5}/> {label}</button>
                 ))}
-                <div className="flex-1 flex items-center gap-2 bg-white border border-[#e5e7eb] rounded-[2px] px-3 hover:border-[#9ca3af] transition-colors">
-                  <Search size={12} strokeWidth={1.5} className="text-[#d1d5db]"/>
-                  <input className="flex-1 py-2 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db]" placeholder="Tên khách, số phòng, folio..."/>
-                </div>
+                <div className="flex-1 flex items-center gap-2 bg-white border border-[#e5e7eb] rounded-[2px] px-3 hover:border-[#9ca3af] transition-colors"><Search size={12} strokeWidth={1.5} className="text-[#d1d5db]"/><input className="flex-1 py-2 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db]" placeholder="Tên khách, số phòng, folio..."/></div>
               </div>
               <div className="grid grid-cols-3 gap-5">
                 <Card className="col-span-2 p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <SectionTitle>Sơ đồ phòng — 3 tầng đầu</SectionTitle>
-                    <button onClick={()=>setCurrentTab("Sơ đồ phòng")} className="text-[11px] text-[#9ca3af] hover:text-[#1a1a1a] transition-colors">Xem đầy đủ →</button>
-                  </div>
-                  <div className="space-y-3">
-                    {simpleFloors.slice(0,3).map(floor=>(
-                      <div key={floor.name}>
-                        <div className="mono text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] mb-1.5">{floor.name}</div>
-                        <div className="flex gap-1 flex-wrap">
-                          {floor.rooms.map(room=>(
-                            <div key={room.id} className={`room-cell w-9 h-7 border rounded-[2px] flex items-center justify-center cursor-pointer ${ROOM_STATUS[room.status].cell} ${ROOM_STATUS[room.status].text}`}>
-                              <span className="mono text-[9px] font-medium">{room.id}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <div className="flex items-center justify-between mb-4"><SectionTitle>Sơ đồ phòng — 3 tầng đầu</SectionTitle><button onClick={()=>setCurrentTab("Sơ đồ phòng")} className="text-[11px] text-[#9ca3af] hover:text-[#1a1a1a] transition-colors">Xem đầy đủ →</button></div>
+                  <div className="space-y-3">{simpleFloors.slice(0,3).map(floor=>(<div key={floor.name}><div className="mono text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] mb-1.5">{floor.name}</div><div className="flex gap-1 flex-wrap">{floor.rooms.map(room=>(<div key={room.id} className={`room-cell w-9 h-7 border rounded-[2px] flex items-center justify-center cursor-pointer ${ROOM_STATUS[room.status].cell} ${ROOM_STATUS[room.status].text}`}><span className="mono text-[9px] font-medium">{room.id}</span></div>))}</div></div>))}</div>
                   <div className="mt-4 pt-4 border-t border-[#f3f4f6]"><SimpleLegend/></div>
                 </Card>
                 <div className="space-y-4">
                   <Card className="p-5">
                     <SectionTitle>Waiting List</SectionTitle>
-                    <div className="space-y-3">
-                      {WAITING_CUSTOMERS.map(cus=>(
-                        <div key={cus.id} className="flex items-center justify-between py-2 border-b border-[#f3f4f6] last:border-0">
-                          <div><div className="text-[12px] font-medium">{cus.name}</div><div className="mono text-[10px] text-[#9ca3af]">{cus.roomType}·{cus.checkIn}</div></div>
-                          <button onClick={()=>setCurrentTab("Sơ đồ phòng")} className="text-[11px] px-3 py-1 border border-[#e5e7eb] rounded-[2px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Gán phòng</button>
-                        </div>
-                      ))}
-                    </div>
+                    <div className="space-y-3">{WAITING_CUSTOMERS.map(cus=>(<div key={cus.id} className="flex items-center justify-between py-2 border-b border-[#f3f4f6] last:border-0"><div><div className="text-[12px] font-medium">{cus.name}</div><div className="mono text-[10px] text-[#9ca3af]">{cus.roomType}·{cus.checkIn}</div></div><button onClick={()=>setCurrentTab("Sơ đồ phòng")} className="text-[11px] px-3 py-1 border border-[#e5e7eb] rounded-[2px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Gán phòng</button></div>))}</div>
                   </Card>
                   <Card className="p-5">
                     <SectionTitle>Hoạt động gần đây</SectionTitle>
-                    <div className="space-y-3">
-                      {[{dot:"#2d6a4f",text:"Nguyen Huy — check-in phòng 102",time:"10 phút trước"},
-                        {dot:"#2d6a4f",text:"Phòng 208 — đã dọn xong",time:"25 phút trước"},
-                        {dot:"#c1121f",text:"Phòng 315 — chờ dọn",time:"1 giờ trước"}].map((act,i)=>(
-                        <div key={i} className="flex gap-2.5 items-start">
-                          <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{backgroundColor:act.dot}}/>
-                          <div><div className="text-[12px] text-[#374151]">{act.text}</div><div className="mono text-[10px] text-[#9ca3af]">{act.time}</div></div>
-                        </div>
-                      ))}
-                    </div>
+                    <div className="space-y-3">{[{dot:"#2d6a4f",text:"Nguyen Huy — check-in phòng 102",time:"10 phút trước"},{dot:"#2d6a4f",text:"Phòng 208 — đã dọn xong",time:"25 phút trước"},{dot:"#c1121f",text:"Phòng 315 — chờ dọn",time:"1 giờ trước"}].map((act,i)=>(<div key={i} className="flex gap-2.5 items-start"><span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{backgroundColor:act.dot}}/><div><div className="text-[12px] text-[#374151]">{act.text}</div><div className="mono text-[10px] text-[#9ca3af]">{act.time}</div></div></div>))}</div>
                   </Card>
                 </div>
               </div>
@@ -975,238 +954,63 @@ export default function AvantiPMS(){
           {currentTab==="Sơ đồ phòng"&&(
             <div className="flex flex-col" style={{height:"calc(100vh - 52px)"}}>
               <div className="bg-white border-b border-[#e5e7eb] px-7 py-4 flex items-center justify-between shrink-0">
-                <div>
-                  <h1 className="text-[20px] font-light tracking-[0.16em] uppercase" style={{color:"#2d6a4f"}}>AVANTI HOTEL</h1>
-                  <div className="flex items-center gap-4 mt-1">
-                    <span className="mono text-[11px] text-[#9ca3af]">{allRooms.length} phòng · 9 tầng</span>
-                    <span className="text-[#e5e7eb]">|</span>
-                    {(["clean","occupied","dirty"] as RoomStatus[]).map(s=>(
-                      <span key={s} className="flex items-center gap-1 text-[11px]" style={{color:ROOM_STATUS[s].mapSubText}}>
-                        <StatusDot status={s}/> {mapStats[s]} {ROOM_STATUS[s].labelVi}
-                      </span>
-                    ))}
-                  </div>
+                <div><h1 className="text-[20px] font-light tracking-[0.16em] uppercase" style={{color:"#2d6a4f"}}>AVANTI HOTEL</h1>
+                  <div className="flex items-center gap-4 mt-1"><span className="mono text-[11px] text-[#9ca3af]">{allRooms.length} phòng · 9 tầng</span><span className="text-[#e5e7eb]">|</span>{(["clean","occupied","dirty"] as RoomStatus[]).map(s=>(<span key={s} className="flex items-center gap-1 text-[11px]" style={{color:ROOM_STATUS[s].mapSubText}}><StatusDot status={s}/> {mapStats[s]} {ROOM_STATUS[s].labelVi}</span>))}</div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <MapLegend/>
-                  <div className="w-px h-5 bg-[#e5e7eb]"/>
+                  <MapLegend/><div className="w-px h-5 bg-[#e5e7eb]"/>
                   <div className="flex border border-[#e5e7eb] rounded-[2px] overflow-hidden">
-                    <button onClick={()=>setMapViewMode("hotelmap")}
-                      className={`flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium transition-colors border-r border-[#e5e7eb] ${mapViewMode==="hotelmap"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}>
-                      <MapIcon size={13} strokeWidth={1.5}/> Hotel Map
-                    </button>
-                    <button onClick={()=>setMapViewMode("block")}
-                      className={`flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium transition-colors ${mapViewMode==="block"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}>
-                      <LayoutGrid size={13} strokeWidth={1.5}/> Block View
-                    </button>
+                    <button onClick={()=>setMapViewMode("hotelmap")} className={`flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium transition-colors border-r border-[#e5e7eb] ${mapViewMode==="hotelmap"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}><MapIcon size={13} strokeWidth={1.5}/> Hotel Map</button>
+                    <button onClick={()=>setMapViewMode("block")} className={`flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium transition-colors ${mapViewMode==="block"?"bg-[#0f0f0e] text-white":"bg-white text-[#6b7280] hover:bg-[#f9f9f7]"}`}><LayoutGrid size={13} strokeWidth={1.5}/> Block View</button>
                   </div>
                 </div>
               </div>
               <div className="flex-1 overflow-auto p-6">
                 <div className={mapViewMode==="block"?"bg-white border border-[#e5e7eb] rounded-[2px] shadow-sm p-6":""}>
-                  <div className="space-y-5">
-                    {floors.map(floor=>(
-                      <div key={floor.name}>
-                        <div className="mono text-[9px] tracking-[0.14em] uppercase text-[#9ca3af] font-medium mb-2">{floor.name}</div>
-                        <div className="flex flex-wrap gap-1">
-                          {floor.rooms.map(room=>mapViewMode==="hotelmap"
-                            ?<HotelCell key={room.id} room={room} selected={selectedRoom===room.id} onClick={()=>setSelectedRoom(prev=>prev===room.id?null:room.id)}/>
-                            :<BlockCell key={room.id} room={room} selected={selectedRoom===room.id} onClick={()=>setSelectedRoom(prev=>prev===room.id?null:room.id)}/>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <div className="space-y-5">{floors.map(floor=>(<div key={floor.name}><div className="mono text-[9px] tracking-[0.14em] uppercase text-[#9ca3af] font-medium mb-2">{floor.name}</div><div className="flex flex-wrap gap-1">{floor.rooms.map(room=>mapViewMode==="hotelmap"?<HotelCell key={room.id} room={room} selected={selectedRoom===room.id} onClick={()=>setSelectedRoom(prev=>prev===room.id?null:room.id)}/>:<BlockCell key={room.id} room={room} selected={selectedRoom===room.id} onClick={()=>setSelectedRoom(prev=>prev===room.id?null:room.id)}/>)}</div></div>))}</div>
                 </div>
               </div>
               {selectedRoomData&&(
                 <div className="bg-white border-t border-[#e5e7eb] px-7 py-3 flex items-center gap-5 shrink-0 text-[12px]">
-                  <div className="flex items-center gap-2 font-semibold shrink-0">
-                    <StatusDot status={selectedRoomData.status}/>
-                    <span className="mono text-[14px]">Phòng {selectedRoomData.id}</span>
-                    <span className="text-[#9ca3af] font-normal">· {selectedRoomData.roomType}</span>
-                    <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-medium text-white ml-1" style={{background:ROOM_STATUS[selectedRoomData.status].dotColor}}>
-                      {ROOM_STATUS[selectedRoomData.status].labelVi.toUpperCase()}
-                    </span>
-                  </div>
+                  <div className="flex items-center gap-2 font-semibold shrink-0"><StatusDot status={selectedRoomData.status}/><span className="mono text-[14px]">Phòng {selectedRoomData.id}</span><span className="text-[#9ca3af] font-normal">· {selectedRoomData.roomType}</span><span className="px-2 py-0.5 rounded-[2px] text-[10px] font-medium text-white ml-1" style={{background:ROOM_STATUS[selectedRoomData.status].dotColor}}>{ROOM_STATUS[selectedRoomData.status].labelVi.toUpperCase()}</span></div>
                   <div className="w-px h-4 bg-[#e5e7eb] shrink-0"/>
-                  {selectedRoomData.guest?(
-                    <>
-                      <span className="font-medium">{selectedRoomData.guest.name}</span>
-                      <span className="text-[#9ca3af]">Folio <span className="mono text-[#374151]">{selectedRoomData.guest.folio}</span></span>
-                      <span className="text-[#9ca3af]">{selectedRoomData.guest.arrival} → {selectedRoomData.guest.departure}</span>
-                      <span className="text-[#9ca3af]">Balance: <span className={`mono font-semibold ${selectedRoomData.guest.balance>0?"text-[#c1121f]":"text-[#1a1a1a]"}`}>{selectedRoomData.guest.balance.toLocaleString()}</span></span>
-                      <div className="flex-1"/>
-                      <div className="flex gap-1.5">
-                        {["Check Out","Post Charge","View Folio"].map(btn=>(
-                          <button key={btn} className="px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors">{btn}</button>
-                        ))}
-                      </div>
-                    </>
-                  ):(
-                    <>
-                      <span className="text-[#9ca3af]">Không có khách</span>
-                      <div className="flex-1"/>
-                      <button className="px-3 py-1.5 bg-[#0f0f0e] text-white border border-[#0f0f0e] rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">Walk In</button>
-                    </>
-                  )}
+                  {selectedRoomData.guest?(<><span className="font-medium">{selectedRoomData.guest.name}</span><span className="text-[#9ca3af]">Folio <span className="mono text-[#374151]">{selectedRoomData.guest.folio}</span></span><span className="text-[#9ca3af]">{selectedRoomData.guest.arrival} → {selectedRoomData.guest.departure}</span><span className="text-[#9ca3af]">Balance: <span className={`mono font-semibold ${selectedRoomData.guest.balance>0?"text-[#c1121f]":"text-[#1a1a1a]"}`}>{selectedRoomData.guest.balance.toLocaleString()}</span></span><div className="flex-1"/><div className="flex gap-1.5">{["Check Out","Post Charge","View Folio"].map(btn=>(<button key={btn} className="px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors">{btn}</button>))}</div></>):(<><span className="text-[#9ca3af]">Không có khách</span><div className="flex-1"/><button className="px-3 py-1.5 bg-[#0f0f0e] text-white border border-[#0f0f0e] rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">Walk In</button></>)}
                   <button onClick={()=>setSelectedRoom(null)} className="text-[#9ca3af] hover:text-[#1a1a1a] text-[13px] ml-1">✕</button>
                 </div>
               )}
             </div>
           )}
 
-          {/* ROOM PLAN */}
           {currentTab==="Room Plan"&&<RoomPlanTab/>}
-
-          {/* ĐẶT PHÒNG */}
           {currentTab==="Đặt phòng"&&<ReservationTab/>}
+          {currentTab==="Báo cáo"&&<ShiftReportTab/>}
 
           {/* KHÁCH HÀNG */}
           {currentTab==="Khách hàng"&&(
             <div className="p-7 max-w-5xl mx-auto space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[15px] font-semibold">Quản lý khách hàng</h2>
-                <div className="flex gap-2">
-                  <button className="px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Walk In</button>
-                  <button className="px-4 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">+ New Reservation</button>
-                </div>
-              </div>
-              <Card className="p-6">
-                <SectionTitle>Tìm kiếm khách hàng</SectionTitle>
-                <div className="grid grid-cols-2 gap-x-8">
-                  <div className="space-y-2.5">
-                    {[{label:"Thông tin khách",ph:""},{label:"Số phòng / Loại",ph:"Số phòng hoặc loại phòng"},{label:"Mã đoàn",ph:""},{label:"Member ID",ph:""}].map(({label,ph})=>(
-                      <FieldRow key={label} label={label}><input className={inputCls} placeholder={ph}/></FieldRow>
-                    ))}
-                  </div>
-                  <div className="space-y-2.5">{[1,2,3,4].map(i=><FieldRow key={i} label={`Thông tin ${i}`}><input className={inputCls}/></FieldRow>)}</div>
-                </div>
-                <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#f3f4f6]">
-                  <label className="flex items-center gap-1.5 text-[12px] text-[#6b7280] cursor-pointer"><input type="checkbox" className="w-3 h-3 accent-[#0f0f0e]"/> In House</label>
-                  <button className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors"><Search size={12} strokeWidth={1.5}/> Tìm kiếm</button>
-                </div>
-              </Card>
-              <Card className="p-6">
-                <SectionTitle>Tìm kiếm nâng cao</SectionTitle>
-                <div className="grid grid-cols-2 gap-x-8 mb-5">
-                  <div className="space-y-2.5">{["Họ","Tên","Mã ngoài"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}</div>
-                  <div className="space-y-2.5">{["Công ty","Quốc gia","Market Segment"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}</div>
-                </div>
-                <div className="flex items-center justify-between border-t border-[#f3f4f6] pt-4">
-                  <div className="flex flex-wrap gap-4">
-                    {["Reserved","In House","Arrival Today","C/O Today","Definite","Waiting"].map(s=>(
-                      <label key={s} className="flex items-center gap-1.5 text-[11px] text-[#6b7280] cursor-pointer hover:text-[#1a1a1a]"><input type="checkbox" defaultChecked className="w-3 h-3 accent-[#0f0f0e]"/> {s}</label>
-                    ))}
-                  </div>
-                  <button className="px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Advanced Search</button>
-                </div>
-              </Card>
-              <Card className="overflow-hidden">
-                <div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Waiting List — Chưa gán phòng</SectionTitle></div>
-                <table className="w-full text-left">
-                  <thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
-                    {["Folio","Tên khách","Loại phòng","Check-in","Check-out",""].map(h=>(
-                      <th key={h} className="px-6 py-3 text-[9px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium">{h}</th>
-                    ))}
-                  </tr></thead>
-                  <tbody>{WAITING_CUSTOMERS.map(cus=>(
-                    <tr key={cus.id} className="border-b border-[#f9f9f7] hover:bg-[#fafafa] transition-colors">
-                      <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.folio}</td>
-                      <td className="px-6 py-4 text-[13px] font-medium">{cus.name}</td>
-                      <td className="px-6 py-4"><span className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded-[2px] text-[#374151] font-medium mono">{cus.roomType}</span></td>
-                      <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkIn}</td>
-                      <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkOut}</td>
-                      <td className="px-6 py-4 text-right">
-                        <button onClick={()=>setCurrentTab("Sơ đồ phòng")} className="text-[11px] px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Gán phòng</button>
-                      </td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              </Card>
+              <div className="flex items-center justify-between"><h2 className="text-[15px] font-semibold">Quản lý khách hàng</h2><div className="flex gap-2"><button className="px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Walk In</button><button className="px-4 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">+ New Reservation</button></div></div>
+              <Card className="p-6"><SectionTitle>Tìm kiếm khách hàng</SectionTitle><div className="grid grid-cols-2 gap-x-8"><div className="space-y-2.5">{[{label:"Thông tin khách",ph:""},{label:"Số phòng / Loại",ph:"Số phòng hoặc loại phòng"},{label:"Mã đoàn",ph:""},{label:"Member ID",ph:""}].map(({label,ph})=>(<FieldRow key={label} label={label}><input className={inputCls} placeholder={ph}/></FieldRow>))}</div><div className="space-y-2.5">{[1,2,3,4].map(i=><FieldRow key={i} label={`Thông tin ${i}`}><input className={inputCls}/></FieldRow>)}</div></div><div className="flex items-center justify-between mt-5 pt-4 border-t border-[#f3f4f6]"><label className="flex items-center gap-1.5 text-[12px] text-[#6b7280] cursor-pointer"><input type="checkbox" className="w-3 h-3 accent-[#0f0f0e]"/> In House</label><button className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors"><Search size={12} strokeWidth={1.5}/> Tìm kiếm</button></div></Card>
+              <Card className="p-6"><SectionTitle>Tìm kiếm nâng cao</SectionTitle><div className="grid grid-cols-2 gap-x-8 mb-5"><div className="space-y-2.5">{["Họ","Tên","Mã ngoài"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}</div><div className="space-y-2.5">{["Công ty","Quốc gia","Market Segment"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}</div></div><div className="flex items-center justify-between border-t border-[#f3f4f6] pt-4"><div className="flex flex-wrap gap-4">{["Reserved","In House","Arrival Today","C/O Today","Definite","Waiting"].map(s=>(<label key={s} className="flex items-center gap-1.5 text-[11px] text-[#6b7280] cursor-pointer hover:text-[#1a1a1a]"><input type="checkbox" defaultChecked className="w-3 h-3 accent-[#0f0f0e]"/> {s}</label>))}</div><button className="px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Advanced Search</button></div></Card>
+              <Card className="overflow-hidden"><div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Waiting List — Chưa gán phòng</SectionTitle></div><table className="w-full text-left"><thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">{["Folio","Tên khách","Loại phòng","Check-in","Check-out",""].map(h=>(<th key={h} className="px-6 py-3 text-[9px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium">{h}</th>))}</tr></thead><tbody>{WAITING_CUSTOMERS.map(cus=>(<tr key={cus.id} className="border-b border-[#f9f9f7] hover:bg-[#fafafa] transition-colors"><td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.folio}</td><td className="px-6 py-4 text-[13px] font-medium">{cus.name}</td><td className="px-6 py-4"><span className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded-[2px] text-[#374151] font-medium mono">{cus.roomType}</span></td><td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkIn}</td><td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkOut}</td><td className="px-6 py-4 text-right"><button onClick={()=>setCurrentTab("Sơ đồ phòng")} className="text-[11px] px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Gán phòng</button></td></tr>))}</tbody></table></Card>
             </div>
           )}
 
           {/* THU NGÂN */}
           {currentTab==="Thu ngân"&&(
             <div className="p-7 max-w-5xl mx-auto space-y-4">
-              {cashierView==="menu"&&(
-                <><h2 className="text-[15px] font-semibold">Cashier Functions</h2>
-                <Card className="p-6"><div className="grid grid-cols-2 gap-2">
-                  {CASHIER_FUNCTIONS.map(fn=>{
-                    const isWide=/^[ACDFX] /.test(fn),isPrimary=fn==="Post Transaction";
-                    return <button key={fn} onClick={()=>{if(isPrimary)setCashierView("postTransaction");}}
-                      className={`text-left px-5 py-3 rounded-[2px] text-[13px] font-medium transition-colors border ${isWide?"col-span-2":""} ${isPrimary?"bg-[#0f0f0e] text-white border-[#0f0f0e] hover:bg-[#252523]":"bg-[#fafafa] border-[#e5e7eb] text-[#374151] hover:bg-[#f3f4f6] hover:border-[#d1d5db]"}`}>
-                      {fn}
-                    </button>;
-                  })}
-                </div></Card></>
-              )}
+              {cashierView==="menu"&&(<><h2 className="text-[15px] font-semibold">Cashier Functions</h2><Card className="p-6"><div className="grid grid-cols-2 gap-2">{CASHIER_FUNCTIONS.map(fn=>{const isWide=/^[ACDFX] /.test(fn),isPrimary=fn==="Post Transaction";return <button key={fn} onClick={()=>{if(isPrimary)setCashierView("postTransaction");}} className={`text-left px-5 py-3 rounded-[2px] text-[13px] font-medium transition-colors border ${isWide?"col-span-2":""} ${isPrimary?"bg-[#0f0f0e] text-white border-[#0f0f0e] hover:bg-[#252523]":"bg-[#fafafa] border-[#e5e7eb] text-[#374151] hover:bg-[#f3f4f6] hover:border-[#d1d5db]"}`}>{fn}</button>;})}</div></Card></>)}
               {cashierView==="postTransaction"&&(
                 <div className="space-y-4">
                   <button onClick={()=>setCashierView("menu")} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] transition-colors font-medium"><ChevronLeft size={13} strokeWidth={1.5}/> Quay lại</button>
                   <div className="flex gap-4">
-                    <Card className="w-64 shrink-0 p-5">
-                      <SectionTitle>Thông tin khách</SectionTitle>
-                      <div className="space-y-2">
-                        {[{label:"Khách",type:"input",ph:"Tên khách"},{label:"Đoàn",type:"input",ph:""},{label:"TA / Cty",type:"input",ph:""},{label:"Trạng thái",type:"static",val:"IN HOUSE"},{label:"Phòng",type:"static",val:"101"},{label:"Giá phòng",type:"static",val:"23,500"},{label:"Số dư",type:"static",val:"0",red:true},{label:"TA / AR",type:"input",ph:""}].map(({label,type,ph,val,red})=>(
-                          <div key={label} className="grid grid-cols-5 items-center gap-2">
-                            <label className="col-span-2 text-[10px] text-[#9ca3af] font-medium uppercase tracking-wide">{label}</label>
-                            {type==="input"?<input className="col-span-3 border border-[#e5e7eb] rounded-[2px] px-2.5 py-1.5 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa]" placeholder={ph}/>
-                              :<div className={`col-span-3 mono text-[12px] font-medium ${red?"text-[#c1121f]":"text-[#1a1a1a]"}`}>{val}</div>}
-                          </div>
-                        ))}
-                        <div className="pt-1"><div className="text-[10px] text-[#9ca3af] font-medium uppercase tracking-wide mb-1">Ghi chú</div>
-                          <textarea className="w-full border border-[#e5e7eb] rounded-[2px] px-2.5 py-1.5 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] h-14 resize-none"/>
-                        </div>
-                      </div>
-                    </Card>
+                    <Card className="w-64 shrink-0 p-5"><SectionTitle>Thông tin khách</SectionTitle><div className="space-y-2">{[{label:"Khách",type:"input",ph:"Tên khách"},{label:"Đoàn",type:"input",ph:""},{label:"TA / Cty",type:"input",ph:""},{label:"Trạng thái",type:"static",val:"IN HOUSE"},{label:"Phòng",type:"static",val:"101"},{label:"Giá phòng",type:"static",val:"23,500"},{label:"Số dư",type:"static",val:"0",red:true},{label:"TA / AR",type:"input",ph:""}].map(({label,type,ph,val,red})=>(<div key={label} className="grid grid-cols-5 items-center gap-2"><label className="col-span-2 text-[10px] text-[#9ca3af] font-medium uppercase tracking-wide">{label}</label>{type==="input"?<input className="col-span-3 border border-[#e5e7eb] rounded-[2px] px-2.5 py-1.5 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa]" placeholder={ph}/>:<div className={`col-span-3 mono text-[12px] font-medium ${red?"text-[#c1121f]":"text-[#1a1a1a]"}`}>{val}</div>}</div>))}<div className="pt-1"><div className="text-[10px] text-[#9ca3af] font-medium uppercase tracking-wide mb-1">Ghi chú</div><textarea className="w-full border border-[#e5e7eb] rounded-[2px] px-2.5 py-1.5 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] h-14 resize-none"/></div></div></Card>
                     <div className="flex-1 flex flex-col gap-3">
-                      <Card className="p-3 flex items-center gap-3">
-                        <label className="flex items-center gap-1.5 text-[11px] text-[#6b7280] font-medium cursor-pointer"><input type="checkbox" className="w-3 h-3 accent-[#0f0f0e]"/> In House</label>
-                        <input className="flex-1 border border-[#e5e7eb] rounded-[2px] px-3 py-1.5 text-[13px] outline-none bg-[#fafafa]" placeholder="Tìm folio..."/>
-                        <button className="px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Tìm</button>
-                      </Card>
-                      <Card className="overflow-hidden">
-                        <table className="w-full text-left">
-                          <thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
-                            {["Sts","Folio#","Confirm#","Tên khách","Phòng","Số dư","Ngày đến","Ngày đi"].map(h=>(
-                              <th key={h} className="px-3 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium">{h}</th>
-                            ))}
-                          </tr></thead>
-                          <tbody><tr className="hover:bg-[#fafafa] cursor-pointer transition-colors">
-                            <td className="px-3 py-3 text-[11px] text-[#2d6a4f] font-semibold mono">OK</td>
-                            <td className="px-3 py-3 mono text-[11px]">10254</td>
-                            <td className="px-3 py-3 mono text-[11px] text-[#9ca3af]">CNF123</td>
-                            <td className="px-3 py-3 text-[12px] font-medium">NGUYEN HUY</td>
-                            <td className="px-3 py-3 mono text-[11px]">101</td>
-                            <td className="px-3 py-3 mono text-[11px]">0</td>
-                            <td className="px-3 py-3 mono text-[11px] text-[#9ca3af]">01/05/2026</td>
-                            <td className="px-3 py-3 mono text-[11px] text-[#9ca3af]">05/05/2026</td>
-                          </tr></tbody>
-                        </table>
-                      </Card>
+                      <Card className="p-3 flex items-center gap-3"><label className="flex items-center gap-1.5 text-[11px] text-[#6b7280] font-medium cursor-pointer"><input type="checkbox" className="w-3 h-3 accent-[#0f0f0e]"/> In House</label><input className="flex-1 border border-[#e5e7eb] rounded-[2px] px-3 py-1.5 text-[13px] outline-none bg-[#fafafa]" placeholder="Tìm folio..."/><button className="px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Tìm</button></Card>
+                      <Card className="overflow-hidden"><table className="w-full text-left"><thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">{["Sts","Folio#","Confirm#","Tên khách","Phòng","Số dư","Ngày đến","Ngày đi"].map(h=>(<th key={h} className="px-3 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium">{h}</th>))}</tr></thead><tbody><tr className="hover:bg-[#fafafa] cursor-pointer transition-colors"><td className="px-3 py-3 text-[11px] text-[#2d6a4f] font-semibold mono">OK</td><td className="px-3 py-3 mono text-[11px]">10254</td><td className="px-3 py-3 mono text-[11px] text-[#9ca3af]">CNF123</td><td className="px-3 py-3 text-[12px] font-medium">NGUYEN HUY</td><td className="px-3 py-3 mono text-[11px]">101</td><td className="px-3 py-3 mono text-[11px]">0</td><td className="px-3 py-3 mono text-[11px] text-[#9ca3af]">01/05/2026</td><td className="px-3 py-3 mono text-[11px] text-[#9ca3af]">05/05/2026</td></tr></tbody></table></Card>
                     </div>
                   </div>
-                  <Card className="overflow-hidden">
-                    <table className="w-full text-left">
-                      <thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
-                        {["Ngày","Code","Mô tả","Ref #","Sub Amt","Số tiền","Phòng gốc","Thuế","Inv Date","User","Ghi chú"].map(h=>(
-                          <th key={h} className="px-3 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium">{h}</th>
-                        ))}
-                      </tr></thead>
-                      <tbody><tr><td colSpan={11} className="px-3 py-10 text-center text-[12px] text-[#d1d5db]">Chưa có giao dịch</td></tr></tbody>
-                    </table>
-                    <div className="px-5 py-3 border-t border-[#f3f4f6] flex justify-between items-center">
-                      <span className="text-[11px] text-[#9ca3af] uppercase tracking-wide">Balance</span>
-                      <span className="mono font-semibold text-[14px]">0</span>
-                    </div>
-                  </Card>
-                  <div className="flex flex-wrap gap-1.5">
-                    {["New","Paid","HSKP","Out","Post","Adv Rim","Chg-F4","Tn","Move","Tn-F5","Edit","Split","Out-F7","Print","P-Dut","Pnt-F9","Set Bill","Cxl Bill","Close"].map(btn=>(
-                      <button key={btn} className="mono px-3.5 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] text-[#374151] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">{btn}</button>
-                    ))}
-                  </div>
+                  <Card className="overflow-hidden"><table className="w-full text-left"><thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">{["Ngày","Code","Mô tả","Ref #","Sub Amt","Số tiền","Phòng gốc","Thuế","Inv Date","User","Ghi chú"].map(h=>(<th key={h} className="px-3 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium">{h}</th>))}</tr></thead><tbody><tr><td colSpan={11} className="px-3 py-10 text-center text-[12px] text-[#d1d5db]">Chưa có giao dịch</td></tr></tbody></table><div className="px-5 py-3 border-t border-[#f3f4f6] flex justify-between items-center"><span className="text-[11px] text-[#9ca3af] uppercase tracking-wide">Balance</span><span className="mono font-semibold text-[14px]">0</span></div></Card>
+                  <div className="flex flex-wrap gap-1.5">{["New","Paid","HSKP","Out","Post","Adv Rim","Chg-F4","Tn","Move","Tn-F5","Edit","Split","Out-F7","Print","P-Dut","Pnt-F9","Set Bill","Cxl Bill","Close"].map(btn=>(<button key={btn} className="mono px-3.5 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] text-[#374151] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">{btn}</button>))}</div>
                 </div>
               )}
             </div>
@@ -1216,115 +1020,24 @@ export default function AvantiPMS(){
           {currentTab==="Room Availability"&&(
             <div className="flex flex-col" style={{height:"calc(100vh - 52px)"}}>
               <div className="bg-white border-b border-[#e5e7eb] px-5 py-3 flex items-center gap-6 shrink-0">
-                <div className="flex items-center gap-2">
-                  <input type="date" value={availStartDate.toISOString().split("T")[0]}
-                    onChange={e=>{const d=new Date(e.target.value);if(!isNaN(d.getTime()))setAvailStartDate(d);}}
-                    className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1.5 outline-none focus:border-[#6b7280] bg-[#fafafa]"/>
-                  <span className="text-[14px] font-semibold text-[#374151]">{availStartDate.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</span>
-                </div>
-                <div className="flex items-center gap-4 text-[12px] text-[#6b7280]">
-                  {(Object.entries(availFilters) as [keyof typeof availFilters,boolean][]).map(([key,val])=>(
-                    <label key={key} className="flex items-center gap-1.5 cursor-pointer hover:text-[#1a1a1a] capitalize">
-                      <input type="checkbox" checked={val} onChange={e=>setAvailFilters(f=>({...f,[key]:e.target.checked}))} className="w-3 h-3 accent-[#0f0f0e]"/>
-                      {key==="ooiPhu"?"OOI+PHU":key.charAt(0).toUpperCase()+key.slice(1)}
-                    </label>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 text-[12px] text-[#6b7280] ml-auto">
-                  <span className="font-medium">Num Days</span>
-                  <input type="number" value={availNumDays} min={1} max={30}
-                    onChange={e=>setAvailNumDays(Math.max(1,Math.min(30,Number(e.target.value))))}
-                    className="mono w-14 border border-[#e5e7eb] rounded-[2px] px-2 py-1 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] text-center"/>
-                  <button className="toolbar-btn flex items-center gap-1.5" onClick={()=>{setAvailStartDate(new Date(2026,4,1));setAvailNumDays(10);}}>
-                    <RefreshCw size={11} strokeWidth={1.5}/> Refresh
-                  </button>
-                </div>
+                <div className="flex items-center gap-2"><input type="date" value={availStartDate.toISOString().split("T")[0]} onChange={e=>{const d=new Date(e.target.value);if(!isNaN(d.getTime()))setAvailStartDate(d);}} className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1.5 outline-none focus:border-[#6b7280] bg-[#fafafa]"/><span className="text-[14px] font-semibold text-[#374151]">{availStartDate.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</span></div>
+                <div className="flex items-center gap-4 text-[12px] text-[#6b7280]">{(Object.entries(availFilters) as [keyof typeof availFilters,boolean][]).map(([key,val])=>(<label key={key} className="flex items-center gap-1.5 cursor-pointer hover:text-[#1a1a1a] capitalize"><input type="checkbox" checked={val} onChange={e=>setAvailFilters(f=>({...f,[key]:e.target.checked}))} className="w-3 h-3 accent-[#0f0f0e]"/>{key==="ooiPhu"?"OOI+PHU":key.charAt(0).toUpperCase()+key.slice(1)}</label>))}</div>
+                <div className="flex items-center gap-2 text-[12px] text-[#6b7280] ml-auto"><span className="font-medium">Num Days</span><input type="number" value={availNumDays} min={1} max={30} onChange={e=>setAvailNumDays(Math.max(1,Math.min(30,Number(e.target.value))))} className="mono w-14 border border-[#e5e7eb] rounded-[2px] px-2 py-1 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] text-center"/><button className="toolbar-btn flex items-center gap-1.5" onClick={()=>{setAvailStartDate(new Date(2026,4,1));setAvailNumDays(10);}}><RefreshCw size={11} strokeWidth={1.5}/> Refresh</button></div>
               </div>
               <div className="flex-1 overflow-auto px-5 py-4">
                 <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
                   <table className="avail-table w-full text-left border-collapse text-[12px]" style={{minWidth:900}}>
-                    <thead>
-                      <tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa]">
-                        <th className="px-4 py-3 text-[10px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium sticky left-0 bg-[#fafafa] z-10 min-w-[160px]">Description</th>
-                        <th className="px-3 py-3 text-[10px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium min-w-[56px]">Type</th>
-                        <th className="px-3 py-3 text-[10px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium min-w-[44px] text-center">Total</th>
-                        {availDates.map((d,i)=>(
-                          <th key={i} className={`px-2 py-0 text-center min-w-[52px] ${isWeekend(d)?"weekend-col":""}`}>
-                            <div className="py-2">
-                              <div className={`mono text-[11px] font-semibold ${isWeekend(d)?"text-[#b45309]":"text-[#374151]"}`}>{d.toLocaleDateString("en-GB",{day:"numeric",month:"numeric"})}</div>
-                              <div className={`text-[9px] tracking-wide uppercase ${isWeekend(d)?"text-[#b45309]":"text-[#9ca3af]"}`}>{d.toLocaleDateString("en-GB",{weekday:"short"})}</div>
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
+                    <thead><tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa]"><th className="px-4 py-3 text-[10px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium sticky left-0 bg-[#fafafa] z-10 min-w-[160px]">Description</th><th className="px-3 py-3 text-[10px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium min-w-[56px]">Type</th><th className="px-3 py-3 text-[10px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium min-w-[44px] text-center">Total</th>{availDates.map((d,i)=>(<th key={i} className={`px-2 py-0 text-center min-w-[52px] ${isWeekend(d)?"weekend-col":""}`}><div className="py-2"><div className={`mono text-[11px] font-semibold ${isWeekend(d)?"text-[#b45309]":"text-[#374151]"}`}>{d.toLocaleDateString("en-GB",{day:"numeric",month:"numeric"})}</div><div className={`text-[9px] tracking-wide uppercase ${isWeekend(d)?"text-[#b45309]":"text-[#9ca3af]"}`}>{d.toLocaleDateString("en-GB",{weekday:"short"})}</div></div></th>))}</tr></thead>
                     <tbody className="divide-y divide-[#f3f4f6]">
-                      {ROOM_TYPES_AVAILABILITY.map((rt,idx)=>(
-                        <tr key={idx} className="transition-colors">
-                          <td className="px-4 py-2.5 font-medium text-[13px] sticky left-0 bg-white z-10">{rt.description}</td>
-                          <td className="px-3 py-2.5 mono text-[11px] text-[#9ca3af]">{rt.type}</td>
-                          <td className="px-3 py-2.5 mono text-[12px] font-semibold text-center">{rt.total}</td>
-                          {availDates.map((d,i)=>{const val=rt.available[i]??0;return(
-                            <td key={i} className={`px-2 py-2.5 text-center ${isWeekend(d)?"weekend-col":""}`}>
-                              <span className={`mono text-[12px] font-medium inline-block w-8 py-0.5 rounded-[2px] ${availBg(val)}`}>{val}</span>
-                            </td>
-                          );})}
-                        </tr>
-                      ))}
-                      <tr className="bg-[#fafafa] border-t-2 border-[#e5e7eb]">
-                        <td className="px-4 py-2.5 font-semibold text-[13px] sticky left-0 bg-[#fafafa] z-10">Total</td>
-                        <td className="px-3 py-2.5"/><td className="px-3 py-2.5 mono text-[12px] font-semibold text-center">{totalAvailRooms}</td>
-                        {availDates.map((d,i)=>(
-                          <td key={i} className={`px-2 py-2.5 text-center ${isWeekend(d)?"weekend-col":""}`}>
-                            <span className="mono text-[12px] font-semibold">{dailyTotals[i]??0}</span>
-                          </td>
-                        ))}
-                      </tr>
+                      {ROOM_TYPES_AVAILABILITY.map((rt,idx)=>(<tr key={idx} className="transition-colors"><td className="px-4 py-2.5 font-medium text-[13px] sticky left-0 bg-white z-10">{rt.description}</td><td className="px-3 py-2.5 mono text-[11px] text-[#9ca3af]">{rt.type}</td><td className="px-3 py-2.5 mono text-[12px] font-semibold text-center">{rt.total}</td>{availDates.map((d,i)=>{const val=rt.available[i]??0;return(<td key={i} className={`px-2 py-2.5 text-center ${isWeekend(d)?"weekend-col":""}`}><span className={`mono text-[12px] font-medium inline-block w-8 py-0.5 rounded-[2px] ${availBg(val)}`}>{val}</span></td>);})}</tr>))}
+                      <tr className="bg-[#fafafa] border-t-2 border-[#e5e7eb]"><td className="px-4 py-2.5 font-semibold text-[13px] sticky left-0 bg-[#fafafa] z-10">Total</td><td className="px-3 py-2.5"/><td className="px-3 py-2.5 mono text-[12px] font-semibold text-center">{totalAvailRooms}</td>{availDates.map((d,i)=>(<td key={i} className={`px-2 py-2.5 text-center ${isWeekend(d)?"weekend-col":""}`}><span className="mono text-[12px] font-semibold">{dailyTotals[i]??0}</span></td>))}</tr>
                       <tr><td colSpan={3+availNumDays} className="px-0 py-0"><div className="notes-divider"/></td></tr>
-                      <tr className="bg-[#0f0f0e]"><td colSpan={3+availNumDays} className="px-4 py-1">
-                        <span className="text-[10px] tracking-[0.14em] uppercase text-[#6b6b68] font-medium">*** NOTES ***</span>
-                      </td></tr>
-                      {([{label:"OOI",data:NOTES_STATIC.ooi},{label:"PHU",data:NOTES_STATIC.phu},{label:"Available Rms",data:NOTES_STATIC.availableRms,bold:true},{label:"OOO",data:NOTES_STATIC.ooo},{label:"Saleable Rms",data:NOTES_STATIC.saleableRms,bold:true}] as {label:string;data:number[];bold?:boolean}[]).map(({label,data,bold})=>(
-                        <tr key={label} className="border-t border-[#f3f4f6] hover:bg-[#fafafa]">
-                          <td className={`px-4 py-1.5 text-[12px] sticky left-0 bg-white z-10 ${bold?"font-semibold":"text-[#6b7280]"}`}>{label}</td>
-                          <td className="px-3 py-1.5"/><td className="px-3 py-1.5 mono text-[11px] text-center text-[#9ca3af]">{data[0]??0}</td>
-                          {availDates.map((d,i)=>(
-                            <td key={i} className={`px-2 py-1.5 text-center ${isWeekend(d)?"weekend-col":""}`}>
-                              <span className={`mono text-[11px] ${bold?"font-semibold text-[#1a1a1a]":"text-[#6b7280]"}`}>{data[i]??0}</span>
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                      <tr className="border-t border-[#f3f4f6] hover:bg-[#fafafa]">
-                        <td className="px-4 py-1.5 text-[12px] text-[#6b7280] sticky left-0 bg-white z-10">Definite</td>
-                        <td className="px-3 py-1.5"/><td className="px-3 py-1.5 mono text-[11px] text-center text-[#9ca3af]">{dailyDefinite[0]??0}</td>
-                        {availDates.map((d,i)=>{const val=dailyDefinite[i]??0,pct=Math.round((val/(NOTES_STATIC.saleableRms[i]||1))*100);return(
-                          <td key={i} className={`px-2 py-1.5 text-center ${isWeekend(d)?"weekend-col":""}`}>
-                            <span className="mono text-[11px] text-[#1b4332]">{val}</span>
-                            <span className="mono text-[9px] text-[#9ca3af] ml-0.5">({pct}%)</span>
-                          </td>
-                        );})}
-                      </tr>
-                      <tr className="border-t border-[#f3f4f6] bg-[#fafafa]">
-                        <td className="px-4 py-1.5 text-[12px] font-semibold sticky left-0 bg-[#fafafa] z-10">Total Occ</td>
-                        <td className="px-3 py-1.5"/><td className="px-3 py-1.5 mono text-[11px] text-center font-semibold">{totalAvailRooms-(NOTES_STATIC.availableRms[0]??93)}</td>
-                        {availDates.map((d,i)=>{const occ=totalAvailRooms-(NOTES_STATIC.availableRms[i]??93),pct=Math.round((occ/(NOTES_STATIC.saleableRms[i]||1))*100),hi=pct>=70;return(
-                          <td key={i} className={`px-2 py-1.5 text-center ${isWeekend(d)?"weekend-col":""}`}>
-                            <span className={`mono text-[11px] font-semibold ${hi?"text-[#c1121f]":"text-[#1a1a1a]"}`}>{occ}</span>
-                            <span className={`mono text-[9px] ml-0.5 ${hi?"text-[#c1121f]":"text-[#9ca3af]"}`}>({pct}%)</span>
-                          </td>
-                        );})}
-                      </tr>
+                      <tr className="bg-[#0f0f0e]"><td colSpan={3+availNumDays} className="px-4 py-1"><span className="text-[10px] tracking-[0.14em] uppercase text-[#6b6b68] font-medium">*** NOTES ***</span></td></tr>
+                      {([{label:"OOI",data:NOTES_STATIC.ooi},{label:"PHU",data:NOTES_STATIC.phu},{label:"Available Rms",data:NOTES_STATIC.availableRms,bold:true},{label:"OOO",data:NOTES_STATIC.ooo},{label:"Saleable Rms",data:NOTES_STATIC.saleableRms,bold:true}] as {label:string;data:number[];bold?:boolean}[]).map(({label,data,bold})=>(<tr key={label} className="border-t border-[#f3f4f6] hover:bg-[#fafafa]"><td className={`px-4 py-1.5 text-[12px] sticky left-0 bg-white z-10 ${bold?"font-semibold":"text-[#6b7280]"}`}>{label}</td><td className="px-3 py-1.5"/><td className="px-3 py-1.5 mono text-[11px] text-center text-[#9ca3af]">{data[0]??0}</td>{availDates.map((d,i)=>(<td key={i} className={`px-2 py-1.5 text-center ${isWeekend(d)?"weekend-col":""}`}><span className={`mono text-[11px] ${bold?"font-semibold text-[#1a1a1a]":"text-[#6b7280]"}`}>{data[i]??0}</span></td>))}</tr>))}
+                      <tr className="border-t border-[#f3f4f6] hover:bg-[#fafafa]"><td className="px-4 py-1.5 text-[12px] text-[#6b7280] sticky left-0 bg-white z-10">Definite</td><td className="px-3 py-1.5"/><td className="px-3 py-1.5 mono text-[11px] text-center text-[#9ca3af]">{dailyDefinite[0]??0}</td>{availDates.map((d,i)=>{const val=dailyDefinite[i]??0,pct=Math.round((val/(NOTES_STATIC.saleableRms[i]||1))*100);return(<td key={i} className={`px-2 py-1.5 text-center ${isWeekend(d)?"weekend-col":""}`}><span className="mono text-[11px] text-[#1b4332]">{val}</span><span className="mono text-[9px] text-[#9ca3af] ml-0.5">({pct}%)</span></td>);})}</tr>
+                      <tr className="border-t border-[#f3f4f6] bg-[#fafafa]"><td className="px-4 py-1.5 text-[12px] font-semibold sticky left-0 bg-[#fafafa] z-10">Total Occ</td><td className="px-3 py-1.5"/><td className="px-3 py-1.5 mono text-[11px] text-center font-semibold">{totalAvailRooms-(NOTES_STATIC.availableRms[0]??93)}</td>{availDates.map((d,i)=>{const occ=totalAvailRooms-(NOTES_STATIC.availableRms[i]??93),pct=Math.round((occ/(NOTES_STATIC.saleableRms[i]||1))*100),hi=pct>=70;return(<td key={i} className={`px-2 py-1.5 text-center ${isWeekend(d)?"weekend-col":""}`}><span className={`mono text-[11px] font-semibold ${hi?"text-[#c1121f]":"text-[#1a1a1a]"}`}>{occ}</span><span className={`mono text-[9px] ml-0.5 ${hi?"text-[#c1121f]":"text-[#9ca3af]"}`}>({pct}%)</span></td>);})}</tr>
                       <tr><td colSpan={3+availNumDays} className="py-1"/></tr>
-                      {([{label:"FIT Arrival",data:NOTES_STATIC.fitArrival},{label:"GIT Arrival",data:NOTES_STATIC.gitArrival},{label:"Waiting List",data:Array(10).fill(0)}]).map(({label,data})=>(
-                        <tr key={label} className="border-t border-[#f3f4f6] hover:bg-[#fafafa]">
-                          <td className="px-4 py-1.5 text-[12px] text-[#6b7280] sticky left-0 bg-white z-10">{label}</td>
-                          <td className="px-3 py-1.5"/><td className="px-3 py-1.5 mono text-[11px] text-center text-[#9ca3af]">{data[0]??0}</td>
-                          {availDates.map((d,i)=>(
-                            <td key={i} className={`px-2 py-1.5 text-center mono text-[11px] text-[#374151] ${isWeekend(d)?"weekend-col":""}`}>{data[i]??0}</td>
-                          ))}
-                        </tr>
-                      ))}
+                      {([{label:"FIT Arrival",data:NOTES_STATIC.fitArrival},{label:"GIT Arrival",data:NOTES_STATIC.gitArrival},{label:"Waiting List",data:Array(10).fill(0)}]).map(({label,data})=>(<tr key={label} className="border-t border-[#f3f4f6] hover:bg-[#fafafa]"><td className="px-4 py-1.5 text-[12px] text-[#6b7280] sticky left-0 bg-white z-10">{label}</td><td className="px-3 py-1.5"/><td className="px-3 py-1.5 mono text-[11px] text-center text-[#9ca3af]">{data[0]??0}</td>{availDates.map((d,i)=>(<td key={i} className={`px-2 py-1.5 text-center mono text-[11px] text-[#374151] ${isWeekend(d)?"weekend-col":""}`}>{data[i]??0}</td>))}</tr>))}
                     </tbody>
                   </table>
                 </div>
