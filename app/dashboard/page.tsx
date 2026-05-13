@@ -464,19 +464,11 @@ function ShiftReportTab() {
   const [tasks, setTasks] = useState<ShiftTask[]>([
     {id:"t1", content:"", priority:"normal", done:false},
   ]);
-  const [pendingArrivals, setPendingArrivals] = useState<PendingArrival[]>([
-    {folio:"247430", name:"YAMAMOTO KENJI", roomType:"DLXTC", eta:"15:00", pax:2, note:"Yêu cầu tầng cao"},
-    {folio:"247431", name:"PARK JI-WOO",    roomType:"SUPDN", eta:"16:30", pax:1, note:""},
-  ]);
   const [submitted, setSubmitted] = useState(false);
 
   const addTask = () => setTasks(prev => [...prev, {id:`t${Date.now()}`, content:"", priority:"normal", done:false}]);
   const removeTask = (id:string) => setTasks(prev => prev.filter(t => t.id !== id));
   const updateTask = (id:string, patch:Partial<ShiftTask>) => setTasks(prev => prev.map(t => t.id===id ? {...t,...patch} : t));
-
-  const addArrival = () => setPendingArrivals(prev => [...prev, {folio:"", name:"", roomType:"SUPDN", eta:"", pax:1, note:""}]);
-  const removeArrival = (i:number) => setPendingArrivals(prev => prev.filter((_,idx)=>idx!==i));
-  const updateArrival = (i:number, patch:Partial<PendingArrival>) => setPendingArrivals(prev => prev.map((a,idx) => idx===i ? {...a,...patch} : a));
 
   const handleSubmit = () => setSubmitted(true);
 
@@ -539,7 +531,7 @@ function ShiftReportTab() {
           </div>
         </Card>
 
-        {/* Pending arrivals */}
+        {/* Pending arrivals — shown in history/detail view only */}
         {r.pendingArrivals.length > 0 && (
           <Card className="overflow-hidden">
             <div className="px-5 py-3 border-b border-[#f3f4f6]"><SectionTitle>Khách chưa tới — {r.pendingArrivals.length} đặt phòng</SectionTitle></div>
@@ -628,34 +620,6 @@ function ShiftReportTab() {
           <FieldRow label="Tồn quỹ (₫)"><input className={inputCls} value={cashBalance} onChange={e=>setCashBalance(e.target.value)} placeholder="0" type="number"/></FieldRow>
           <FieldRow label="Giờ bàn giao"><input type="time" className={inputCls} defaultValue="14:00"/></FieldRow>
         </div>
-      </Card>
-
-      {/* Pending arrivals */}
-      <Card className="overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#f3f4f6] flex items-center justify-between">
-          <SectionTitle>Khách chưa tới hôm nay</SectionTitle>
-          <button onClick={addArrival} className="flex items-center gap-1 text-[11px] text-[#6b7280] hover:text-[#1a1a1a] font-medium transition-colors">
-            <Plus size={12} strokeWidth={2}/> Thêm
-          </button>
-        </div>
-        {pendingArrivals.length === 0 ? (
-          <div className="px-5 py-6 text-center text-[12px] text-[#9ca3af]">Không có khách chờ tới</div>
-        ) : (
-          <div className="divide-y divide-[#f9f9f7]">
-            {pendingArrivals.map((a,i)=>(
-              <div key={i} className="px-5 py-3 grid grid-cols-6 gap-2 items-center">
-                <input className={`${inputCls} col-span-1`} placeholder="Folio" value={a.folio} onChange={e=>updateArrival(i,{folio:e.target.value})}/>
-                <input className={`${inputCls} col-span-1`} placeholder="Tên khách" value={a.name} onChange={e=>updateArrival(i,{name:e.target.value})}/>
-                <select className={`${selectCls} col-span-1`} value={a.roomType} onChange={e=>updateArrival(i,{roomType:e.target.value})}>
-                  {["SUPDN","DLXTC","PRETM","AVTFM","PREKM"].map(t=><option key={t}>{t}</option>)}
-                </select>
-                <input className={`${inputCls} col-span-1`} placeholder="ETA" type="time" value={a.eta} onChange={e=>updateArrival(i,{eta:e.target.value})}/>
-                <input className={`${inputCls} col-span-1`} placeholder="Ghi chú" value={a.note} onChange={e=>updateArrival(i,{note:e.target.value})}/>
-                <button onClick={()=>removeArrival(i)} className="flex justify-center text-[#d1d5db] hover:text-[#c1121f] transition-colors"><Trash2 size={13} strokeWidth={1.5}/></button>
-              </div>
-            ))}
-          </div>
-        )}
       </Card>
 
       {/* Tasks */}
@@ -903,7 +867,7 @@ function RoomPlanTab(){
       <button className="toolbar-btn">Availability</button><button className="toolbar-btn">Print</button><button className="toolbar-btn">Notes</button>
       <div className="flex-1"/>
       {selected&&(()=>{const bk=bookings.find(b=>b.id===selected);if(!bk)return null;const c=BOOKING_COLOR[bk.status];return <div className="flex items-center gap-3 text-[12px]"><span className="w-2 h-2 rounded-[2px]" style={{background:c.bg}}/><span className="font-medium">{bk.guestName}</span><span className="text-[#9ca3af]">Phòng <span className="mono text-[#374151]">{bk.roomId}</span></span><span className="text-[#9ca3af]">{bk.nights} đêm</span><div className="w-px h-4 bg-[#e5e7eb]"/><button className="px-3 py-1 border border-[#e5e7eb] rounded-[2px] text-[11px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Xem folio</button><button className="px-3 py-1 border border-[#e5e7eb] rounded-[2px] text-[11px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Đổi phòng</button><button onClick={()=>setSelected(null)} className="text-[#9ca3af] hover:text-[#1a1a1a] text-[13px]">✕</button></div>;})()}
-      <button className="toolbar-btn flex items-center gap-1 text-[#9ca3af] hover:text-[#c1121f]"><X size={11} strokeWidth={1.5}/> Close</button>
+      <button className="toolbar-btn flex items-center gap-1.5 text-[#9ca3af] hover:text-[#c1121f]"><X size={11} strokeWidth={1.5}/> Close</button>
     </div>
   </div>;
 }
