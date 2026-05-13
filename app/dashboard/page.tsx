@@ -11,7 +11,7 @@ import {
 // ─────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────
-type TabName = "Tổng quan"|"Sơ đồ phòng"|"Room Plan"|"Đặt phòng"|"Khách hàng"|"Báo cáo"|"Thu ngân"|"Room Availability";
+type TabName = "Tổng quan"|"Tìm kiếm"|"Sơ đồ phòng"|"Room Plan"|"Đặt phòng"|"Báo cáo"|"Thu ngân"|"Room Availability";
 type RoomStatus = "clean"|"occupied"|"dirty";
 type MapViewMode = "hotelmap"|"block";
 type BookingStatus = "definite"|"tentative"|"group"|"checkedIn"|"waitlist";
@@ -77,10 +77,10 @@ const ALL_ROOM_TYPES = ["ALL","PRETM","PREPM","AVTFM","SUPTN","SUPDN","DLXTC","D
 
 const MENU_ITEMS: Array<{name:TabName;icon:React.ElementType}> = [
   {name:"Tổng quan",        icon:Home},
+  {name:"Tìm kiếm",         icon:Search},
   {name:"Sơ đồ phòng",      icon:LayoutGrid},
   {name:"Room Plan",        icon:CalendarDays},
   {name:"Đặt phòng",        icon:BedDouble},
-  {name:"Khách hàng",       icon:User},
   {name:"Báo cáo",          icon:ClipboardList},
   {name:"Thu ngân",         icon:DollarSign},
   {name:"Room Availability",icon:CalendarDays},
@@ -721,6 +721,94 @@ function ShiftReportTab() {
 }
 
 // ─────────────────────────────────────────────
+// SEARCH TAB (Tìm kiếm khách hàng)
+// ─────────────────────────────────────────────
+function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
+  return (
+    <div className="p-7 max-w-5xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-[15px] font-semibold">Tìm kiếm</h2>
+          <div className="mono text-[11px] text-[#9ca3af] mt-0.5">Guest & Reservation Search</div>
+        </div>
+        <div className="flex gap-2">
+          <button className="px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Walk In</button>
+          <button className="px-4 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">+ New Reservation</button>
+        </div>
+      </div>
+      <Card className="p-6">
+        <SectionTitle>Tìm kiếm khách hàng</SectionTitle>
+        <div className="grid grid-cols-2 gap-x-8">
+          <div className="space-y-2.5">
+            {[{label:"Thông tin khách",ph:""},{label:"Số phòng / Loại",ph:"Số phòng hoặc loại phòng"},{label:"Mã đoàn",ph:""},{label:"Member ID",ph:""}].map(({label,ph})=>(
+              <FieldRow key={label} label={label}><input className={inputCls} placeholder={ph}/></FieldRow>
+            ))}
+          </div>
+          <div className="space-y-2.5">
+            {[1,2,3,4].map(i=><FieldRow key={i} label={`Thông tin ${i}`}><input className={inputCls}/></FieldRow>)}
+          </div>
+        </div>
+        <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#f3f4f6]">
+          <label className="flex items-center gap-1.5 text-[12px] text-[#6b7280] cursor-pointer">
+            <input type="checkbox" className="w-3 h-3 accent-[#0f0f0e]"/> In House
+          </label>
+          <button className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">
+            <Search size={12} strokeWidth={1.5}/> Tìm kiếm
+          </button>
+        </div>
+      </Card>
+      <Card className="p-6">
+        <SectionTitle>Tìm kiếm nâng cao</SectionTitle>
+        <div className="grid grid-cols-2 gap-x-8 mb-5">
+          <div className="space-y-2.5">
+            {["Họ","Tên","Mã ngoài"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}
+          </div>
+          <div className="space-y-2.5">
+            {["Công ty","Quốc gia","Market Segment"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}
+          </div>
+        </div>
+        <div className="flex items-center justify-between border-t border-[#f3f4f6] pt-4">
+          <div className="flex flex-wrap gap-4">
+            {["Reserved","In House","Arrival Today","C/O Today","Definite","Waiting"].map(s=>(
+              <label key={s} className="flex items-center gap-1.5 text-[11px] text-[#6b7280] cursor-pointer hover:text-[#1a1a1a]">
+                <input type="checkbox" defaultChecked className="w-3 h-3 accent-[#0f0f0e]"/> {s}
+              </label>
+            ))}
+          </div>
+          <button className="px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Advanced Search</button>
+        </div>
+      </Card>
+      <Card className="overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Waiting List — Chưa gán phòng</SectionTitle></div>
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
+              {["Folio","Tên khách","Loại phòng","Check-in","Check-out",""].map(h=>(
+                <th key={h} className="px-6 py-3 text-[9px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {WAITING_CUSTOMERS.map(cus=>(
+              <tr key={cus.id} className="border-b border-[#f9f9f7] hover:bg-[#fafafa] transition-colors">
+                <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.folio}</td>
+                <td className="px-6 py-4 text-[13px] font-medium">{cus.name}</td>
+                <td className="px-6 py-4"><span className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded-[2px] text-[#374151] font-medium mono">{cus.roomType}</span></td>
+                <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkIn}</td>
+                <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkOut}</td>
+                <td className="px-6 py-4 text-right">
+                  <button onClick={onAssignRoom} className="text-[11px] px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Gán phòng</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // ROOM PLAN TAB
 // ─────────────────────────────────────────────
 function RoomPlanTab(){
@@ -925,7 +1013,7 @@ export default function AvantiPMS(){
                 ))}
               </div>
               <div className="flex gap-2 items-center">
-                {[{label:"Walk In",icon:User},{label:"New Reservation",icon:BedDouble},{label:"Find Guest",icon:Search,action:()=>setCurrentTab("Khách hàng")}].map(({label,icon:Icon,action})=>(
+                {[{label:"Walk In",icon:User},{label:"New Reservation",icon:BedDouble},{label:"Find Guest",icon:Search,action:()=>setCurrentTab("Tìm kiếm")}].map(({label,icon:Icon,action})=>(
                   <button key={label} onClick={action} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#374151] hover:border-[#9ca3af] hover:bg-[#f9f9f7] transition-colors"><Icon size={12} strokeWidth={1.5}/> {label}</button>
                 ))}
                 <div className="flex-1 flex items-center gap-2 bg-white border border-[#e5e7eb] rounded-[2px] px-3 hover:border-[#9ca3af] transition-colors"><Search size={12} strokeWidth={1.5} className="text-[#d1d5db]"/><input className="flex-1 py-2 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db]" placeholder="Tên khách, số phòng, folio..."/></div>
@@ -949,6 +1037,9 @@ export default function AvantiPMS(){
               </div>
             </div>
           )}
+
+          {/* TÌM KIẾM */}
+          {currentTab==="Tìm kiếm"&&<SearchTab onAssignRoom={()=>setCurrentTab("Sơ đồ phòng")}/>}
 
           {/* SƠ ĐỒ PHÒNG */}
           {currentTab==="Sơ đồ phòng"&&(
@@ -984,16 +1075,6 @@ export default function AvantiPMS(){
           {currentTab==="Room Plan"&&<RoomPlanTab/>}
           {currentTab==="Đặt phòng"&&<ReservationTab/>}
           {currentTab==="Báo cáo"&&<ShiftReportTab/>}
-
-          {/* KHÁCH HÀNG */}
-          {currentTab==="Khách hàng"&&(
-            <div className="p-7 max-w-5xl mx-auto space-y-4">
-              <div className="flex items-center justify-between"><h2 className="text-[15px] font-semibold">Quản lý khách hàng</h2><div className="flex gap-2"><button className="px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Walk In</button><button className="px-4 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">+ New Reservation</button></div></div>
-              <Card className="p-6"><SectionTitle>Tìm kiếm khách hàng</SectionTitle><div className="grid grid-cols-2 gap-x-8"><div className="space-y-2.5">{[{label:"Thông tin khách",ph:""},{label:"Số phòng / Loại",ph:"Số phòng hoặc loại phòng"},{label:"Mã đoàn",ph:""},{label:"Member ID",ph:""}].map(({label,ph})=>(<FieldRow key={label} label={label}><input className={inputCls} placeholder={ph}/></FieldRow>))}</div><div className="space-y-2.5">{[1,2,3,4].map(i=><FieldRow key={i} label={`Thông tin ${i}`}><input className={inputCls}/></FieldRow>)}</div></div><div className="flex items-center justify-between mt-5 pt-4 border-t border-[#f3f4f6]"><label className="flex items-center gap-1.5 text-[12px] text-[#6b7280] cursor-pointer"><input type="checkbox" className="w-3 h-3 accent-[#0f0f0e]"/> In House</label><button className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors"><Search size={12} strokeWidth={1.5}/> Tìm kiếm</button></div></Card>
-              <Card className="p-6"><SectionTitle>Tìm kiếm nâng cao</SectionTitle><div className="grid grid-cols-2 gap-x-8 mb-5"><div className="space-y-2.5">{["Họ","Tên","Mã ngoài"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}</div><div className="space-y-2.5">{["Công ty","Quốc gia","Market Segment"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}</div></div><div className="flex items-center justify-between border-t border-[#f3f4f6] pt-4"><div className="flex flex-wrap gap-4">{["Reserved","In House","Arrival Today","C/O Today","Definite","Waiting"].map(s=>(<label key={s} className="flex items-center gap-1.5 text-[11px] text-[#6b7280] cursor-pointer hover:text-[#1a1a1a]"><input type="checkbox" defaultChecked className="w-3 h-3 accent-[#0f0f0e]"/> {s}</label>))}</div><button className="px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Advanced Search</button></div></Card>
-              <Card className="overflow-hidden"><div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Waiting List — Chưa gán phòng</SectionTitle></div><table className="w-full text-left"><thead><tr className="border-b border-[#f3f4f6] bg-[#fafafa]">{["Folio","Tên khách","Loại phòng","Check-in","Check-out",""].map(h=>(<th key={h} className="px-6 py-3 text-[9px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium">{h}</th>))}</tr></thead><tbody>{WAITING_CUSTOMERS.map(cus=>(<tr key={cus.id} className="border-b border-[#f9f9f7] hover:bg-[#fafafa] transition-colors"><td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.folio}</td><td className="px-6 py-4 text-[13px] font-medium">{cus.name}</td><td className="px-6 py-4"><span className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded-[2px] text-[#374151] font-medium mono">{cus.roomType}</span></td><td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkIn}</td><td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkOut}</td><td className="px-6 py-4 text-right"><button onClick={()=>setCurrentTab("Sơ đồ phòng")} className="text-[11px] px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Gán phòng</button></td></tr>))}</tbody></table></Card>
-            </div>
-          )}
 
           {/* THU NGÂN */}
           {currentTab==="Thu ngân"&&(
