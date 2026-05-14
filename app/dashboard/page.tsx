@@ -49,7 +49,7 @@ type ShiftReport = {
 // ─────────────────────────────────────────────
 const ROOM_STATUS: Record<RoomStatus,{label:string;labelVi:string;cell:string;text:string;mapBg:string;mapBorder:string;mapText:string;mapSubText:string;mapPaxColor:string;dotColor:string}> = {
   clean:    { label:"CLEAN",    labelVi:"Đã dọn",  cell:"bg-[#2d6a4f] border-[#1b4332]", text:"text-white", mapBg:"#f0fdf4", mapBorder:"#86efac", mapText:"#14532d", mapSubText:"#15803d", mapPaxColor:"#166534", dotColor:"#22c55e" },
-  occupied: { label:"OCCUPIED", labelVi:"Đang ở",  cell:"bg-[#d4a017] border-[#a37c00]", text:"text-white", mapBg:"#fffbeb", mapBorder:"#fcd34d", mapText:"#78350f", mapSubText:"#92400e", mapPaxColor:"#92400e", dotColor:"#f59e0b" },
+  occupied: { label:"OCCUPIED", labelVi:"Chưa dọn", cell:"bg-[#d4a017] border-[#a37c00]", text:"text-white", mapBg:"#fffbeb", mapBorder:"#fcd34d", mapText:"#78350f", mapSubText:"#92400e", mapPaxColor:"#92400e", dotColor:"#f59e0b" },
   dirty:    { label:"DIRTY",    labelVi:"Chờ dọn", cell:"bg-[#c1121f] border-[#8b0000]", text:"text-white", mapBg:"#fff1f2", mapBorder:"#fca5a5", mapText:"#7f1d1d", mapSubText:"#991b1b", mapPaxColor:"#991b1b", dotColor:"#ef4444" },
 };
 
@@ -255,7 +255,8 @@ function WalkIcon({color}:{color:string}){
   </svg>;
 }
 function GuestTooltip({guest,roomType}:{guest:Guest;roomType:string}){
-  return <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none" style={{minWidth:270}}>
+  return <div className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-2 pointer-events-none" style={{minWidth:270}}>
+    <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 rotate-45" style={{background:"#fffef0",borderLeft:"1px solid #d4c87a",borderTop:"1px solid #d4c87a"}}/>
     <div className="text-[11px] text-[#1a1a1a] p-3 rounded-[2px] shadow-2xl" style={{background:"#fffef0",border:"1px solid #d4c87a"}}>
       <div className="space-y-0.5 pb-2 mb-2" style={{borderBottom:"1px solid #e8dfa0"}}>
         <div className="flex flex-wrap gap-x-3"><span><span className="text-[#9ca3af]">Folio: </span><span className="mono font-semibold">{guest.folio}</span></span><span><span className="text-[#9ca3af]">RmType: </span><span className="mono font-semibold">{roomType}</span></span></div>
@@ -265,7 +266,6 @@ function GuestTooltip({guest,roomType}:{guest:Guest;roomType:string}){
       <div className="font-semibold text-[12px]">+ {guest.name}</div>
       <div className="text-[#9ca3af] mt-1" style={{borderTop:"1px dashed #d4c87a",paddingTop:4}}>{guest.plan}</div>
     </div>
-    <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 rotate-45" style={{background:"#fffef0",borderRight:"1px solid #d4c87a",borderBottom:"1px solid #d4c87a"}}/>
   </div>;
 }
 function HotelCell({room,selected,onClick}:{room:HotelRoom;selected:boolean;onClick:()=>void}){
