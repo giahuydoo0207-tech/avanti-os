@@ -728,6 +728,27 @@ const ARRIVAL_TODAY_DATA: ArrivalRow[] = [
   {sts:"IH",stt:2,folio:"247796",conf:"1089823",title:"MRS", name:"NGUYEN THI VUI",        rate:760000,  vip:false,rm:912,type:"SUPDN",booked:"SUPDN",arrival:"11/05/2026",departure:"12/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"224988",bkSts:"Definite",nat:"VNM"},
 ];
 
+const CHECKOUT_TODAY_DATA: ArrivalRow[] = [
+  {sts:"CO",stt:2,folio:"247796",conf:"1089823",title:"MRS", name:"NGUYEN THI VUI",        rate:760000,  vip:false,rm:912,type:"SUPDN",booked:"SUPDN",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"224988",bkSts:"CheckedIn",nat:"VNM"},
+  {sts:"CO",stt:2,folio:"248706",conf:"1089766",title:"MR",  name:"NGUYEN VAN MANH",      rate:1500000, vip:false,rm:302,type:"PREPM",booked:"PREPM",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"SHB BANK",           sales:"224856",bkSts:"CheckedIn",nat:"VNM"},
+  {sts:"CO",stt:2,folio:"248703",conf:"1089766",title:"MRS", name:"VU THI NGUYET ANH",    rate:1900000, vip:false,rm:303,type:"AVTFM",booked:"AVTFM",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"SHB BANK",           sales:"224853",bkSts:"CheckedIn",nat:"VNM"},
+  {sts:"CO",stt:2,folio:"248033",conf:"1089381",title:"MR",  name:"ANG YU YUAN",           rate:1200000, vip:false,rm:605,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"Matsui Solutions VN", sales:"223743",bkSts:"CheckedIn",nat:"SGP"},
+  {sts:"CO",stt:2,folio:"248358",conf:"1089584",title:"MR",  name:"Tan AIK THENG Jeremy",  rate:1200000, vip:false,rm:705,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"224257",bkSts:"CheckedIn",nat:"SGP"},
+  {sts:"CO",stt:2,folio:"244959",conf:"1087961",title:"MR",  name:"MAK FOOK HENG",         rate:1104000, vip:false,rm:806,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"219042",bkSts:"CheckedIn",nat:"SGP"},
+  {sts:"CO",stt:2,folio:"244958",conf:"1087961",title:"MR",  name:"WONG KOON SAI",         rate:1104000, vip:false,rm:807,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"AGODA B",           sales:"219041",bkSts:"CheckedIn",nat:"SGP"},
+  {sts:"CO",stt:2,folio:"244958",conf:"",       title:"MRS", name:"NGUYEN THI TUOI",       rate:0,       vip:false,rm:807,type:"",     booked:"",      arrival:"11/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"",                 sales:"224980",bkSts:"",        nat:"VNM"},
+  {sts:"CO",stt:2,folio:"244962",conf:"1087961",title:"MR",  name:"MAK FOOK MING",         rate:1104000, vip:false,rm:808,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"219044",bkSts:"CheckedIn",nat:"SGP"},
+  {sts:"CO",stt:2,folio:"244961",conf:"1087961",title:"MR",  name:"CHUA CHIN HER",         rate:1104000, vip:false,rm:811,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"219043",bkSts:"CheckedIn",nat:"SGP"},
+  {sts:"CO",stt:2,folio:"246021",conf:"1088383",title:"MRS", name:"NICHELLE AMELIA DARMAWAN",rate:1847115,vip:false,rm:502,type:"PREPM",booked:"PREPM",arrival:"10/05/2026",departure:"14/05/2026",adtCh:"3/0",shr:false,company:"TRAVELOKA",       sales:"220662",bkSts:"CheckedIn",nat:"IDN"},
+  {sts:"CO",stt:2,folio:"246021",conf:"",       title:"MRS", name:"EVANIAAUDREY SUSANTO",  rate:0,       vip:false,rm:502,type:"",     booked:"",      arrival:"10/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225116",bkSts:"",        nat:"IDN"},
+  {sts:"CO",stt:2,folio:"246021",conf:"",       title:"MRS", name:"YENNI WINATA",          rate:0,       vip:false,rm:502,type:"",     booked:"",      arrival:"10/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225117",bkSts:"",        nat:"IDN"},
+  {sts:"CO",stt:2,folio:"248811",conf:"1089829",title:"MR",  name:"JEFFREY LAURENCE JACKEL",rate:1080000,vip:false,rm:509,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"VIETNAM TRAVEL GROU",sales:"225012",bkSts:"CheckedIn",nat:"AUS"},
+  {sts:"CO",stt:2,folio:"248811",conf:"",       title:"MRS", name:"JANET LEE ANNE WITHERS",rate:0,       vip:false,rm:509,type:"",     booked:"",      arrival:"11/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225013",bkSts:"",        nat:"AUS"},
+  {sts:"CO",stt:2,folio:"248675",conf:"1089747",title:"MRS", name:"PHAM THI YEN",         rate:1080000, vip:false,rm:308,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"CTY DU LICH HONG NGC",sales:"224823",bkSts:"CheckedIn",nat:"VNM"},
+  {sts:"CO",stt:2,folio:"248659",conf:"1089747",title:"MR",  name:"DO HUY HOANG",         rate:1080000, vip:false,rm:310,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"CTY DU LICH HONG NGC",sales:"224789",bkSts:"CheckedIn",nat:"VNM"},
+  {sts:"CO",stt:2,folio:"248660",conf:"1089747",title:"MR",  name:"TRAN VIET THANG",      rate:1080000, vip:false,rm:311,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"CTY DU LICH HONG NGC",sales:"224791",bkSts:"CheckedIn",nat:"VNM"},
+];
+
 // ─────────────────────────────────────────────
 // SEARCH TAB (Tìm kiếm khách hàng)
 // ─────────────────────────────────────────────
@@ -736,8 +757,11 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const [roomInfo,setRoomInfo]=useState("");
   const [inHouse,setInHouse]=useState(false);
   const [arrivalDate,setArrivalDate]=useState(true);
-  const [arrivalFrom,setArrivalFrom]=useState("2026-05-11");
-  const [arrivalTo,setArrivalTo]=useState("2026-05-11");
+  const [arrivalFrom,setArrivalFrom]=useState("2026-05-14");
+  const [arrivalTo,setArrivalTo]=useState("2026-05-14");
+  const [departureDate,setDepartureDate]=useState(false);
+  const [departureFrom,setDepartureFrom]=useState("2026-05-14");
+  const [departureTo,setDepartureTo]=useState("2026-05-14");
   // advanced
   const [lastName,setLastName]=useState("");
   const [firstName,setFirstName]=useState("");
@@ -746,27 +770,26 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   // result state
   const [results,setResults]=useState<ArrivalRow[]|null>(null);
   const [searched,setSearched]=useState(false);
+  const [searchMode,setSearchMode]=useState<"arrival"|"departure">("arrival");
   const [selectedRow,setSelectedRow]=useState<string|null>(null);
   const [sortCol,setSortCol]=useState<keyof ArrivalRow>("rm");
   const [sortAsc,setSortAsc]=useState(true);
 
   const handleSort=(col:keyof ArrivalRow)=>{if(sortCol===col)setSortAsc(a=>!a);else{setSortCol(col);setSortAsc(true);}};
 
-  const doSearch=()=>{
-    let rows=[...ARRIVAL_TODAY_DATA];
-    // filter by name
+  const doSearch=(mode:"arrival"|"departure")=>{
+    const baseData = mode==="departure" ? CHECKOUT_TODAY_DATA : ARRIVAL_TODAY_DATA;
+    let rows=[...baseData];
     const q=(guestInfo+lastName+firstName).toLowerCase().trim();
     if(q) rows=rows.filter(r=>r.name.toLowerCase().includes(q)||r.folio.includes(q));
-    // filter by room
     if(roomInfo.trim()) rows=rows.filter(r=>String(r.rm).includes(roomInfo.trim())||r.type.toLowerCase().includes(roomInfo.toLowerCase()));
-    // filter by company
     if(company.trim()) rows=rows.filter(r=>r.company.toLowerCase().includes(company.toLowerCase()));
-    // sort
     rows.sort((a,b)=>{
       const av=a[sortCol],bv=b[sortCol];
       if(typeof av==="number"&&typeof bv==="number") return sortAsc?av-bv:bv-av;
       return sortAsc?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
     });
+    setSearchMode(mode);
     setResults(rows);
     setSearched(true);
     setSelectedRow(null);
@@ -824,7 +847,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
           </label>
           <div className="flex gap-2">
             <button onClick={handleReset} className="px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Xóa</button>
-            <button onClick={doSearch} className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">
+            <button onClick={()=>doSearch(departureDate?"departure":"arrival")} className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">
               <Search size={12} strokeWidth={1.5}/> Tìm kiếm
             </button>
           </div>
@@ -847,11 +870,12 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
           </div>
         </div>
 
-        {/* Arrival date filter */}
-        <div className="border border-[#e5e7eb] rounded-[2px] p-4 mb-4 bg-[#fafafa]">
+        {/* Date filters */}
+        <div className="border border-[#e5e7eb] rounded-[2px] p-4 mb-3 bg-[#fafafa] space-y-3">
+          {/* Arrival date */}
           <div className="flex flex-wrap items-center gap-6">
-            <label className="flex items-center gap-2 text-[12px] text-[#374151] font-medium cursor-pointer">
-              <input type="checkbox" checked={arrivalDate} onChange={e=>setArrivalDate(e.target.checked)} className="w-3.5 h-3.5 accent-[#0f0f0e]"/>
+            <label className="flex items-center gap-2 text-[12px] text-[#374151] font-medium cursor-pointer w-32">
+              <input type="checkbox" checked={arrivalDate} onChange={e=>{setArrivalDate(e.target.checked);if(e.target.checked)setDepartureDate(false);}} className="w-3.5 h-3.5 accent-[#0f0f0e]"/>
               Arrival date
             </label>
             <div className="flex items-center gap-2 text-[12px]">
@@ -859,6 +883,19 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
               <input type="date" value={arrivalFrom} onChange={e=>setArrivalFrom(e.target.value)} disabled={!arrivalDate} className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1 outline-none focus:border-[#6b7280] bg-white disabled:opacity-40"/>
               <span className="text-[#9ca3af]">To</span>
               <input type="date" value={arrivalTo} onChange={e=>setArrivalTo(e.target.value)} disabled={!arrivalDate} className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1 outline-none focus:border-[#6b7280] bg-white disabled:opacity-40"/>
+            </div>
+          </div>
+          {/* Departure date */}
+          <div className="flex flex-wrap items-center gap-6 pt-2.5 border-t border-[#e5e7eb]">
+            <label className="flex items-center gap-2 text-[12px] text-[#374151] font-medium cursor-pointer w-32">
+              <input type="checkbox" checked={departureDate} onChange={e=>{setDepartureDate(e.target.checked);if(e.target.checked)setArrivalDate(false);}} className="w-3.5 h-3.5 accent-[#c1121f]"/>
+              <span className={departureDate?"text-[#c1121f]":""}>Departure date</span>
+            </label>
+            <div className="flex items-center gap-2 text-[12px]">
+              <span className="text-[#9ca3af]">From</span>
+              <input type="date" value={departureFrom} onChange={e=>setDepartureFrom(e.target.value)} disabled={!departureDate} className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1 outline-none focus:border-[#6b7280] bg-white disabled:opacity-40"/>
+              <span className="text-[#9ca3af]">To</span>
+              <input type="date" value={departureTo} onChange={e=>setDepartureTo(e.target.value)} disabled={!departureDate} className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1 outline-none focus:border-[#6b7280] bg-white disabled:opacity-40"/>
             </div>
           </div>
         </div>
@@ -871,7 +908,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
               </label>
             ))}
           </div>
-          <button onClick={doSearch} className="px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Advanced Search</button>
+          <button onClick={()=>doSearch(departureDate?"departure":"arrival")} className="px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Advanced Search</button>
         </div>
       </Card>
 
@@ -879,8 +916,11 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
       {searched && results !== null && (
         <Card className="overflow-hidden">
           <div className="px-5 py-3 border-b border-[#f3f4f6] flex items-center justify-between">
-            <div>
-              <SectionTitle>Kết quả tìm kiếm</SectionTitle>
+            <div className="flex items-center gap-3">
+              <SectionTitle>{searchMode==="departure"?"Danh sách Check-out hôm nay":"Danh sách Check-in hôm nay"}</SectionTitle>
+              {searchMode==="departure"
+                ? <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#fff1f2] text-[#c1121f] border border-[#fca5a5]">C/O Today</span>
+                : <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#f0fdf4] text-[#15803d] border border-[#86efac]">Arrival Today</span>}
             </div>
             <div className="flex items-center gap-3">
               <span className="mono text-[11px] text-[#9ca3af]">Folio 1 to {results.length} of {results.length}</span>
@@ -921,7 +961,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                     <tr key={r.folio+r.sales+i}
                       onClick={()=>setSelectedRow(isSelected?null:r.folio+r.sales)}
                       className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}>
-                      <td className="pl-4 py-2 text-[11px] font-semibold mono text-[#2d6a4f]">{r.sts}</td>
+                      <td className={`pl-4 py-2 text-[11px] font-semibold mono ${r.sts==="CO"?"text-[#c1121f]":"text-[#2d6a4f]"}`}>{r.sts}</td>
                       <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.stt}</td>
                       <td className="px-2 py-2 mono text-[11px] font-medium text-[#374151]">{r.folio}</td>
                       <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.conf}</td>
@@ -956,9 +996,14 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
             {selectedRow&&(
               <>
                 <div className="w-px h-4 bg-[#e5e7eb]"/>
-                {["Confirm","Reg Card","Copy Rsv","Cancel C/I","Change Folio","View"].map(btn=>(
-                  <button key={btn} className="px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium bg-white hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors">{btn}</button>
-                ))}
+                {searchMode==="departure"
+                  ? ["Check Out","View Folio","Post Charge","Print Bill","Reg Card","Change Folio"].map(btn=>(
+                      <button key={btn} className={`px-3 py-1.5 border rounded-[2px] text-[11px] font-medium transition-colors ${btn==="Check Out"?"bg-[#c1121f] text-white border-[#c1121f] hover:bg-[#9b1015]":"bg-white border-[#e5e7eb] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e]"}`}>{btn}</button>
+                    ))
+                  : ["Confirm","Reg Card","Copy Rsv","Cancel C/I","Change Folio","View"].map(btn=>(
+                      <button key={btn} className="px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium bg-white hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors">{btn}</button>
+                    ))
+                }
               </>
             )}
             <div className="flex-1"/>
