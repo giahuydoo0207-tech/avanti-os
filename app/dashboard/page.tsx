@@ -254,9 +254,13 @@ function WalkIcon({color}:{color:string}){
     <path d="M14 10 L17 13" stroke={color} strokeWidth="2.2" strokeLinecap="round"/>
   </svg>;
 }
-function GuestTooltip({guest,roomType}:{guest:Guest;roomType:string}){
-  return <div className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-2 pointer-events-none" style={{minWidth:270}}>
-    <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 rotate-45" style={{background:"#fffef0",borderLeft:"1px solid #d4c87a",borderTop:"1px solid #d4c87a"}}/>
+function GuestTooltip({guest,roomType,x}:{guest:Guest;roomType:string;x:number}){
+  // clamp tooltip so it never overflows left edge (sidebar ~208px) or right edge
+  const TIP_W=270;
+  const left=Math.max(208-x+8, -(TIP_W/2)); // offset from cell's left-1/2
+  const arrowLeft=Math.min(Math.max(TIP_W/2+left-8, 12), TIP_W-20);
+  return <div className="absolute z-50 top-full mt-2 pointer-events-none" style={{minWidth:TIP_W,left:"50%",transform:`translateX(${left}px)`}}>
+    <div className="absolute -top-1.5 w-3 h-3 rotate-45" style={{left:arrowLeft,background:"#fffef0",borderLeft:"1px solid #d4c87a",borderTop:"1px solid #d4c87a"}}/>
     <div className="text-[11px] text-[#1a1a1a] p-3 rounded-[2px] shadow-2xl" style={{background:"#fffef0",border:"1px solid #d4c87a"}}>
       <div className="space-y-0.5 pb-2 mb-2" style={{borderBottom:"1px solid #e8dfa0"}}>
         <div className="flex flex-wrap gap-x-3"><span><span className="text-[#9ca3af]">Folio: </span><span className="mono font-semibold">{guest.folio}</span></span><span><span className="text-[#9ca3af]">RmType: </span><span className="mono font-semibold">{roomType}</span></span></div>
@@ -269,8 +273,10 @@ function GuestTooltip({guest,roomType}:{guest:Guest;roomType:string}){
   </div>;
 }
 function HotelCell({room,selected,onClick}:{room:HotelRoom;selected:boolean;onClick:()=>void}){
-  const [hover,setHover]=useState(false);const cfg=ROOM_STATUS[room.status];
-  return <div className="relative" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}>
+  const [hover,setHover]=useState(false);
+  const [tipX,setTipX]=useState(0);
+  const cfg=ROOM_STATUS[room.status];
+  return <div className="relative" onMouseEnter={e=>{setHover(true);setTipX(e.currentTarget.getBoundingClientRect().left+48);}} onMouseLeave={()=>setHover(false)}>
     <div onClick={onClick} className={`cursor-pointer select-none transition-shadow ${selected?"ring-2 ring-[#0f0f0e] ring-offset-1 z-20 relative":"hover:shadow-md hover:z-10 relative"}`}
       style={{width:96,minHeight:68,background:cfg.mapBg,border:`1.5px solid ${hover||selected?"#374151":cfg.mapBorder}`,borderRadius:2}}>
       <div className="flex items-center justify-between px-1.5 pt-1.5 pb-0.5">
@@ -279,18 +285,20 @@ function HotelCell({room,selected,onClick}:{room:HotelRoom;selected:boolean;onCl
       </div>
       <div className="px-1.5 pb-1.5"><div className="mono font-semibold text-[13px] leading-tight" style={{color:cfg.mapText}}>{room.id}</div><div className="text-[9px] font-medium tracking-wide uppercase leading-tight" style={{color:cfg.mapSubText}}>{room.roomType}</div></div>
     </div>
-    {hover&&room.guest&&<GuestTooltip guest={room.guest} roomType={room.roomType}/>}
+    {hover&&room.guest&&<GuestTooltip guest={room.guest} roomType={room.roomType} x={tipX}/>}
   </div>;
 }
 function BlockCell({room,selected,onClick}:{room:HotelRoom;selected:boolean;onClick:()=>void}){
-  const [hover,setHover]=useState(false);const cfg=ROOM_STATUS[room.status];
-  return <div className="relative" onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}>
+  const [hover,setHover]=useState(false);
+  const [tipX,setTipX]=useState(0);
+  const cfg=ROOM_STATUS[room.status];
+  return <div className="relative" onMouseEnter={e=>{setHover(true);setTipX(e.currentTarget.getBoundingClientRect().left+26);}} onMouseLeave={()=>setHover(false)}>
     <div onClick={onClick} className={`cursor-pointer border rounded-[2px] flex flex-col items-center justify-center transition-transform text-white hover:scale-[1.07] hover:shadow-md hover:z-10 relative ${cfg.cell} ${selected?"ring-2 ring-[#0f0f0e] ring-offset-1 z-20":""}`} style={{width:52,height:44}} title={`${room.id}·${room.roomType}·${cfg.labelVi}`}>
       {room.pax>0&&<div className="absolute top-0.5 right-0.5 flex items-center gap-0.5"><WalkIcon color="rgba(255,255,255,0.75)"/><span className="mono text-[8px] opacity-75">{room.pax}</span></div>}
       <span className="mono text-[10px] font-semibold leading-tight">{room.id}</span>
       <span className="text-[7px] opacity-70 uppercase tracking-wide leading-tight">{room.roomType}</span>
     </div>
-    {hover&&room.guest&&<GuestTooltip guest={room.guest} roomType={room.roomType}/>}
+    {hover&&room.guest&&<GuestTooltip guest={room.guest} roomType={room.roomType} x={tipX}/>}
   </div>;
 }
 
