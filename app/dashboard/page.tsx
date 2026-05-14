@@ -729,24 +729,39 @@ const ARRIVAL_TODAY_DATA: ArrivalRow[] = [
 ];
 
 const CHECKOUT_TODAY_DATA: ArrivalRow[] = [
-  {sts:"CO",stt:2,folio:"247796",conf:"1089823",title:"MRS", name:"NGUYEN THI VUI",        rate:760000,  vip:false,rm:912,type:"SUPDN",booked:"SUPDN",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"224988",bkSts:"CheckedIn",nat:"VNM"},
-  {sts:"CO",stt:2,folio:"248706",conf:"1089766",title:"MR",  name:"NGUYEN VAN MANH",      rate:1500000, vip:false,rm:302,type:"PREPM",booked:"PREPM",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"SHB BANK",           sales:"224856",bkSts:"CheckedIn",nat:"VNM"},
-  {sts:"CO",stt:2,folio:"248703",conf:"1089766",title:"MRS", name:"VU THI NGUYET ANH",    rate:1900000, vip:false,rm:303,type:"AVTFM",booked:"AVTFM",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"SHB BANK",           sales:"224853",bkSts:"CheckedIn",nat:"VNM"},
-  {sts:"CO",stt:2,folio:"248033",conf:"1089381",title:"MR",  name:"ANG YU YUAN",           rate:1200000, vip:false,rm:605,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"Matsui Solutions VN", sales:"223743",bkSts:"CheckedIn",nat:"SGP"},
-  {sts:"CO",stt:2,folio:"248358",conf:"1089584",title:"MR",  name:"Tan AIK THENG Jeremy",  rate:1200000, vip:false,rm:705,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"224257",bkSts:"CheckedIn",nat:"SGP"},
-  {sts:"CO",stt:2,folio:"244959",conf:"1087961",title:"MR",  name:"MAK FOOK HENG",         rate:1104000, vip:false,rm:806,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"219042",bkSts:"CheckedIn",nat:"SGP"},
-  {sts:"CO",stt:2,folio:"244958",conf:"1087961",title:"MR",  name:"WONG KOON SAI",         rate:1104000, vip:false,rm:807,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"AGODA B",           sales:"219041",bkSts:"CheckedIn",nat:"SGP"},
-  {sts:"CO",stt:2,folio:"244958",conf:"",       title:"MRS", name:"NGUYEN THI TUOI",       rate:0,       vip:false,rm:807,type:"",     booked:"",      arrival:"11/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"",                 sales:"224980",bkSts:"",        nat:"VNM"},
-  {sts:"CO",stt:2,folio:"244962",conf:"1087961",title:"MR",  name:"MAK FOOK MING",         rate:1104000, vip:false,rm:808,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"219044",bkSts:"CheckedIn",nat:"SGP"},
-  {sts:"CO",stt:2,folio:"244961",conf:"1087961",title:"MR",  name:"CHUA CHIN HER",         rate:1104000, vip:false,rm:811,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"219043",bkSts:"CheckedIn",nat:"SGP"},
-  {sts:"CO",stt:2,folio:"246021",conf:"1088383",title:"MRS", name:"NICHELLE AMELIA DARMAWAN",rate:1847115,vip:false,rm:502,type:"PREPM",booked:"PREPM",arrival:"10/05/2026",departure:"14/05/2026",adtCh:"3/0",shr:false,company:"TRAVELOKA",       sales:"220662",bkSts:"CheckedIn",nat:"IDN"},
-  {sts:"CO",stt:2,folio:"246021",conf:"",       title:"MRS", name:"EVANIAAUDREY SUSANTO",  rate:0,       vip:false,rm:502,type:"",     booked:"",      arrival:"10/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225116",bkSts:"",        nat:"IDN"},
-  {sts:"CO",stt:2,folio:"246021",conf:"",       title:"MRS", name:"YENNI WINATA",          rate:0,       vip:false,rm:502,type:"",     booked:"",      arrival:"10/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225117",bkSts:"",        nat:"IDN"},
-  {sts:"CO",stt:2,folio:"248811",conf:"1089829",title:"MR",  name:"JEFFREY LAURENCE JACKEL",rate:1080000,vip:false,rm:509,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"VIETNAM TRAVEL GROU",sales:"225012",bkSts:"CheckedIn",nat:"AUS"},
-  {sts:"CO",stt:2,folio:"248811",conf:"",       title:"MRS", name:"JANET LEE ANNE WITHERS",rate:0,       vip:false,rm:509,type:"",     booked:"",      arrival:"11/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225013",bkSts:"",        nat:"AUS"},
-  {sts:"CO",stt:2,folio:"248675",conf:"1089747",title:"MRS", name:"PHAM THI YEN",         rate:1080000, vip:false,rm:308,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"CTY DU LICH HONG NGC",sales:"224823",bkSts:"CheckedIn",nat:"VNM"},
-  {sts:"CO",stt:2,folio:"248659",conf:"1089747",title:"MR",  name:"DO HUY HOANG",         rate:1080000, vip:false,rm:310,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"CTY DU LICH HONG NGC",sales:"224789",bkSts:"CheckedIn",nat:"VNM"},
-  {sts:"CO",stt:2,folio:"248660",conf:"1089747",title:"MR",  name:"TRAN VIET THANG",      rate:1080000, vip:false,rm:311,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"CTY DU LICH HONG NGC",sales:"224791",bkSts:"CheckedIn",nat:"VNM"},
+  // Phòng 302 - SHB BANK
+  {sts:"CO",stt:2,folio:"248706",conf:"1089766",title:"MR",  name:"NGUYEN VAN MANH",        rate:1500000, vip:false,rm:302,type:"PREPM",booked:"PREPM",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"SHB BANK",            sales:"224856",bkSts:"CheckedIn",nat:"VNM"},
+  // Phòng 303 - SHB BANK
+  {sts:"CO",stt:2,folio:"248703",conf:"1089766",title:"MRS", name:"VU THI NGUYET ANH",      rate:1900000, vip:false,rm:303,type:"AVTFM",booked:"AVTFM",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"SHB BANK",            sales:"224853",bkSts:"CheckedIn",nat:"VNM"},
+  // Phòng 308
+  {sts:"CO",stt:2,folio:"248675",conf:"1089747",title:"MRS", name:"PHAM THI YEN",           rate:1080000, vip:false,rm:308,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"CTY DU LICH HONG NGC", sales:"224823",bkSts:"CheckedIn",nat:"VNM"},
+  // Phòng 310 - 2 khách
+  {sts:"CO",stt:2,folio:"248659",conf:"1089747",title:"MR",  name:"DO HUY HOANG",           rate:1080000, vip:false,rm:310,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"CTY DU LICH HONG NGC", sales:"224789",bkSts:"CheckedIn",nat:"VNM"},
+  {sts:"CO",stt:2,folio:"248659",conf:"",       title:"MR",  name:"PHAM NGOC BA",           rate:1080000, vip:false,rm:310,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"CTY DU LICH HONG NGC", sales:"224790",bkSts:"CheckedIn",nat:"VNM"},
+  // Phòng 311
+  {sts:"CO",stt:2,folio:"248660",conf:"1089747",title:"MR",  name:"TRAN VIET THANG",        rate:1080000, vip:false,rm:311,type:"DLXTC",booked:"DLXTC",arrival:"12/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"CTY DU LICH HONG NGC", sales:"224791",bkSts:"CheckedIn",nat:"VNM"},
+  // Phòng 502 - TRAVELOKA - 3 khách
+  {sts:"CO",stt:2,folio:"246021",conf:"1088383",title:"MRS", name:"NICHELLE AMELIA DARMAWAN",rate:1847115,vip:false,rm:502,type:"PREPM",booked:"PREPM",arrival:"10/05/2026",departure:"14/05/2026",adtCh:"3/0",shr:false,company:"TRAVELOKA",            sales:"220662",bkSts:"CheckedIn",nat:"IDN"},
+  {sts:"CO",stt:2,folio:"246021",conf:"",       title:"MRS", name:"EVANIAAUDREY SUSANTO",    rate:1847115, vip:false,rm:502,type:"PREPM",booked:"PREPM",arrival:"10/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"TRAVELOKA",            sales:"225116",bkSts:"CheckedIn",nat:"IDN"},
+  {sts:"CO",stt:2,folio:"246021",conf:"",       title:"MRS", name:"YENNI WINATA",            rate:1847115, vip:false,rm:502,type:"PREPM",booked:"PREPM",arrival:"10/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"TRAVELOKA",            sales:"225117",bkSts:"CheckedIn",nat:"IDN"},
+  // Phòng 509 - VIETNAM TRAVEL GROUP - 2 khách
+  {sts:"CO",stt:2,folio:"248811",conf:"1089829",title:"MR",  name:"JEFFREY LAURENCE JACKEL", rate:1080000, vip:false,rm:509,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"VIETNAM TRAVEL GROU",  sales:"225012",bkSts:"CheckedIn",nat:"AUS"},
+  {sts:"CO",stt:2,folio:"248811",conf:"",       title:"MRS", name:"JANET LEE ANNE WITHERS",  rate:1080000, vip:false,rm:509,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"VIETNAM TRAVEL GROU",  sales:"225013",bkSts:"CheckedIn",nat:"AUS"},
+  // Phòng 605 - Matsui Solutions
+  {sts:"CO",stt:2,folio:"248033",conf:"1089381",title:"MR",  name:"ANG YU YUAN",             rate:1200000, vip:false,rm:605,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"Matsui Solutions VN",  sales:"223743",bkSts:"CheckedIn",nat:"SGP"},
+  // Phòng 705 - AGODA B
+  {sts:"CO",stt:2,folio:"248358",conf:"1089584",title:"MR",  name:"Tan AIK THENG Jeremy",    rate:1200000, vip:false,rm:705,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",             sales:"224257",bkSts:"CheckedIn",nat:"SGP"},
+  // Phòng 806 - AGODA B
+  {sts:"CO",stt:2,folio:"244959",conf:"1087961",title:"MR",  name:"MAK FOOK HENG",           rate:1104000, vip:false,rm:806,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",             sales:"219042",bkSts:"CheckedIn",nat:"SGP"},
+  // Phòng 807 - AGODA B - 2 khách
+  {sts:"CO",stt:2,folio:"244958",conf:"1087961",title:"MR",  name:"WONG KOON SAI",           rate:1104000, vip:false,rm:807,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"AGODA B",             sales:"219041",bkSts:"CheckedIn",nat:"SGP"},
+  {sts:"CO",stt:2,folio:"244958",conf:"",       title:"MRS", name:"NGUYEN THI TUOI",         rate:1104000, vip:false,rm:807,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"AGODA B",             sales:"224980",bkSts:"CheckedIn",nat:"VNM"},
+  // Phòng 808 - AGODA B
+  {sts:"CO",stt:2,folio:"244962",conf:"1087961",title:"MR",  name:"MAK FOOK MING",           rate:1104000, vip:false,rm:808,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",             sales:"219044",bkSts:"CheckedIn",nat:"SGP"},
+  // Phòng 811 - AGODA B
+  {sts:"CO",stt:2,folio:"244961",conf:"1087961",title:"MR",  name:"CHUA CHIN HER",           rate:1104000, vip:false,rm:811,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",             sales:"219043",bkSts:"CheckedIn",nat:"SGP"},
+  // Phòng 912 - AGODA B
+  {sts:"CO",stt:2,folio:"247796",conf:"1089823",title:"MRS", name:"NGUYEN THI VUI",          rate:760000,  vip:false,rm:912,type:"SUPDN",booked:"SUPDN",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",             sales:"224988",bkSts:"CheckedIn",nat:"VNM"},
 ];
 
 // ─────────────────────────────────────────────
