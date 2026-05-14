@@ -693,11 +693,103 @@ function ShiftReportTab() {
 }
 
 // ─────────────────────────────────────────────
+// MOCK DATA: arrival today list
+// ─────────────────────────────────────────────
+type ArrivalRow = {
+  sts:string; stt:number; folio:string; conf:string; title:string; name:string;
+  rate:number; vip:boolean; rm:number; type:string; booked:string;
+  arrival:string; departure:string; adtCh:string; shr:boolean;
+  company:string; sales:string; bkSts:string; nat:string;
+};
+const ARRIVAL_TODAY_DATA: ArrivalRow[] = [
+  {sts:"IH",stt:2,folio:"248813",conf:"1089831",title:"MR",  name:"PHAM NHAT MUON",      rate:850000,  vip:false,rm:105,type:"SUPDN",booked:"SUPDN",arrival:"11/05/2026",departure:"13/05/2026",adtCh:"2/0",shr:false,company:"WALKIN",           sales:"225015",bkSts:"Definite",nat:"VNM"},
+  {sts:"IH",stt:2,folio:"248813",conf:"",       title:"MS",  name:"VU THI THU TAM",       rate:0,       vip:false,rm:105,type:"",     booked:"",      arrival:"11/05/2026",departure:"13/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225016",bkSts:"",        nat:"VNM"},
+  {sts:"IH",stt:2,folio:"248706",conf:"1089766",title:"MR",  name:"NGUYEN VAN MANH",      rate:1500000, vip:false,rm:302,type:"PREPM",booked:"PREPM",arrival:"11/05/2026",departure:"12/05/2026",adtCh:"1/0",shr:false,company:"SHB BANK",           sales:"224856",bkSts:"Definite",nat:"VNM"},
+  {sts:"IH",stt:2,folio:"248703",conf:"1089766",title:"MRS", name:"VU THI NGUYET ANH",    rate:1900000, vip:false,rm:303,type:"AVTFM",booked:"AVTFM",arrival:"11/05/2026",departure:"12/05/2026",adtCh:"1/0",shr:false,company:"SHB BANK",           sales:"224853",bkSts:"Definite",nat:"VNM"},
+  {sts:"IH",stt:2,folio:"248675",conf:"1089747",title:"MRS", name:"PHAM THI YEN",         rate:1080000, vip:false,rm:308,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"13/05/2026",adtCh:"1/0",shr:false,company:"CTY DU LICH HONG NGC",sales:"224823",bkSts:"Definite",nat:"VNM"},
+  {sts:"IH",stt:2,folio:"248659",conf:"1089747",title:"MR",  name:"DO HUY HOANG",         rate:1080000, vip:false,rm:310,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"13/05/2026",adtCh:"2/0",shr:false,company:"CTY DU LICH HONG NGC",sales:"224789",bkSts:"Definite",nat:"VNM"},
+  {sts:"IH",stt:2,folio:"248659",conf:"",       title:"MR",  name:"PHAM NGOC BA",         rate:0,       vip:false,rm:310,type:"",     booked:"",      arrival:"11/05/2026",departure:"13/05/2026",adtCh:"",   shr:false,company:"",                 sales:"224790",bkSts:"",        nat:"VNM"},
+  {sts:"IH",stt:2,folio:"248660",conf:"1089747",title:"MR",  name:"TRAN VIET THANG",      rate:1080000, vip:false,rm:311,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"13/05/2026",adtCh:"1/0",shr:false,company:"CTY DU LICH HONG NGC",sales:"224791",bkSts:"Definite",nat:"VNM"},
+  {sts:"IH",stt:2,folio:"246021",conf:"1088383",title:"MRS", name:"NICHELLE AMELIA DARMAWAN",rate:1847115,vip:false,rm:502,type:"PREPM",booked:"PREPM",arrival:"11/05/2026",departure:"13/05/2026",adtCh:"3/0",shr:false,company:"TRAVELOKA",       sales:"220662",bkSts:"Definite",nat:"IDN"},
+  {sts:"IH",stt:2,folio:"246021",conf:"",       title:"MRS", name:"EVANIAAUDREY SUSANTO",  rate:0,       vip:false,rm:502,type:"",     booked:"",      arrival:"11/05/2026",departure:"13/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225116",bkSts:"",        nat:"IDN"},
+  {sts:"IH",stt:2,folio:"246021",conf:"",       title:"MRS", name:"YENNI WINATA",          rate:0,       vip:false,rm:502,type:"",     booked:"",      arrival:"11/05/2026",departure:"13/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225117",bkSts:"",        nat:"IDN"},
+  {sts:"IH",stt:2,folio:"248811",conf:"1089829",title:"MR",  name:"JEFFREY LAURENCE JACKEL",rate:1080000,vip:false,rm:509,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"13/05/2026",adtCh:"2/0",shr:false,company:"VIETNAM TRAVEL GROU",sales:"225012",bkSts:"Definite",nat:"AUS"},
+  {sts:"IH",stt:2,folio:"248811",conf:"",       title:"MRS", name:"JANET LEE ANNE WITHERS",rate:0,       vip:false,rm:509,type:"",     booked:"",      arrival:"11/05/2026",departure:"13/05/2026",adtCh:"",   shr:false,company:"",                 sales:"225013",bkSts:"",        nat:"AUS"},
+  {sts:"IH",stt:2,folio:"248033",conf:"1089381",title:"MR",  name:"ANG YU YUAN",           rate:1200000, vip:false,rm:605,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"15/05/2026",adtCh:"1/0",shr:false,company:"Matsui Solutions VN", sales:"223743",bkSts:"Definite",nat:"SGP"},
+  {sts:"IH",stt:2,folio:"248358",conf:"1089584",title:"MR",  name:"Tan AIK THENG Jeremy",  rate:1200000, vip:false,rm:705,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"13/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"224257",bkSts:"Definite",nat:"SGP"},
+  {sts:"IH",stt:2,folio:"244959",conf:"1087961",title:"MR",  name:"MAK FOOK HENG",         rate:1104000, vip:false,rm:806,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"219042",bkSts:"Definite",nat:"SGP"},
+  {sts:"IH",stt:2,folio:"244958",conf:"1087961",title:"MR",  name:"WONG KOON SAI",         rate:1104000, vip:false,rm:807,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"2/0",shr:false,company:"AGODA B",           sales:"219041",bkSts:"Definite",nat:"SGP"},
+  {sts:"IH",stt:2,folio:"244958",conf:"",       title:"MRS", name:"NGUYEN THI TUOI",       rate:0,       vip:false,rm:807,type:"",     booked:"",      arrival:"11/05/2026",departure:"14/05/2026",adtCh:"",   shr:false,company:"",                 sales:"224980",bkSts:"",        nat:"VNM"},
+  {sts:"IH",stt:2,folio:"244962",conf:"1087961",title:"MR",  name:"MAK FOOK MING",         rate:1104000, vip:false,rm:808,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"219044",bkSts:"Definite",nat:"SGP"},
+  {sts:"IH",stt:2,folio:"244961",conf:"1087961",title:"MR",  name:"CHUA CHIN HER",         rate:1104000, vip:false,rm:811,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"14/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"219043",bkSts:"Definite",nat:"SGP"},
+  {sts:"IH",stt:2,folio:"248033",conf:"1088678",title:"MR",  name:"TRAN GIA BAO",          rate:950000,  vip:false,rm:902,type:"PREDM",booked:"PREDM",arrival:"11/05/2026",departure:"16/05/2026",adtCh:"1/0",shr:false,company:"",                  sales:"221788",bkSts:"Definite",nat:"VNM"},
+  {sts:"IH",stt:2,folio:"246416",conf:"1088541",title:"MRS", name:"NGUYEN THI PHUONG",     rate:950000,  vip:false,rm:910,type:"DLXTC",booked:"DLXTC",arrival:"11/05/2026",departure:"16/05/2026",adtCh:"2/0",shr:false,company:"CONG TY CO PHAN KHA",sales:"221233",bkSts:"Definite",nat:"VNM"},
+  {sts:"IH",stt:2,folio:"246416",conf:"",       title:"MRS", name:"HO QUE THUONG",         rate:0,       vip:false,rm:910,type:"",     booked:"",      arrival:"11/05/2026",departure:"16/05/2026",adtCh:"",   shr:false,company:"",                  sales:"221234",bkSts:"",        nat:"VNM"},
+  {sts:"IH",stt:2,folio:"247796",conf:"1089823",title:"MRS", name:"NGUYEN THI VUI",        rate:760000,  vip:false,rm:912,type:"SUPDN",booked:"SUPDN",arrival:"11/05/2026",departure:"12/05/2026",adtCh:"1/0",shr:false,company:"AGODA B",           sales:"224988",bkSts:"Definite",nat:"VNM"},
+];
+
+// ─────────────────────────────────────────────
 // SEARCH TAB (Tìm kiếm khách hàng)
 // ─────────────────────────────────────────────
 function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
+  const [guestInfo,setGuestInfo]=useState("");
+  const [roomInfo,setRoomInfo]=useState("");
+  const [inHouse,setInHouse]=useState(false);
+  const [arrivalDate,setArrivalDate]=useState(true);
+  const [arrivalFrom,setArrivalFrom]=useState("2026-05-11");
+  const [arrivalTo,setArrivalTo]=useState("2026-05-11");
+  // advanced
+  const [lastName,setLastName]=useState("");
+  const [firstName,setFirstName]=useState("");
+  const [company,setCompany]=useState("");
+  const [filterStatuses,setFilterStatuses]=useState({Reserved:true,"In House":true,"Arrival Today":true,"C/O Today":true,Definite:true,Waiting:true});
+  // result state
+  const [results,setResults]=useState<ArrivalRow[]|null>(null);
+  const [searched,setSearched]=useState(false);
+  const [selectedRow,setSelectedRow]=useState<string|null>(null);
+  const [sortCol,setSortCol]=useState<keyof ArrivalRow>("rm");
+  const [sortAsc,setSortAsc]=useState(true);
+
+  const handleSort=(col:keyof ArrivalRow)=>{if(sortCol===col)setSortAsc(a=>!a);else{setSortCol(col);setSortAsc(true);}};
+
+  const doSearch=()=>{
+    let rows=[...ARRIVAL_TODAY_DATA];
+    // filter by name
+    const q=(guestInfo+lastName+firstName).toLowerCase().trim();
+    if(q) rows=rows.filter(r=>r.name.toLowerCase().includes(q)||r.folio.includes(q));
+    // filter by room
+    if(roomInfo.trim()) rows=rows.filter(r=>String(r.rm).includes(roomInfo.trim())||r.type.toLowerCase().includes(roomInfo.toLowerCase()));
+    // filter by company
+    if(company.trim()) rows=rows.filter(r=>r.company.toLowerCase().includes(company.toLowerCase()));
+    // sort
+    rows.sort((a,b)=>{
+      const av=a[sortCol],bv=b[sortCol];
+      if(typeof av==="number"&&typeof bv==="number") return sortAsc?av-bv:bv-av;
+      return sortAsc?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
+    });
+    setResults(rows);
+    setSearched(true);
+    setSelectedRow(null);
+  };
+
+  const handleReset=()=>{setResults(null);setSearched(false);setGuestInfo("");setRoomInfo("");setLastName("");setFirstName("");setCompany("");setSelectedRow(null);};
+
+  const SortTh=({col,label,className=""}:{col:keyof ArrivalRow;label:string;className?:string})=>(
+    <th onClick={()=>handleSort(col)} className={`px-2 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium cursor-pointer hover:text-[#1a1a1a] select-none whitespace-nowrap ${className}`}>
+      {label}{sortCol===col?<span className="ml-0.5 text-[#0f0f0e]">{sortAsc?"↑":"↓"}</span>:<span className="ml-0.5 opacity-0">↑</span>}
+    </th>
+  );
+
+  const natColor=(nat:string)=>{
+    if(nat==="VNM") return "text-[#15803d]";
+    if(nat==="SGP") return "text-[#1d4ed8]";
+    if(nat==="AUS") return "text-[#b45309]";
+    if(nat==="IDN") return "text-[#7c3aed]";
+    return "text-[#374151]";
+  };
+
   return (
-    <div className="p-7 max-w-5xl mx-auto space-y-4">
+    <div className="p-7 max-w-6xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-[15px] font-semibold">Tìm kiếm</h2>
@@ -708,74 +800,202 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
           <button className="px-4 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">+ New Reservation</button>
         </div>
       </div>
+
+      {/* Search form */}
       <Card className="p-6">
         <SectionTitle>Tìm kiếm khách hàng</SectionTitle>
-        <div className="grid grid-cols-2 gap-x-8">
+        <div className="grid grid-cols-2 gap-x-8 mb-4">
           <div className="space-y-2.5">
-            {[{label:"Thông tin khách",ph:""},{label:"Số phòng / Loại",ph:"Số phòng hoặc loại phòng"},{label:"Mã đoàn",ph:""},{label:"Member ID",ph:""}].map(({label,ph})=>(
-              <FieldRow key={label} label={label}><input className={inputCls} placeholder={ph}/></FieldRow>
-            ))}
+            <FieldRow label="Thông tin khách"><input className={inputCls} value={guestInfo} onChange={e=>setGuestInfo(e.target.value)} placeholder="Tên, folio..."/></FieldRow>
+            <FieldRow label="Số phòng / Loại"><input className={inputCls} value={roomInfo} onChange={e=>setRoomInfo(e.target.value)} placeholder="Số phòng hoặc loại phòng"/></FieldRow>
+            <FieldRow label="Mã đoàn"><input className={inputCls}/></FieldRow>
+            <FieldRow label="Member ID"><input className={inputCls}/></FieldRow>
           </div>
           <div className="space-y-2.5">
-            {[1,2,3,4].map(i=><FieldRow key={i} label={`Thông tin ${i}`}><input className={inputCls}/></FieldRow>)}
+            <FieldRow label="Info 1"><input className={inputCls}/></FieldRow>
+            <FieldRow label="Info 2"><input className={inputCls}/></FieldRow>
+            <FieldRow label="Info 3"><input className={inputCls}/></FieldRow>
+            <FieldRow label="Info 4"><input className={inputCls}/></FieldRow>
           </div>
         </div>
-        <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#f3f4f6]">
+        <div className="flex items-center justify-between pt-4 border-t border-[#f3f4f6]">
           <label className="flex items-center gap-1.5 text-[12px] text-[#6b7280] cursor-pointer">
-            <input type="checkbox" className="w-3 h-3 accent-[#0f0f0e]"/> In House
+            <input type="checkbox" checked={inHouse} onChange={e=>setInHouse(e.target.checked)} className="w-3 h-3 accent-[#0f0f0e]"/> In House
           </label>
-          <button className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">
-            <Search size={12} strokeWidth={1.5}/> Tìm kiếm
-          </button>
+          <div className="flex gap-2">
+            <button onClick={handleReset} className="px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Xóa</button>
+            <button onClick={doSearch} className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">
+              <Search size={12} strokeWidth={1.5}/> Tìm kiếm
+            </button>
+          </div>
         </div>
       </Card>
+
+      {/* Advanced search */}
       <Card className="p-6">
         <SectionTitle>Tìm kiếm nâng cao</SectionTitle>
-        <div className="grid grid-cols-2 gap-x-8 mb-5">
+        <div className="grid grid-cols-2 gap-x-8 mb-4">
           <div className="space-y-2.5">
-            {["Họ","Tên","Mã ngoài"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}
+            <FieldRow label="Họ"><input className={inputCls} value={lastName} onChange={e=>setLastName(e.target.value)}/></FieldRow>
+            <FieldRow label="Tên"><input className={inputCls} value={firstName} onChange={e=>setFirstName(e.target.value)}/></FieldRow>
+            <FieldRow label="Mã ngoài"><input className={inputCls}/></FieldRow>
           </div>
           <div className="space-y-2.5">
-            {["Công ty","Quốc gia","Market Segment"].map(lbl=><FieldRow key={lbl} label={lbl}><input className={inputCls}/></FieldRow>)}
+            <FieldRow label="Công ty"><input className={inputCls} value={company} onChange={e=>setCompany(e.target.value)}/></FieldRow>
+            <FieldRow label="Quốc gia"><input className={inputCls}/></FieldRow>
+            <FieldRow label="Market Segment"><input className={inputCls}/></FieldRow>
           </div>
         </div>
+
+        {/* Arrival date filter */}
+        <div className="border border-[#e5e7eb] rounded-[2px] p-4 mb-4 bg-[#fafafa]">
+          <div className="flex flex-wrap items-center gap-6">
+            <label className="flex items-center gap-2 text-[12px] text-[#374151] font-medium cursor-pointer">
+              <input type="checkbox" checked={arrivalDate} onChange={e=>setArrivalDate(e.target.checked)} className="w-3.5 h-3.5 accent-[#0f0f0e]"/>
+              Arrival date
+            </label>
+            <div className="flex items-center gap-2 text-[12px]">
+              <span className="text-[#9ca3af]">From</span>
+              <input type="date" value={arrivalFrom} onChange={e=>setArrivalFrom(e.target.value)} disabled={!arrivalDate} className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1 outline-none focus:border-[#6b7280] bg-white disabled:opacity-40"/>
+              <span className="text-[#9ca3af]">To</span>
+              <input type="date" value={arrivalTo} onChange={e=>setArrivalTo(e.target.value)} disabled={!arrivalDate} className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1 outline-none focus:border-[#6b7280] bg-white disabled:opacity-40"/>
+            </div>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between border-t border-[#f3f4f6] pt-4">
           <div className="flex flex-wrap gap-4">
-            {["Reserved","In House","Arrival Today","C/O Today","Definite","Waiting"].map(s=>(
+            {(Object.keys(filterStatuses) as (keyof typeof filterStatuses)[]).map(s=>(
               <label key={s} className="flex items-center gap-1.5 text-[11px] text-[#6b7280] cursor-pointer hover:text-[#1a1a1a]">
-                <input type="checkbox" defaultChecked className="w-3 h-3 accent-[#0f0f0e]"/> {s}
+                <input type="checkbox" checked={filterStatuses[s]} onChange={e=>setFilterStatuses(f=>({...f,[s]:e.target.checked}))} className="w-3 h-3 accent-[#0f0f0e]"/> {s}
               </label>
             ))}
           </div>
-          <button className="px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Advanced Search</button>
+          <button onClick={doSearch} className="px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Advanced Search</button>
         </div>
       </Card>
-      <Card className="overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Waiting List — Chưa gán phòng</SectionTitle></div>
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
-              {["Folio","Tên khách","Loại phòng","Check-in","Check-out",""].map(h=>(
-                <th key={h} className="px-6 py-3 text-[9px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {WAITING_CUSTOMERS.map(cus=>(
-              <tr key={cus.id} className="border-b border-[#f9f9f7] hover:bg-[#fafafa] transition-colors">
-                <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.folio}</td>
-                <td className="px-6 py-4 text-[13px] font-medium">{cus.name}</td>
-                <td className="px-6 py-4"><span className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded-[2px] text-[#374151] font-medium mono">{cus.roomType}</span></td>
-                <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkIn}</td>
-                <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkOut}</td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={onAssignRoom} className="text-[11px] px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Gán phòng</button>
-                </td>
+
+      {/* Results table — shown after search */}
+      {searched && results !== null && (
+        <Card className="overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#f3f4f6] flex items-center justify-between">
+            <div>
+              <SectionTitle>Kết quả tìm kiếm</SectionTitle>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="mono text-[11px] text-[#9ca3af]">Folio 1 to {results.length} of {results.length}</span>
+              <span className="text-[11px] text-[#6b7280] italic">Click vào tiêu đề cột để sắp xếp</span>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse" style={{minWidth:1100}}>
+              <thead>
+                <tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa]">
+                  <SortTh col="sts"       label="Sts"       className="pl-4"/>
+                  <SortTh col="stt"       label="Stt"/>
+                  <SortTh col="folio"     label="Folio #"/>
+                  <SortTh col="conf"      label="Conf #"/>
+                  <SortTh col="title"     label="Title"/>
+                  <SortTh col="name"      label="Tên khách"/>
+                  <SortTh col="rate"      label="Rate"/>
+                  <SortTh col="rm"        label="Rm"/>
+                  <SortTh col="type"      label="Type"/>
+                  <SortTh col="booked"    label="Booked"/>
+                  <SortTh col="arrival"   label="Arrival"/>
+                  <SortTh col="departure" label="Departure"/>
+                  <SortTh col="adtCh"     label="Adt/Ch"/>
+                  <SortTh col="company"   label="Company"/>
+                  <SortTh col="sales"     label="Sales"/>
+                  <SortTh col="bkSts"     label="BkSts"/>
+                  <SortTh col="nat"       label="NAT"       className="pr-4"/>
+                </tr>
+              </thead>
+              <tbody>
+                {results.length===0?(
+                  <tr><td colSpan={17} className="px-5 py-10 text-center text-[12px] text-[#9ca3af]">Không tìm thấy khách nào phù hợp</td></tr>
+                ):results.map((r,i)=>{
+                  const isMain=!!r.conf;
+                  const isSelected=selectedRow===r.folio+r.sales;
+                  const rowBg=isSelected?"bg-[#fffbeb]":isMain?(i%2===0?"bg-white":"bg-[#fafafa]"):"bg-[#f5f9ff]";
+                  return (
+                    <tr key={r.folio+r.sales+i}
+                      onClick={()=>setSelectedRow(isSelected?null:r.folio+r.sales)}
+                      className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}>
+                      <td className="pl-4 py-2 text-[11px] font-semibold mono text-[#2d6a4f]">{r.sts}</td>
+                      <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.stt}</td>
+                      <td className="px-2 py-2 mono text-[11px] font-medium text-[#374151]">{r.folio}</td>
+                      <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.conf}</td>
+                      <td className="px-2 py-2 text-[11px] text-[#6b7280]">{r.title}</td>
+                      <td className="px-2 py-2 text-[12px] font-medium max-w-[160px] truncate">{r.name}</td>
+                      <td className="px-2 py-2 mono text-[11px] text-right">{r.rate>0?r.rate.toLocaleString():""}</td>
+                      <td className="px-2 py-2 mono text-[12px] font-semibold text-[#374151]">{r.rm||""}</td>
+                      <td className="px-2 py-2">
+                        {r.type&&<span className="mono text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium" style={{background:"#f0fdf4",color:"#15803d",border:"1px solid #86efac"}}>{r.type}</span>}
+                      </td>
+                      <td className="px-2 py-2 mono text-[10px] text-[#6b7280]">{r.booked}</td>
+                      <td className="px-2 py-2 mono text-[11px] text-[#374151]">{r.arrival}</td>
+                      <td className="px-2 py-2 mono text-[11px] text-[#374151]">{r.departure}</td>
+                      <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.adtCh}</td>
+                      <td className="px-2 py-2 text-[11px] text-[#6b7280] max-w-[120px] truncate">{r.company}</td>
+                      <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.sales}</td>
+                      <td className="px-2 py-2">
+                        {r.bkSts&&<span className="text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]">{r.bkSts}</span>}
+                      </td>
+                      <td className={`pr-4 py-2 mono text-[11px] font-semibold ${natColor(r.nat)}`}>{r.nat}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {/* Bottom action bar */}
+          <div className="px-5 py-3 border-t border-[#e5e7eb] bg-[#fafafa] flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 text-[12px] text-[#6b7280] mr-3">
+              <span className="font-medium text-[#374151]">Total: {results.length}</span>
+            </div>
+            {selectedRow&&(
+              <>
+                <div className="w-px h-4 bg-[#e5e7eb]"/>
+                {["Confirm","Reg Card","Copy Rsv","Cancel C/I","Change Folio","View"].map(btn=>(
+                  <button key={btn} className="px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium bg-white hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors">{btn}</button>
+                ))}
+              </>
+            )}
+            <div className="flex-1"/>
+            <button onClick={handleReset} className="px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors">Xóa kết quả</button>
+          </div>
+        </Card>
+      )}
+
+      {/* Waiting list — always shown */}
+      {!searched && (
+        <Card className="overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Waiting List — Chưa gán phòng</SectionTitle></div>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
+                {["Folio","Tên khách","Loại phòng","Check-in","Check-out",""].map(h=>(
+                  <th key={h} className="px-6 py-3 text-[9px] tracking-[0.12em] uppercase text-[#9ca3af] font-medium">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+            </thead>
+            <tbody>
+              {WAITING_CUSTOMERS.map(cus=>(
+                <tr key={cus.id} className="border-b border-[#f9f9f7] hover:bg-[#fafafa] transition-colors">
+                  <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.folio}</td>
+                  <td className="px-6 py-4 text-[13px] font-medium">{cus.name}</td>
+                  <td className="px-6 py-4"><span className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded-[2px] text-[#374151] font-medium mono">{cus.roomType}</span></td>
+                  <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkIn}</td>
+                  <td className="px-6 py-4 mono text-[12px] text-[#9ca3af]">{cus.checkOut}</td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={onAssignRoom} className="text-[11px] px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors font-medium">Gán phòng</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
     </div>
   );
 }
