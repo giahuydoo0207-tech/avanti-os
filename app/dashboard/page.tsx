@@ -942,10 +942,10 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
               <span className="text-[11px] text-[#6b7280] italic">Click vào tiêu đề cột để sắp xếp</span>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto" style={{maxHeight:"calc(100vh - 420px)"}}>
             <table className="w-full text-left border-collapse" style={{minWidth:1100}}>
               <thead>
-                <tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa]">
+                <tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa] sticky top-0 z-10">
                   <SortTh col="sts"       label="Sts"       className="pl-4"/>
                   <SortTh col="stt"       label="Stt"/>
                   <SortTh col="folio"     label="Folio #"/>
