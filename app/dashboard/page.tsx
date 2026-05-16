@@ -942,7 +942,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
               <span className="text-[11px] text-[#6b7280] italic">Click vào tiêu đề cột để sắp xếp</span>
             </div>
           </div>
-          <div className="overflow-x-auto overflow-y-auto" style={{maxHeight:"calc(100vh - 420px)"}}>
+          <div className="overflow-x-auto overflow-y-auto" style={{maxHeight:"calc(100vh - 280px)"}}>
             <table className="w-full text-left border-collapse" style={{minWidth:1100}}>
               <thead>
                 <tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa] sticky top-0 z-10">
@@ -956,23 +956,23 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                   <SortTh col="rm"        label="Rm"/>
                   <SortTh col="type"      label="Type"/>
                   <SortTh col="booked"    label="Booked"/>
-                  <SortTh col="arrival"   label="Arrival"/>
-                  <SortTh col="departure" label="Departure"/>
+                  <SortTh col="arrival"   label="Arrival"  className="hidden"/>
+                  <SortTh col="departure" label="Departure" className="hidden"/>
                   <SortTh col="adtCh"     label="Adt/Ch"/>
                   <SortTh col="company"   label="Company"/>
-                  <SortTh col="sales"     label="Sales"/>
-                  <SortTh col="bkSts"     label="BkSts"/>
-                  <SortTh col="nat"       label="NAT"       className="pr-4"/>
+                  <SortTh col="sales"     label="Sales"    className="hidden"/>
+                  <SortTh col="bkSts"     label="BkSts"    className="hidden"/>
+                  <SortTh col="nat"       label="NAT"       className="hidden"/>
                 </tr>
               </thead>
               <tbody>
                 {results.length===0?(
                   <tr><td colSpan={17} className="px-5 py-10 text-center text-[12px] text-[#9ca3af]">Không tìm thấy khách nào phù hợp</td></tr>
-                ):results.map((r,i)=>{
+                ):results.flatMap((r,i)=>{
                   const isMain=!!r.conf;
                   const isSelected=selectedRow===r.folio+r.sales;
                   const rowBg=isSelected?"bg-[#fffbeb]":isMain?(i%2===0?"bg-white":"bg-[#fafafa]"):"bg-[#f5f9ff]";
-                  return (
+                  const mainRow=(
                     <tr key={r.folio+r.sales+i}
                       onClick={()=>setSelectedRow(isSelected?null:r.folio+r.sales)}
                       className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}>
@@ -988,17 +988,25 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                         {r.type&&<span className="mono text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium" style={{background:"#f0fdf4",color:"#15803d",border:"1px solid #86efac"}}>{r.type}</span>}
                       </td>
                       <td className="px-2 py-2 mono text-[10px] text-[#6b7280]">{r.booked}</td>
-                      <td className="px-2 py-2 mono text-[11px] text-[#374151]">{r.arrival}</td>
-                      <td className="px-2 py-2 mono text-[11px] text-[#374151]">{r.departure}</td>
                       <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.adtCh}</td>
                       <td className="px-2 py-2 text-[11px] text-[#6b7280] max-w-[120px] truncate">{r.company}</td>
-                      <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.sales}</td>
-                      <td className="px-2 py-2">
-                        {r.bkSts&&<span className="text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]">{r.bkSts}</span>}
-                      </td>
-                      <td className={`pr-4 py-2 mono text-[11px] font-semibold ${natColor(r.nat)}`}>{r.nat}</td>
                     </tr>
                   );
+                  if(!isSelected) return [mainRow];
+                  const expandRow=(
+                    <tr key={r.folio+r.sales+i+"exp"} className="bg-[#fffbeb] border-b border-[#f3f4f6]">
+                      <td colSpan={12} className="px-4 py-3">
+                        <div className="flex flex-wrap gap-x-8 gap-y-1 text-[11px]">
+                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">Arrival</span><span className="mono font-medium text-[#374151]">{r.arrival}</span></span>
+                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">Departure</span><span className="mono font-medium text-[#374151]">{r.departure}</span></span>
+                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">Sales</span><span className="mono text-[#6b7280]">{r.sales}</span></span>
+                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">BkSts</span>{r.bkSts&&<span className="text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]">{r.bkSts}</span>}</span>
+                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">NAT</span><span className={`mono font-semibold ${natColor(r.nat)}`}>{r.nat}</span></span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                  return [mainRow, expandRow];
                 })}
               </tbody>
             </table>
