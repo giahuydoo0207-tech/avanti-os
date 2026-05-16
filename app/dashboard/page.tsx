@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import React, { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import {
@@ -768,6 +769,7 @@ const CHECKOUT_TODAY_DATA: ArrivalRow[] = [
 // SEARCH TAB (Tìm kiếm khách hàng)
 // ─────────────────────────────────────────────
 function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
+  const router = useRouter();
   const [guestInfo,setGuestInfo]=useState("");
   const [roomInfo,setRoomInfo]=useState("");
   const [inHouse,setInHouse]=useState(false);
@@ -927,115 +929,114 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
         </div>
       </Card>
 
-      {/* Results table — shown after search */}
+      {/* Results — fullscreen page, ẩn form và sidebar context */}
       {searched && results !== null && (
-        <Card className="overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#f3f4f6] flex items-center justify-between">
+        <div className="fixed inset-0 z-30 bg-[#f2f2ef] flex flex-col" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
+          {/* Header */}
+          <div className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0" style={{height:52}}>
             <div className="flex items-center gap-3">
-              <SectionTitle>{searchMode==="departure"?"Danh sách Check-out hôm nay":"Danh sách Check-in hôm nay"}</SectionTitle>
-              {searchMode==="departure"
-                ? <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#fff1f2] text-[#c1121f] border border-[#fca5a5]">C/O Today</span>
-                : <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#f0fdf4] text-[#15803d] border border-[#86efac]">Arrival Today</span>}
+              <button onClick={handleReset} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors">
+                <ChevronLeft size={13} strokeWidth={1.5}/> Quay lại
+              </button>
+              <span className="text-[#e5e7eb]">|</span>
+              <span className="text-[12px] text-[#9ca3af]">Tìm kiếm</span>
+              <ChevronRight size={11} className="text-[#d1d5db]" strokeWidth={1.5}/>
+              <span className="text-[12px] font-medium text-[#1a1a1a]">
+                {searchMode==="departure" ? "Danh sách Check-out" : "Danh sách Check-in"}
+              </span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="mono text-[11px] text-[#9ca3af]">Folio 1 to {results.length} of {results.length}</span>
-              <span className="text-[11px] text-[#6b7280] italic">Click vào tiêu đề cột để sắp xếp</span>
-            </div>
-          </div>
-          <div className="overflow-x-auto overflow-y-auto" style={{maxHeight:"calc(100vh - 280px)"}}>
-            <table className="w-full text-left border-collapse" style={{minWidth:1100}}>
-              <thead>
-                <tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa] sticky top-0 z-10">
-                  <SortTh col="sts"       label="Sts"       className="pl-4"/>
-                  <SortTh col="stt"       label="Stt"/>
-                  <SortTh col="folio"     label="Folio #"/>
-                  <SortTh col="conf"      label="Conf #"/>
-                  <SortTh col="title"     label="Title"/>
-                  <SortTh col="name"      label="Tên khách"/>
-                  <SortTh col="rate"      label="Rate"/>
-                  <SortTh col="rm"        label="Rm"/>
-                  <SortTh col="type"      label="Type"/>
-                  <SortTh col="booked"    label="Booked"/>
-                  <SortTh col="arrival"   label="Arrival"  className="hidden"/>
-                  <SortTh col="departure" label="Departure" className="hidden"/>
-                  <SortTh col="adtCh"     label="Adt/Ch"/>
-                  <SortTh col="company"   label="Company"/>
-                  <SortTh col="sales"     label="Sales"    className="hidden"/>
-                  <SortTh col="bkSts"     label="BkSts"    className="hidden"/>
-                  <SortTh col="nat"       label="NAT"       className="hidden"/>
-                </tr>
-              </thead>
-              <tbody>
-                {results.length===0?(
-                  <tr><td colSpan={17} className="px-5 py-10 text-center text-[12px] text-[#9ca3af]">Không tìm thấy khách nào phù hợp</td></tr>
-                ):results.flatMap((r,i)=>{
-                  const isMain=!!r.conf;
-                  const isSelected=selectedRow===r.folio+r.sales;
-                  const rowBg=isSelected?"bg-[#fffbeb]":isMain?(i%2===0?"bg-white":"bg-[#fafafa]"):"bg-[#f5f9ff]";
-                  const mainRow=(
-                    <tr key={r.folio+r.sales+i}
-                      onClick={()=>setSelectedRow(isSelected?null:r.folio+r.sales)}
-                      className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}>
-                      <td className={`pl-4 py-2 text-[11px] font-semibold mono ${r.sts==="CO"?"text-[#c1121f]":"text-[#2d6a4f]"}`}>{r.sts}</td>
-                      <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.stt}</td>
-                      <td className="px-2 py-2 mono text-[11px] font-medium text-[#374151]">{r.folio}</td>
-                      <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.conf}</td>
-                      <td className="px-2 py-2 text-[11px] text-[#6b7280]">{r.title}</td>
-                      <td className="px-2 py-2 text-[12px] font-medium max-w-[160px] truncate">{r.name}</td>
-                      <td className="px-2 py-2 mono text-[11px] text-right">{r.rate>0?r.rate.toLocaleString():""}</td>
-                      <td className="px-2 py-2 mono text-[12px] font-semibold text-[#374151]">{r.rm||""}</td>
-                      <td className="px-2 py-2">
-                        {r.type&&<span className="mono text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium" style={{background:"#f0fdf4",color:"#15803d",border:"1px solid #86efac"}}>{r.type}</span>}
-                      </td>
-                      <td className="px-2 py-2 mono text-[10px] text-[#6b7280]">{r.booked}</td>
-                      <td className="px-2 py-2 mono text-[11px] text-[#9ca3af]">{r.adtCh}</td>
-                      <td className="px-2 py-2 text-[11px] text-[#6b7280] max-w-[120px] truncate">{r.company}</td>
-                    </tr>
-                  );
-                  if(!isSelected) return [mainRow];
-                  const expandRow=(
-                    <tr key={r.folio+r.sales+i+"exp"} className="bg-[#fffbeb] border-b border-[#f3f4f6]">
-                      <td colSpan={12} className="px-4 py-3">
-                        <div className="flex flex-wrap gap-x-8 gap-y-1 text-[11px]">
-                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">Arrival</span><span className="mono font-medium text-[#374151]">{r.arrival}</span></span>
-                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">Departure</span><span className="mono font-medium text-[#374151]">{r.departure}</span></span>
-                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">Sales</span><span className="mono text-[#6b7280]">{r.sales}</span></span>
-                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">BkSts</span>{r.bkSts&&<span className="text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]">{r.bkSts}</span>}</span>
-                          <span><span className="text-[#9ca3af] uppercase tracking-wide text-[9px] mr-1.5">NAT</span><span className={`mono font-semibold ${natColor(r.nat)}`}>{r.nat}</span></span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                  return [mainRow, expandRow];
-                })}
-              </tbody>
-            </table>
-          </div>
-          {/* Bottom action bar */}
-          <div className="px-5 py-3 border-t border-[#e5e7eb] bg-[#fafafa] flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2 text-[12px] text-[#6b7280] mr-3">
-              <span className="font-medium text-[#374151]">Total: {results.length}</span>
-            </div>
-            {selectedRow&&(
-              <>
-                <div className="w-px h-4 bg-[#e5e7eb]"/>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 {searchMode==="departure"
-                  ? ["Check Out","View Folio","Post Charge","Print Bill","Reg Card","Change Folio"].map(btn=>(
-                      <button key={btn} className={`px-3 py-1.5 border rounded-[2px] text-[11px] font-medium transition-colors ${btn==="Check Out"?"bg-[#c1121f] text-white border-[#c1121f] hover:bg-[#9b1015]":"bg-white border-[#e5e7eb] hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e]"}`}>{btn}</button>
-                    ))
-                  : ["Confirm","Reg Card","Copy Rsv","Cancel C/I","Change Folio","View"].map(btn=>(
-                      <button key={btn} className="px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium bg-white hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors">{btn}</button>
-                    ))
-                }
-              </>
-            )}
-            <div className="flex-1"/>
-            <button onClick={handleReset} className="px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors">Xóa kết quả</button>
+                  ? <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#fff1f2] text-[#c1121f] border border-[#fca5a5]">C/O Today</span>
+                  : <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#f0fdf4] text-[#15803d] border border-[#86efac]">Arrival Today</span>}
+                <span className="mono text-[11px] text-[#9ca3af]">Folio 1 to {results.length} of {results.length}</span>
+              </div>
+              <span className="text-[11px] text-[#9ca3af] italic">Click vào tiêu đề cột để sắp xếp · Click dòng để xem chi tiết</span>
+            </div>
           </div>
-        </Card>
+
+          {/* Table */}
+          <div className="flex-1 overflow-auto px-7 py-5">
+            <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse" style={{minWidth:1100}}>
+                  <thead>
+                    <tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa] sticky top-0 z-10">
+                      <SortTh col="sts"       label="Sts"    className="pl-5"/>
+                      <SortTh col="stt"       label="Stt"/>
+                      <SortTh col="folio"     label="Folio #"/>
+                      <SortTh col="conf"      label="Conf #"/>
+                      <SortTh col="title"     label="Title"/>
+                      <SortTh col="name"      label="Tên khách"/>
+                      <SortTh col="rate"      label="Rate"/>
+                      <SortTh col="rm"        label="Rm"/>
+                      <SortTh col="type"      label="Type"/>
+                      <SortTh col="booked"    label="Booked"/>
+                      <SortTh col="arrival"   label="Arrival"/>
+                      <SortTh col="departure" label="Departure"/>
+                      <SortTh col="adtCh"     label="Adt/Ch"/>
+                      <SortTh col="company"   label="Company"/>
+                      <SortTh col="sales"     label="Sales"/>
+                      <SortTh col="bkSts"     label="BkSts"/>
+                      <SortTh col="nat"       label="NAT"    className="pr-5"/>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.length===0?(
+                      <tr><td colSpan={17} className="px-5 py-10 text-center text-[12px] text-[#9ca3af]">Không tìm thấy khách nào phù hợp</td></tr>
+                    ):results.flatMap((r,i)=>{
+                      const isMain=!!r.conf;
+                      const isSelected=selectedRow===r.folio+r.sales;
+                      const rowBg=isSelected?"bg-[#fffbeb]":isMain?(i%2===0?"bg-white":"bg-[#fafafa]"):"bg-[#f5f9ff]";
+                      const mainRow=(
+                        <tr key={r.folio+r.sales+i}
+                          onClick={()=>router.push(`/dashboard/folio/${r.sales}`)}
+                          className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}
+                          title="Click để xem chi tiết folio">
+                          <td className={`pl-5 py-2.5 text-[11px] font-semibold mono ${r.sts==="CO"?"text-[#c1121f]":"text-[#2d6a4f]"}`}>{r.sts}</td>
+                          <td className="px-2 py-2.5 mono text-[11px] text-[#9ca3af]">{r.stt}</td>
+                          <td className="px-2 py-2.5 mono text-[11px] font-medium text-[#374151]">{r.folio}</td>
+                          <td className="px-2 py-2.5 mono text-[11px] text-[#9ca3af]">{r.conf}</td>
+                          <td className="px-2 py-2.5 text-[11px] text-[#6b7280]">{r.title}</td>
+                          <td className="px-2 py-2.5 text-[12px] font-medium max-w-[160px] truncate">{r.name}</td>
+                          <td className="px-2 py-2.5 mono text-[11px] text-right">{r.rate>0?r.rate.toLocaleString():""}</td>
+                          <td className="px-2 py-2.5 mono text-[12px] font-semibold text-[#374151]">{r.rm||""}</td>
+                          <td className="px-2 py-2.5">
+                            {r.type&&<span className="mono text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium" style={{background:"#f0fdf4",color:"#15803d",border:"1px solid #86efac"}}>{r.type}</span>}
+                          </td>
+                          <td className="px-2 py-2.5 mono text-[10px] text-[#6b7280]">{r.booked}</td>
+                          <td className="px-2 py-2.5 mono text-[11px] text-[#374151]">{r.arrival}</td>
+                          <td className="px-2 py-2.5 mono text-[11px] text-[#374151]">{r.departure}</td>
+                          <td className="px-2 py-2.5 mono text-[11px] text-[#9ca3af]">{r.adtCh}</td>
+                          <td className="px-2 py-2.5 text-[11px] text-[#6b7280] max-w-[120px] truncate">{r.company}</td>
+                          <td className="px-2 py-2.5 mono text-[11px] text-[#9ca3af]">{r.sales}</td>
+                          <td className="px-2 py-2.5">
+                            {r.bkSts&&<span className="text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]">{r.bkSts}</span>}
+                          </td>
+                          <td className={`pr-5 py-2.5 mono text-[11px] font-semibold ${natColor(r.nat)}`}>{r.nat}</td>
+                        </tr>
+                      );
+                      return [mainRow];
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="bg-white border-t border-[#e5e7eb] px-7 py-3 flex items-center gap-3 shrink-0">
+            <span className="text-[12px] font-medium text-[#374151]">Total: {results.length}</span>
+            <div className="flex-1"/>
+            <button onClick={handleReset} className="flex items-center gap-1.5 px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors">
+              <ChevronLeft size={12} strokeWidth={1.5}/> Quay lại tìm kiếm
+            </button>
+          </div>
+        </div>
       )}
 
-      {/* Waiting list — always shown */}
+            {/* Waiting list — always shown */}
       {!searched && (
         <Card className="overflow-hidden">
           <div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Waiting List — Chưa gán phòng</SectionTitle></div>
