@@ -791,6 +791,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const [selectedRow,setSelectedRow]=useState<string|null>(null);
   const [sortCol,setSortCol]=useState<keyof ArrivalRow>("rm");
   const [sortAsc,setSortAsc]=useState(true);
+  const [checkInRow,setCheckInRow]=useState<ArrivalRow|null>(null);
 
   const handleSort=(col:keyof ArrivalRow)=>{if(sortCol===col)setSortAsc(a=>!a);else{setSortCol(col);setSortAsc(true);}};
 
@@ -991,7 +992,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                       const rowBg=isSelected?"bg-[#fffbeb]":isMain?(i%2===0?"bg-white":"bg-[#fafafa]"):"bg-[#f5f9ff]";
                       const mainRow=(
                         <tr key={r.folio+r.sales+i}
-                          onClick={()=>router.push(`/dashboard/folio/${r.sales}`)}
+                          onClick={()=>setCheckInRow(r)}
                           className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}
                           title="Click để xem chi tiết folio">
                           <td className={`pl-5 py-2.5 text-[11px] font-semibold mono ${r.sts==="CO"?"text-[#c1121f]":"text-[#2d6a4f]"}`}>{r.sts}</td>
@@ -1036,7 +1037,191 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
         </div>
       )}
 
-            {/* Waiting list — always shown */}
+            {/* CHECK-IN FULLSCREEN PAGE */}
+      {checkInRow&&(
+        <div className="fixed inset-0 z-40 bg-[#f2f2ef] flex flex-col overflow-y-auto" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
+          {/* Header */}
+          <div className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0 sticky top-0 z-10" style={{height:52}}>
+            <div className="flex items-center gap-3">
+              <button onClick={()=>setCheckInRow(null)} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors">
+                <ChevronLeft size={13} strokeWidth={1.5}/> Quay lại
+              </button>
+              <span className="text-[#e5e7eb]">|</span>
+              <span className="text-[12px] text-[#9ca3af]">Tìm kiếm</span>
+              <ChevronRight size={11} className="text-[#d1d5db]" strokeWidth={1.5}/>
+              <span className="text-[12px] font-medium text-[#1a1a1a]">Check-In — {checkInRow.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="mono text-[11px] text-[#9ca3af]">Folio #{checkInRow.folio} · Phòng {checkInRow.rm}</span>
+              <div className="w-px h-4 bg-[#e5e7eb]"/>
+              <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={12} strokeWidth={1.5}/> In Reg Card</button>
+              <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><Download size={12} strokeWidth={1.5}/> Xuất PC06</button>
+              <button onClick={()=>setCheckInRow(null)} className="flex items-center gap-1.5 px-5 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ Xác nhận Check-In</button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="p-7 max-w-6xl mx-auto w-full space-y-5">
+            {/* Booking summary bar */}
+            <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center gap-8 flex-wrap">
+              {[
+                {label:"Phòng",    value:String(checkInRow.rm),       mono:true},
+                {label:"Loại",     value:checkInRow.type||"—",         mono:true},
+                {label:"Arrival",  value:checkInRow.arrival,           mono:true},
+                {label:"Departure",value:checkInRow.departure,         mono:true},
+                {label:"Pax",      value:checkInRow.adtCh||"—",        mono:true},
+                {label:"Rate",     value:checkInRow.rate>0?checkInRow.rate.toLocaleString()+" ₫":"—", mono:true},
+                {label:"Nguồn",    value:checkInRow.company||"Direct", mono:false},
+              ].map(({label,value,mono})=>(
+                <div key={label}>
+                  <div className="text-[9px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">{label}</div>
+                  <div className={`text-[13px] font-semibold text-[#1a1a1a] ${mono?"mono":""}`}>{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-5">
+              {/* LEFT — Thông tin khách */}
+              <div className="col-span-2 space-y-4">
+
+                {/* Thông tin cá nhân */}
+                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
+                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
+                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Thông tin khách
+                  </h3>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                    {/* Cột trái */}
+                    <div className="space-y-3">
+                      <FieldRow label="Quốc tịch">
+                        <select className={selectCls} defaultValue={checkInRow.nat==="VNM"?"VN":"OTHER"}>
+                          <option value="VN">🇻🇳 Việt Nam</option>
+                          {COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}
+                        </select>
+                      </FieldRow>
+                      <FieldRow label="Danh xưng">
+                        <select className={selectCls} defaultValue={checkInRow.title}>
+                          {["MR","MRS","MS","DR","PROF"].map(t=><option key={t}>{t}</option>)}
+                        </select>
+                      </FieldRow>
+                      <FieldRow label="Họ và tên"><input className={inputCls} defaultValue={checkInRow.name}/></FieldRow>
+                      <FieldRow label="Ngày sinh"><input type="date" className={inputCls}/></FieldRow>
+                      <FieldRow label="Giới tính">
+                        <select className={selectCls}><option>Nam / Male</option><option>Nữ / Female</option><option>Khác / Other</option></select>
+                      </FieldRow>
+                      <FieldRow label="Điện thoại"><input className={inputCls} placeholder="09xx xxx xxx / +xx xxx xxxx xxxx"/></FieldRow>
+                      <FieldRow label="Email"><input className={inputCls} placeholder=""/></FieldRow>
+                    </div>
+                    {/* Cột phải */}
+                    <div className="space-y-3">
+                      <FieldRow label="CMND / CCCD / Passport"><input className={inputCls} placeholder="Số giấy tờ tuỳ thân"/></FieldRow>
+                      <FieldRow label="Ngày cấp"><input type="date" className={inputCls}/></FieldRow>
+                      <FieldRow label="Nơi cấp / Issued At"><input className={inputCls} placeholder="Công an TP.HCM / Embassy Hanoi..."/></FieldRow>
+                      <FieldRow label="Ngày hết hạn"><input type="date" className={inputCls}/></FieldRow>
+                      <FieldRow label="Địa chỉ / Country of Residence"><input className={inputCls} placeholder="Địa chỉ thường trú hoặc quốc gia cư trú"/></FieldRow>
+                      <FieldRow label="Công ty / TA"><input className={inputCls} defaultValue={checkInRow.company}/></FieldRow>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PC06 — Khai báo tạm trú (hiện cho cả 2 loại khách) */}
+                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
+                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
+                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Khai báo tạm trú (PC06)
+                    <span className="text-[9px] font-normal normal-case tracking-normal text-[#9ca3af]">— bắt buộc với khách nước ngoài</span>
+                  </h3>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                    <div className="space-y-3">
+                      <FieldRow label="Loại visa / Giấy tờ">
+                        <select className={selectCls}>
+                          <option>— Không áp dụng (khách VN) —</option>
+                          {VISA_TYPES.map(v=><option key={v}>{v}</option>)}
+                        </select>
+                      </FieldRow>
+                      <FieldRow label="Số visa"><input className={inputCls} placeholder="Để trống nếu không có"/></FieldRow>
+                      <FieldRow label="Ngày cấp visa"><input type="date" className={inputCls}/></FieldRow>
+                    </div>
+                    <div className="space-y-3">
+                      <FieldRow label="Cửa khẩu nhập cảnh">
+                        <select className={selectCls}>
+                          <option>— Không áp dụng —</option>
+                          <option>Tân Sơn Nhất (SGN)</option>
+                          <option>Nội Bài (HAN)</option>
+                          <option>Đà Nẵng (DAD)</option>
+                          <option>Cảng biển</option>
+                          <option>Cửa khẩu bộ</option>
+                        </select>
+                      </FieldRow>
+                      <FieldRow label="Ngày nhập cảnh"><input type="date" className={inputCls}/></FieldRow>
+                      <FieldRow label="Visa hết hạn"><input type="date" className={inputCls}/></FieldRow>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ghi chú */}
+                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
+                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
+                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Yêu cầu đặc biệt
+                  </h3>
+                  <textarea className="w-full border border-[#e5e7eb] rounded-[2px] px-3 py-2 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] resize-none h-20" placeholder="Non-smoking, high floor, extra pillow, early check-in, late check-out..."/>
+                </div>
+              </div>
+
+              {/* RIGHT — Tóm tắt + thanh toán */}
+              <div className="space-y-4">
+                {/* Tóm tắt folio */}
+                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
+                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Tóm tắt folio
+                  </h3>
+                  <RateTable nights={3} roomType={checkInRow.type||"SUPDN"}/>
+                </div>
+
+                {/* Thanh toán */}
+                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
+                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Thanh toán
+                  </h3>
+                  <div className="space-y-3">
+                    <FieldRow label="Hình thức">
+                      <select className={selectCls}>
+                        <option>Tiền mặt (VND)</option>
+                        <option>Tiền mặt (USD)</option>
+                        <option>Thẻ tín dụng</option>
+                        <option>Chuyển khoản</option>
+                        <option>Công nợ (AR)</option>
+                      </select>
+                    </FieldRow>
+                    <FieldRow label="Đặt cọc"><input className={inputCls} placeholder="0 ₫" type="number"/></FieldRow>
+                    <FieldRow label="Meal Plan">
+                      <select className={selectCls}>
+                        <option>RO — Room Only</option>
+                        <option>BB — Bed & Breakfast</option>
+                        <option>HB — Half Board</option>
+                        <option>FB — Full Board</option>
+                      </select>
+                    </FieldRow>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-2">
+                  <button onClick={()=>setCheckInRow(null)} className="w-full px-4 py-3 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-semibold hover:bg-[#252523] transition-colors">
+                    ✓ Xác nhận Check-In
+                  </button>
+                  <button className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
+                    Lưu nháp
+                  </button>
+                  <button onClick={()=>setCheckInRow(null)} className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors">
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Waiting list — always shown */}
       {!searched && (
         <Card className="overflow-hidden">
           <div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Waiting List — Chưa gán phòng</SectionTitle></div>
