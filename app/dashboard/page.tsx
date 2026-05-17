@@ -1115,7 +1115,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                     <div className="space-y-3">
                       <FieldRow label="CMND / CCCD / Passport"><input className={inputCls} placeholder="Số giấy tờ tuỳ thân"/></FieldRow>
                       <FieldRow label="Ngày cấp"><input type="date" className={inputCls}/></FieldRow>
-                      <FieldRow label="Nơi cấp / Issued At"><input className={inputCls} placeholder="Công an TP.HCM / Embassy Hanoi..."/></FieldRow>
+
                       <FieldRow label="Ngày hết hạn"><input type="date" className={inputCls}/></FieldRow>
                       <FieldRow label="Địa chỉ / Country of Residence"><input className={inputCls} placeholder="Địa chỉ thường trú hoặc quốc gia cư trú"/></FieldRow>
                       <FieldRow label="Công ty / TA"><input className={inputCls} defaultValue={checkInRow.company}/></FieldRow>
@@ -1131,26 +1131,12 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                   </h3>
                   <div className="grid grid-cols-2 gap-x-8 gap-y-3">
                     <div className="space-y-3">
-                      <FieldRow label="Loại visa / Giấy tờ">
-                        <select className={selectCls}>
-                          <option>— Không áp dụng (khách VN) —</option>
-                          {VISA_TYPES.map(v=><option key={v}>{v}</option>)}
-                        </select>
-                      </FieldRow>
+
                       <FieldRow label="Số visa"><input className={inputCls} placeholder="Để trống nếu không có"/></FieldRow>
                       <FieldRow label="Ngày cấp visa"><input type="date" className={inputCls}/></FieldRow>
                     </div>
                     <div className="space-y-3">
-                      <FieldRow label="Cửa khẩu nhập cảnh">
-                        <select className={selectCls}>
-                          <option>— Không áp dụng —</option>
-                          <option>Tân Sơn Nhất (SGN)</option>
-                          <option>Nội Bài (HAN)</option>
-                          <option>Đà Nẵng (DAD)</option>
-                          <option>Cảng biển</option>
-                          <option>Cửa khẩu bộ</option>
-                        </select>
-                      </FieldRow>
+
                       <FieldRow label="Ngày nhập cảnh"><input type="date" className={inputCls}/></FieldRow>
                       <FieldRow label="Visa hết hạn"><input type="date" className={inputCls}/></FieldRow>
                     </div>
