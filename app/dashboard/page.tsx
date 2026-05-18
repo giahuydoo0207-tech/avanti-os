@@ -782,13 +782,15 @@ const AVAILABLE_ROOMS: Record<string,number[]> = {
   "PREMDM":[210,410,510],
 };
 
-function RoomAssign({initType,initRm}:{initType:string;initRm:number}){
+function RoomAssign({initType,initRm,onChange}:{initType:string;initRm:number;onChange:(rm:string,type:string)=>void}){
   const [assignedType,setAssignedType]=useState(initType||"SUPDN");
   const [assignedRoom,setAssignedRoom]=useState(initRm?String(initRm):"");
   const needsRoom=!initRm||initRm===0;
   const roomsForType=AVAILABLE_ROOMS[assignedType]||[];
+  const handleTypeChange=(t:string)=>{setAssignedType(t);setAssignedRoom("");onChange("",t);};
+  const handleRoomChange=(r:string)=>{setAssignedRoom(r);onChange(r,assignedType);};
   return (
-    <div className={`bg-white border rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6 ${needsRoom?"border-[#fcd34d]":"border-[#e5e7eb]"}`}>
+    <div className={`bg-white border rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6 ${needsRoom&&!assignedRoom?"border-[#fcd34d]":"border-[#86efac]"}`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] flex items-center gap-2">
           <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Gắn phòng
@@ -796,18 +798,18 @@ function RoomAssign({initType,initRm}:{initType:string;initRm:number}){
         {needsRoom&&!assignedRoom&&(
           <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#fff8e1] text-[#7a5800] border border-[#fcd34d]">⚠ Chưa có phòng</span>
         )}
-        {(assignedRoom||(!needsRoom))&&(
+        {(assignedRoom||!needsRoom)&&(
           <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#f0fdf4] text-[#15803d] border border-[#86efac]">✓ Phòng {assignedRoom||initRm}</span>
         )}
       </div>
       <div className="grid grid-cols-2 gap-x-8 gap-y-3">
         <FieldRow label="Loại phòng">
-          <select className={selectCls} value={assignedType} onChange={e=>{setAssignedType(e.target.value);setAssignedRoom("");}}>
+          <select className={selectCls} value={assignedType} onChange={e=>handleTypeChange(e.target.value)}>
             {Object.keys(AVAILABLE_ROOMS).map(t=><option key={t} value={t}>{t}</option>)}
           </select>
         </FieldRow>
         <FieldRow label="Số phòng">
-          <select className={selectCls} value={assignedRoom} onChange={e=>setAssignedRoom(e.target.value)}>
+          <select className={selectCls} value={assignedRoom} onChange={e=>handleRoomChange(e.target.value)}>
             <option value="">— Chọn phòng trống —</option>
             {roomsForType.map(r=><option key={r} value={String(r)}>Phòng {r}</option>)}
           </select>
@@ -860,6 +862,34 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const [sortCol,setSortCol]=useState<keyof ArrivalRow>("rm");
   const [sortAsc,setSortAsc]=useState(true);
   const [checkInRow,setCheckInRow]=useState<ArrivalRow|null>(null);
+  const [ciName,setCiName]=useState("");
+  const [ciIdNo,setCiIdNo]=useState("");
+  const [ciPhone,setCiPhone]=useState("");
+  const [ciRoom,setCiRoom]=useState("");
+  const [ciRoomType,setCiRoomType]=useState("");
+  const [ciSaved,setCiSaved]=useState(false);
+  const [ciErrors,setCiErrors]=useState<string[]>([]);
+
+  const handleCheckInRowOpen=(r:ArrivalRow)=>{
+    setCheckInRow(r);
+    setCiName(r.name);
+    setCiIdNo("");setCiPhone("");
+    setCiRoom(r.rm?String(r.rm):"");
+    setCiRoomType(r.type||"SUPDN");
+    setCiSaved(false);setCiErrors([]);
+  };
+
+  const handleCheckInSave=()=>{
+    const hasName=!!ciName.trim();
+    const hasId=!!ciIdNo.trim();
+    const hasRoom=!!ciRoom;
+    if(!hasName&&!hasId&&!hasRoom){
+      setCiErrors(["Vui lòng nhập ít nhất một trong ba: Họ tên, CMND/Passport, hoặc Số phòng"]);
+      return;
+    }
+    setCiErrors([]);
+    setCiSaved(true);
+  };
 
   const handleSort=(col:keyof ArrivalRow)=>{if(sortCol===col)setSortAsc(a=>!a);else{setSortCol(col);setSortAsc(true);}};
 
@@ -1060,7 +1090,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                       const rowBg=isSelected?"bg-[#fffbeb]":isMain?(i%2===0?"bg-white":"bg-[#fafafa]"):"bg-[#f5f9ff]";
                       const mainRow=(
                         <tr key={r.folio+r.sales+i}
-                          onClick={()=>setCheckInRow(r)}
+                          onClick={()=>handleCheckInRowOpen(r)}
                           className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}
                           title="Click để xem chi tiết folio">
                           <td className={`pl-5 py-2.5 text-[11px] font-semibold mono ${r.sts==="CO"?"text-[#c1121f]":"text-[#2d6a4f]"}`}>{r.sts}</td>
@@ -1108,7 +1138,38 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
             {/* CHECK-IN FULLSCREEN PAGE */}
       {checkInRow&&(
         <div className="fixed inset-0 z-40 bg-[#f2f2ef] flex flex-col overflow-y-auto" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
-          {/* Header */}
+          {/* SUCCESS SCREEN */}
+          {ciSaved&&(
+            <div className="flex-1 flex flex-col items-center justify-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-[#f0fdf4] flex items-center justify-center">
+                <CheckCircle size={32} className="text-[#2d6a4f]" strokeWidth={1.5}/>
+              </div>
+              <div className="text-center">
+                <div className="text-[15px] font-semibold text-[#1a1a1a] mb-1">Check-In thành công!</div>
+                <div className="mono text-[12px] text-[#9ca3af]">Phòng {ciRoom} · {checkInRow.name}</div>
+              </div>
+              <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-8 py-5 space-y-2 text-[12px] w-80">
+                {[
+                  {label:"Folio",   value:"#"+checkInRow.folio},
+                  {label:"Phòng",   value:ciRoom+" · "+ciRoomType},
+                  {label:"Arrival", value:checkInRow.arrival},
+                  {label:"Departure",value:checkInRow.departure},
+                  {label:"Nguồn",  value:checkInRow.company||"Direct"},
+                ].map(({label,value})=>(
+                  <div key={label} className="flex justify-between border-b border-[#f3f4f6] pb-2">
+                    <span className="text-[#9ca3af]">{label}</span>
+                    <span className="mono font-medium text-[#374151]">{value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3 mt-2">
+                <button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={13} strokeWidth={1.5}/> In Reg Card</button>
+                <button onClick={()=>{setCheckInRow(null);setCiSaved(false);}} className="px-5 py-2.5 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Đóng</button>
+              </div>
+            </div>
+          )}
+          {!ciSaved&&<>
+        {/* Header */}
           <div className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0 sticky top-0 z-10" style={{height:52}}>
             <div className="flex items-center gap-3">
               <button onClick={()=>setCheckInRow(null)} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors">
@@ -1124,7 +1185,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
               <div className="w-px h-4 bg-[#e5e7eb]"/>
               <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={12} strokeWidth={1.5}/> In Reg Card</button>
               <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><Download size={12} strokeWidth={1.5}/> Xuất PC06</button>
-              <button onClick={()=>setCheckInRow(null)} className="flex items-center gap-1.5 px-5 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ Xác nhận Check-In</button>
+              <button onClick={handleCheckInSave} className="flex items-center gap-1.5 px-5 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ Xác nhận Check-In</button>
             </div>
           </div>
 
@@ -1171,17 +1232,17 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                           {["MR","MRS","MS","DR","PROF"].map(t=><option key={t}>{t}</option>)}
                         </select>
                       </FieldRow>
-                      <FieldRow label="Họ và tên"><input className={inputCls} defaultValue={checkInRow.name}/></FieldRow>
+                      <FieldRow label="Họ và tên"><input className={inputCls} value={ciName} onChange={e=>setCiName(e.target.value)}/></FieldRow>
                       <FieldRow label="Ngày sinh"><input type="date" className={inputCls}/></FieldRow>
                       <FieldRow label="Giới tính">
                         <select className={selectCls}><option>Nam / Male</option><option>Nữ / Female</option><option>Khác / Other</option></select>
                       </FieldRow>
-                      <FieldRow label="Điện thoại"><input className={inputCls} placeholder="09xx xxx xxx / +xx xxx xxxx xxxx"/></FieldRow>
+                      <FieldRow label="Điện thoại"><input className={inputCls} value={ciPhone} onChange={e=>setCiPhone(e.target.value)} placeholder="09xx xxx xxx / +xx xxx xxxx xxxx"/></FieldRow>
                       <FieldRow label="Email"><input className={inputCls} placeholder=""/></FieldRow>
                     </div>
                     {/* Cột phải */}
                     <div className="space-y-3">
-                      <FieldRow label="CMND / CCCD / Passport"><input className={inputCls} placeholder="Số giấy tờ tuỳ thân"/></FieldRow>
+                      <FieldRow label="CMND / CCCD / Passport"><input className={`${inputCls} ${ciErrors.some(e=>e.includes("CMND"))?"border-[#fca5a5]":""}`} value={ciIdNo} onChange={e=>setCiIdNo(e.target.value)} placeholder="Số giấy tờ tuỳ thân"/></FieldRow>
                       <FieldRow label="Ngày cấp"><input type="date" className={inputCls}/></FieldRow>
 
                       <FieldRow label="Ngày hết hạn"><input type="date" className={inputCls}/></FieldRow>
@@ -1212,7 +1273,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                 </div>
 
                 {/* Gắn phòng */}
-                <RoomAssign initType={checkInRow.type||"SUPDN"} initRm={checkInRow.rm||0}/>
+                <RoomAssign initType={checkInRow.type||"SUPDN"} initRm={checkInRow.rm||0} onChange={(rm,type)=>{setCiRoom(rm);setCiRoomType(type);}}/>
 
                 {/* Ghi chú */}
                 <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
@@ -1262,7 +1323,12 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
 
                 {/* Actions */}
                 <div className="space-y-2">
-                  <button onClick={()=>setCheckInRow(null)} className="w-full px-4 py-3 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-semibold hover:bg-[#252523] transition-colors">
+                  {ciErrors.length>0&&(
+                    <div className="border border-[#fca5a5] bg-[#fff1f2] rounded-[2px] px-4 py-3 space-y-1">
+                      {ciErrors.map((e,i)=><div key={i} className="text-[11px] text-[#c1121f] flex items-start gap-1.5"><span className="shrink-0 mt-0.5">•</span>{e}</div>)}
+                    </div>
+                  )}
+                  <button onClick={handleCheckInSave} className="w-full px-4 py-3 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-semibold hover:bg-[#252523] transition-colors">
                     ✓ Xác nhận Check-In
                   </button>
                   <button className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
@@ -1275,7 +1341,8 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
               </div>
             </div>
           </div>
-        </div>
+        </>}
+      </div>
       )}
 
       {/* Waiting list — always shown */}
