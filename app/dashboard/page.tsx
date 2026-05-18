@@ -869,6 +869,8 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const [ciRoomType,setCiRoomType]=useState("");
   const [ciSaved,setCiSaved]=useState(false);
   const [ciErrors,setCiErrors]=useState<string[]>([]);
+  const [ciInfoSaved,setCiInfoSaved]=useState(false);
+  const [ciRoomSaved,setCiRoomSaved]=useState(false);
 
   const handleCheckInRowOpen=(r:ArrivalRow)=>{
     setCheckInRow(r);
@@ -876,7 +878,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
     setCiIdNo("");setCiPhone("");
     setCiRoom(r.rm?String(r.rm):"");
     setCiRoomType(r.type||"SUPDN");
-    setCiSaved(false);setCiErrors([]);
+    setCiSaved(false);setCiErrors([]);setCiInfoSaved(false);setCiRoomSaved(false);
   };
 
   const handleCheckInSave=()=>{
@@ -1250,6 +1252,13 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                       <FieldRow label="Công ty / TA"><input className={inputCls} defaultValue={checkInRow.company}/></FieldRow>
                     </div>
                   </div>
+                  {/* OK Thông tin khách */}
+                  <div className="flex items-center justify-end pt-3 border-t border-[#f3f4f6] mt-1">
+                    {ciInfoSaved
+                      ? <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#2d6a4f]"><CheckCircle size={13} strokeWidth={1.5}/> Đã lưu thông tin</span>
+                      : <button onClick={()=>setCiInfoSaved(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ OK — Lưu thông tin</button>
+                    }
+                  </div>
                 </div>
 
                 {/* PC06 — Khai báo tạm trú (hiện cho cả 2 loại khách) */}
@@ -1273,7 +1282,13 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                 </div>
 
                 {/* Gắn phòng */}
-                <RoomAssign initType={checkInRow.type||"SUPDN"} initRm={checkInRow.rm||0} onChange={(rm,type)=>{setCiRoom(rm);setCiRoomType(type);}}/>
+                <RoomAssign initType={checkInRow.type||"SUPDN"} initRm={checkInRow.rm||0} onChange={(rm,type)=>{setCiRoom(rm);setCiRoomType(type);setCiRoomSaved(false);}}/>
+                <div className="flex items-center justify-end mt-1">
+                  {ciRoomSaved
+                    ? <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#2d6a4f]"><CheckCircle size={13} strokeWidth={1.5}/> Đã gắn phòng {ciRoom}</span>
+                    : <button onClick={()=>{if(ciRoom){setCiRoomSaved(true);}else{alert("Vui lòng chọn số phòng trước");}}} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ OK — Xác nhận phòng</button>
+                  }
+                </div>
 
                 {/* Ghi chú */}
                 <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
