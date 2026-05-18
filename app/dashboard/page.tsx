@@ -766,6 +766,74 @@ const CHECKOUT_TODAY_DATA: ArrivalRow[] = [
 ];
 
 // ─────────────────────────────────────────────
+// ROOM ASSIGN COMPONENT
+// ─────────────────────────────────────────────
+const AVAILABLE_ROOMS: Record<string,number[]> = {
+  "SUPDN": [205,206,207,208,304,305,311,312,405,610,611,712,812,912],
+  "SUPTN": [104,109,204,209,210,310,404,604,612],
+  "DLXTC": [106,306,406,506,606,704,708,709,710,809,810,904,909,910],
+  "DLXDDC":[107,307,407,507,607,705,706,707,711,804,805,806,807,808,811,905,906,907,908,911],
+  "PREPM": [102,202,302,402,502,602],
+  "PREDM": [201,301,401,601,802,902],
+  "PRETM": [101,308,408,501,508,601,608,701,801,901],
+  "PREKM": [109,309,409,509,609,803,903],
+  "AVTFM": [103,203,303,403,503,603],
+  "AVTDM": [211,411,511,702,703],
+  "PREMDM":[210,410,510],
+};
+
+function RoomAssign({initType,initRm}:{initType:string;initRm:number}){
+  const [assignedType,setAssignedType]=useState(initType||"SUPDN");
+  const [assignedRoom,setAssignedRoom]=useState(initRm?String(initRm):"");
+  const needsRoom=!initRm||initRm===0;
+  const roomsForType=AVAILABLE_ROOMS[assignedType]||[];
+  return (
+    <div className={`bg-white border rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6 ${needsRoom?"border-[#fcd34d]":"border-[#e5e7eb]"}`}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] flex items-center gap-2">
+          <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Gắn phòng
+        </h3>
+        {needsRoom&&!assignedRoom&&(
+          <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#fff8e1] text-[#7a5800] border border-[#fcd34d]">⚠ Chưa có phòng</span>
+        )}
+        {(assignedRoom||(!needsRoom))&&(
+          <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#f0fdf4] text-[#15803d] border border-[#86efac]">✓ Phòng {assignedRoom||initRm}</span>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+        <FieldRow label="Loại phòng">
+          <select className={selectCls} value={assignedType} onChange={e=>{setAssignedType(e.target.value);setAssignedRoom("");}}>
+            {Object.keys(AVAILABLE_ROOMS).map(t=><option key={t} value={t}>{t}</option>)}
+          </select>
+        </FieldRow>
+        <FieldRow label="Số phòng">
+          <select className={selectCls} value={assignedRoom} onChange={e=>setAssignedRoom(e.target.value)}>
+            <option value="">— Chọn phòng trống —</option>
+            {roomsForType.map(r=><option key={r} value={String(r)}>Phòng {r}</option>)}
+          </select>
+        </FieldRow>
+        {assignedRoom&&(
+          <>
+            <FieldRow label="Tầng">
+              <input className={inputCls} readOnly value={`Tầng ${assignedRoom[0]}`}/>
+            </FieldRow>
+            <FieldRow label="Trạng thái">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#f0fdf4] border border-[#86efac] rounded-[2px]">
+                <span className="inline-block w-2 h-2 rounded-full bg-[#22c55e]"/>
+                <span className="text-[12px] text-[#15803d] font-medium">Sạch — Sẵn sàng</span>
+              </div>
+            </FieldRow>
+          </>
+        )}
+      </div>
+      {!assignedRoom&&needsRoom&&(
+        <div className="mt-3 text-[11px] text-[#9ca3af]">Chọn loại phòng rồi chọn số phòng trống bên phải</div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // SEARCH TAB (Tìm kiếm khách hàng)
 // ─────────────────────────────────────────────
 function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
@@ -1144,72 +1212,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                 </div>
 
                 {/* Gắn phòng */}
-                {(()=>{
-                  const needsRoom = !checkInRow.rm || checkInRow.rm === 0;
-                  const [assignedType, setAssignedType] = React.useState(checkInRow.type || "SUPDN");
-                  const [assignedRoom, setAssignedRoom] = React.useState(checkInRow.rm ? String(checkInRow.rm) : "");
-                  const availableRooms: Record<string,number[]> = {
-                    "SUPDN": [205,206,207,208,304,305,311,312,405,610,611,712,812,912],
-                    "SUPTN": [104,109,204,209,210,310,404,604,612],
-                    "DLXTC": [106,306,406,506,606,704,708,709,710,809,810,904,909,910],
-                    "DLXDDC":[107,307,407,507,607,705,706,707,711,804,805,806,807,808,811,905,906,907,908,911],
-                    "PREPM": [102,202,302,402,502,602],
-                    "PREDM": [201,301,401,601,802,902],
-                    "PRETM": [101,308,408,501,508,601,608,701,801,901],
-                    "PREKM": [109,309,409,509,609,803,903],
-                    "AVTFM": [103,203,303,403,503,603],
-                    "AVTDM": [211,411,511,702,703],
-                    "PREMDM":[210,410,510],
-                  };
-                  const roomsForType = availableRooms[assignedType] || [];
-                  const isAssigned = !!assignedRoom;
-                  return (
-                    <div className={`bg-white border rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6 ${needsRoom ? "border-[#fcd34d]" : "border-[#e5e7eb]"}`}>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] flex items-center gap-2">
-                          <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Gắn phòng
-                        </h3>
-                        {needsRoom && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#fff8e1] text-[#7a5800] border border-[#fcd34d]">⚠ Chưa có phòng</span>
-                        )}
-                        {!needsRoom && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#f0fdf4] text-[#15803d] border border-[#86efac]">✓ Đã gán phòng {checkInRow.rm}</span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                        <FieldRow label="Loại phòng">
-                          <select className={selectCls} value={assignedType} onChange={e=>{setAssignedType(e.target.value);setAssignedRoom("");}}>
-                            {Object.keys(availableRooms).map(t=><option key={t} value={t}>{t}</option>)}
-                          </select>
-                        </FieldRow>
-                        <FieldRow label="Số phòng">
-                          <select className={selectCls} value={assignedRoom} onChange={e=>setAssignedRoom(e.target.value)}>
-                            <option value="">— Chọn phòng trống —</option>
-                            {roomsForType.map(r=><option key={r} value={String(r)}>Phòng {r}</option>)}
-                          </select>
-                        </FieldRow>
-                        {isAssigned && (
-                          <>
-                            <FieldRow label="Tầng">
-                              <input className={inputCls} readOnly value={`Tầng ${String(assignedRoom)[0]}`}/>
-                            </FieldRow>
-                            <FieldRow label="Trạng thái">
-                              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#f0fdf4] border border-[#86efac] rounded-[2px]">
-                                <span className="inline-block w-2 h-2 rounded-full bg-[#22c55e]"/>
-                                <span className="text-[12px] text-[#15803d] font-medium">Sạch — Sẵn sàng</span>
-                              </div>
-                            </FieldRow>
-                          </>
-                        )}
-                      </div>
-                      {!assignedRoom && (
-                        <div className="mt-3 text-[11px] text-[#9ca3af]">
-                          Chọn loại phòng rồi chọn số phòng trống bên phải
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                <RoomAssign initType={checkInRow.type||"SUPDN"} initRm={checkInRow.rm||0}/>
 
                 {/* Ghi chú */}
                 <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
