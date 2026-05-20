@@ -427,6 +427,69 @@ function ForeignForm(){
   </div>;
 }
 
+function ReservationRoomAssign(){
+  const [source,setSource]=useState("Direct");
+  const [assignedType,setAssignedType]=useState("SUPDN");
+  const [assignedRoom,setAssignedRoom]=useState("");
+  const [confirmed,setConfirmed]=useState(false);
+  const isWalkIn=source==="Walk-in"||source==="Direct";
+  const roomsForType=AVAILABLE_ROOMS[assignedType]||[];
+  return (
+    <Card className={`p-6 transition-colors ${isWalkIn?"border-[#fcd34d]":"border-[#e5e7eb]"}`}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] flex items-center gap-2">
+          <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Nguồn đặt phòng & Gắn phòng
+        </h3>
+        {isWalkIn&&!confirmed&&<span className="text-[10px] px-2 py-0.5 rounded-[2px] font-medium bg-[#fff8e1] text-[#7a5800] border border-[#fcd34d]">⚠ Walk-in / Direct — nên gắn phòng ngay</span>}
+        {confirmed&&<span className="flex items-center gap-1.5 text-[11px] font-medium text-[#2d6a4f]"><CheckCircle size={13} strokeWidth={1.5}/> Đã gắn phòng {assignedRoom} · {assignedType}</span>}
+      </div>
+      <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+        {/* Nguồn */}
+        <FieldRow label="Nguồn đặt phòng">
+          <select className={selectCls} value={source} onChange={e=>{setSource(e.target.value);setConfirmed(false);}}>
+            {["Direct","Walk-in","Booking.com","Agoda","Expedia","Travel Agent","OTA khác"].map(s=><option key={s}>{s}</option>)}
+          </select>
+        </FieldRow>
+        {/* Chỉ hiện gắn phòng khi Walk-in hoặc Direct */}
+        {isWalkIn&&(
+          <>
+            <FieldRow label="Loại phòng">
+              <select className={selectCls} value={assignedType} onChange={e=>{setAssignedType(e.target.value);setAssignedRoom("");setConfirmed(false);}}>
+                {Object.keys(AVAILABLE_ROOMS).map(t=><option key={t} value={t}>{t}</option>)}
+              </select>
+            </FieldRow>
+            <FieldRow label="Số phòng">
+              <select className={selectCls} value={assignedRoom} onChange={e=>{setAssignedRoom(e.target.value);setConfirmed(false);}}>
+                <option value="">— Chọn phòng trống —</option>
+                {roomsForType.map(r=><option key={r} value={String(r)}>Phòng {r}</option>)}
+              </select>
+            </FieldRow>
+            {assignedRoom&&(
+              <FieldRow label="Trạng thái phòng">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#f0fdf4] border border-[#86efac] rounded-[2px]">
+                  <span className="inline-block w-2 h-2 rounded-full bg-[#22c55e]"/>
+                  <span className="text-[12px] text-[#15803d] font-medium">Sạch — Tầng {assignedRoom[0]}</span>
+                </div>
+              </FieldRow>
+            )}
+          </>
+        )}
+      </div>
+      {isWalkIn&&(
+        <div className="flex items-center justify-end pt-4 border-t border-[#f3f4f6] mt-3">
+          {confirmed
+            ? <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#2d6a4f]"><CheckCircle size={13} strokeWidth={1.5}/> Đã xác nhận phòng {assignedRoom||"(chưa chọn)"}</span>
+            : <button onClick={()=>{if(assignedRoom)setConfirmed(true);else alert("Vui lòng chọn số phòng trước");}}
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">
+                ✓ OK — Xác nhận gắn phòng
+              </button>
+          }
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function ReservationTab(){
   const [guestType,setGuestType]=useState<GuestType>("vietnamese");
   return <div className="p-7 max-w-6xl mx-auto">
@@ -442,6 +505,9 @@ function ReservationTab(){
     </div>
     <Card className="p-6 mb-4">{guestType==="vietnamese"?<VietnameseForm/>:<ForeignForm/>}</Card>
     <Card className="mb-4"><div className="px-6 py-4 border-b border-[#f3f4f6]"><SectionTitle>Rate &amp; Folio</SectionTitle></div><RateTable nights={3} roomType="SUPDN"/></Card>
+    {/* Gắn phòng Walk-in / Direct */}
+    <ReservationRoomAssign/>
+
     <div className="flex items-center gap-2 flex-wrap">
       <button className="px-5 py-2.5 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Lưu — Definite</button>
       <button className="px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Lưu — Tentative</button>
