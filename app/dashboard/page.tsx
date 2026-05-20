@@ -1214,8 +1214,8 @@ function CheckOutPage({row, onClose}:{row:ArrivalRow; onClose:()=>void}){
         </div>
       </div>
     </div>
-  </div>
-  );
+  
+  )
 }
 
 // ─────────────────────────────────────────────
