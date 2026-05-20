@@ -871,6 +871,8 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const [ciErrors,setCiErrors]=useState<string[]>([]);
   const [ciInfoSaved,setCiInfoSaved]=useState(false);
   const [ciRoomSaved,setCiRoomSaved]=useState(false);
+  // Map lưu phòng đã gán: key = sales ref, value = {rm, type}
+  const [assignedRooms,setAssignedRooms]=useState<Record<string,{rm:string;type:string}>>({});
 
   const handleCheckInRowOpen=(r:ArrivalRow)=>{
     setCheckInRow(r);
@@ -1102,9 +1104,13 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                           <td className="px-2 py-2.5 text-[11px] text-[#6b7280]">{r.title}</td>
                           <td className="px-2 py-2.5 text-[12px] font-medium max-w-[160px] truncate">{r.name}</td>
                           <td className="px-2 py-2.5 mono text-[11px] text-right">{r.rate>0?r.rate.toLocaleString():""}</td>
-                          <td className="px-2 py-2.5 mono text-[12px] font-semibold text-[#374151]">{r.rm||""}</td>
+                          <td className="px-2 py-2.5 mono text-[12px] font-semibold text-[#374151]">
+                            {assignedRooms[r.sales]?.rm
+                              ? <span className="text-[#15803d]">{assignedRooms[r.sales].rm}</span>
+                              : r.rm||""}
+                          </td>
                           <td className="px-2 py-2.5">
-                            {r.type&&<span className="mono text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium" style={{background:"#f0fdf4",color:"#15803d",border:"1px solid #86efac"}}>{r.type}</span>}
+                            {(assignedRooms[r.sales]?.type||r.type)&&<span className="mono text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium" style={{background:"#f0fdf4",color:"#15803d",border:"1px solid #86efac"}}>{assignedRooms[r.sales]?.type||r.type}</span>}
                           </td>
                           <td className="px-2 py-2.5 mono text-[10px] text-[#6b7280]">{r.booked}</td>
                           <td className="px-2 py-2.5 mono text-[11px] text-[#374151]">{r.arrival}</td>
@@ -1286,7 +1292,13 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                 <div className="flex items-center justify-end mt-1">
                   {ciRoomSaved
                     ? <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#2d6a4f]"><CheckCircle size={13} strokeWidth={1.5}/> Đã gắn phòng {ciRoom}</span>
-                    : <button onClick={()=>{if(ciRoom){setCiRoomSaved(true);}else{alert("Vui lòng chọn số phòng trước");}}} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ OK — Xác nhận phòng</button>
+                    : <button onClick={()=>{
+                        if(ciRoom){
+                          setCiRoomSaved(true);
+                          setAssignedRooms(prev=>({...prev,[checkInRow.sales]:{rm:ciRoom,type:ciRoomType}}));
+                          setResults(prev=>prev?prev.map(r=>r.sales===checkInRow.sales?{...r,rm:Number(ciRoom),type:ciRoomType}:r):prev);
+                        }else{alert("Vui lòng chọn số phòng trước");}
+                      }} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ OK — Xác nhận phòng</button>
                   }
                 </div>
 
