@@ -832,6 +832,393 @@ const CHECKOUT_TODAY_DATA: ArrivalRow[] = [
 ];
 
 // ─────────────────────────────────────────────
+// FOLIO DETAIL COMPONENT
+// ─────────────────────────────────────────────
+type FolioCharge = {id:string;date:string;code:string;desc:string;ref:string;amount:number;type:"debit"|"credit"};
+
+function FolioDetail({row,onClose}:{row:ArrivalRow;onClose:()=>void}){
+  const parseDate=(d:string)=>{const [day,month,year]=d.split("/").map(Number);return new Date(year,month-1,day);};
+  const nights=Math.max(1,Math.round((parseDate(row.departure).getTime()-parseDate(row.arrival).getTime())/(1000*60*60*24)));
+
+  const [charges,setCharges]=useState<FolioCharge[]>([
+    {id:"F001",date:row.arrival,       code:"ROOM",  desc:"Tiền phòng",         ref:row.type,  amount:row.rate*nights, type:"debit"},
+    {id:"F002",date:row.arrival,       code:"TAX",   desc:"VAT 8%",             ref:"AUTO",    amount:Math.round(row.rate*nights*0.08), type:"debit"},
+    {id:"F003",date:row.arrival,       code:"DEP",   desc:"Đặt cọc",            ref:"CASH",    amount:0,               type:"credit"},
+  ]);
+  const [showPostForm,setShowPostForm]=useState(false);
+  const [postDesc,setPostDesc]=useState("");
+  const [postAmount,setPostAmount]=useState("");
+  const [postCode,setPostCode]=useState("MISC");
+  const [postType,setPostType]=useState<"debit"|"credit">("debit");
+
+  const totalDebit=charges.filter(c=>c.type==="debit").reduce((s,c)=>s+c.amount,0);
+  const totalCredit=charges.filter(c=>c.type==="credit").reduce((s,c)=>s+c.amount,0);
+  const balance=totalDebit-totalCredit;
+
+  const today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric"}).replace(/\//g,"/");
+
+  const handlePost=()=>{
+    if(!postDesc.trim()||!postAmount)return;
+    const newCharge:FolioCharge={
+      id:"F"+Date.now(),
+      date:today,
+      code:postCode,
+      desc:postDesc,
+      ref:"MANUAL",
+      amount:Number(postAmount),
+      type:postType,
+    };
+    setCharges(prev=>[...prev,newCharge]);
+    setPostDesc("");setPostAmount("");setShowPostForm(false);
+  };
+
+  const handleDelete=(id:string)=>setCharges(prev=>prev.filter(c=>c.id!==id));
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#f2f2ef] flex flex-col" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
+      <style>{`.mono{font-family:'DM Mono','Courier New',monospace;}`}</style>
+
+      {/* Header */}
+      <div className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0 sticky top-0 z-10" style={{height:52}}>
+        <div className="flex items-center gap-3">
+          <button onClick={onClose} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors">
+            <ChevronLeft size={13} strokeWidth={1.5}/> Quay lại
+          </button>
+          <span className="text-[#e5e7eb]">|</span>
+          <span className="text-[12px] text-[#9ca3af]">Folio Detail</span>
+          <ChevronRight size={11} className="text-[#d1d5db]" strokeWidth={1.5}/>
+          <span className="text-[12px] font-medium text-[#1a1a1a]">{row.name} — Folio #{row.folio}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`mono text-[12px] font-semibold px-3 py-1 rounded-[2px] border ${balance>0?"bg-[#fff1f2] text-[#c1121f] border-[#fca5a5]":"bg-[#f0fdf4] text-[#15803d] border-[#86efac]"}`}>
+            Balance: {balance.toLocaleString()} ₫
+          </span>
+          <div className="w-px h-4 bg-[#e5e7eb]"/>
+          <button onClick={()=>setShowPostForm(true)} className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors">
+            <Plus size={12} strokeWidth={2}/> Post Charge
+          </button>
+          <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors">
+            <Printer size={12} strokeWidth={1.5}/> In folio
+          </button>
+          <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors">
+            <Send size={12} strokeWidth={1.5}/> Gửi email
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-7">
+        <div className="max-w-5xl mx-auto space-y-5">
+
+          {/* Guest info bar */}
+          <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center gap-8 flex-wrap">
+            {[
+              {label:"Khách",     value:row.title+" "+row.name},
+              {label:"Folio",     value:"#"+row.folio},
+              {label:"Phòng",     value:String(row.rm)+" · "+row.type},
+              {label:"Arrival",   value:row.arrival},
+              {label:"Departure", value:row.departure},
+              {label:"Số đêm",    value:String(nights)},
+              {label:"Nguồn",     value:row.company||"Direct"},
+              {label:"NAT",       value:row.nat},
+            ].map(({label,value})=>(
+              <div key={label}>
+                <div className="text-[9px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">{label}</div>
+                <div className="mono text-[12px] font-semibold text-[#1a1a1a]">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Post charge form */}
+          {showPostForm&&(
+            <div className="bg-white border border-[#fcd34d] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+              <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
+                <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Post Charge mới
+              </h3>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                <FieldRow label="Mô tả"><input className={inputCls} value={postDesc} onChange={e=>setPostDesc(e.target.value)} placeholder="Minibar, Laundry, Restaurant..."/></FieldRow>
+                <FieldRow label="Mã giao dịch">
+                  <select className={selectCls} value={postCode} onChange={e=>setPostCode(e.target.value)}>
+                    {["ROOM","MINIBAR","LAUNDRY","RESTAURANT","TRANSPORT","SPA","MISC","DEPOSIT","DISCOUNT"].map(c=><option key={c}>{c}</option>)}
+                  </select>
+                </FieldRow>
+                <FieldRow label="Số tiền (₫)"><input className={inputCls} type="number" value={postAmount} onChange={e=>setPostAmount(e.target.value)} placeholder="0"/></FieldRow>
+                <FieldRow label="Loại">
+                  <div className="flex gap-2">
+                    {(["debit","credit"] as const).map(t=>(
+                      <button key={t} onClick={()=>setPostType(t)} className={`flex-1 py-1.5 rounded-[2px] text-[11px] font-medium border transition-colors ${postType===t?(t==="debit"?"bg-[#c1121f] text-white border-[#c1121f]":"bg-[#2d6a4f] text-white border-[#2d6a4f]"):"bg-white border-[#e5e7eb] text-[#6b7280] hover:bg-[#f9f9f7]"}`}>
+                        {t==="debit"?"Debit (Phát sinh)":"Credit (Thanh toán)"}
+                      </button>
+                    ))}
+                  </div>
+                </FieldRow>
+              </div>
+              <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-[#f3f4f6]">
+                <button onClick={()=>setShowPostForm(false)} className="px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors">Hủy</button>
+                <button onClick={handlePost} className="flex items-center gap-1.5 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">
+                  <Plus size={12} strokeWidth={2}/> Thêm vào folio
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Charges table */}
+          <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#f3f4f6] flex items-center justify-between">
+              <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] flex items-center gap-2">
+                <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Chi tiết giao dịch
+              </h3>
+              <span className="mono text-[11px] text-[#9ca3af]">{charges.length} giao dịch</span>
+            </div>
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
+                  {["Ngày","Code","Mô tả","Ref","Debit","Credit",""].map(h=>(
+                    <th key={h} className="px-5 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {charges.map(c=>(
+                  <tr key={c.id} className="border-b border-[#f9f9f7] hover:bg-[#fafafa] group">
+                    <td className="px-5 py-3 mono text-[11px] text-[#9ca3af]">{c.date}</td>
+                    <td className="px-5 py-3"><span className="mono text-[10px] px-1.5 py-0.5 bg-[#f3f4f6] rounded-[2px] text-[#374151]">{c.code}</span></td>
+                    <td className="px-5 py-3 text-[12px] font-medium text-[#1a1a1a]">{c.desc}</td>
+                    <td className="px-5 py-3 mono text-[11px] text-[#9ca3af]">{c.ref}</td>
+                    <td className="px-5 py-3 mono text-[12px] text-right font-medium text-[#c1121f]">{c.type==="debit"?c.amount.toLocaleString():""}</td>
+                    <td className="px-5 py-3 mono text-[12px] text-right font-medium text-[#2d6a4f]">{c.type==="credit"?c.amount.toLocaleString():""}</td>
+                    <td className="px-5 py-3 text-right">
+                      <button onClick={()=>handleDelete(c.id)} className="opacity-0 group-hover:opacity-100 text-[#d1d5db] hover:text-[#c1121f] transition-all">
+                        <Trash2 size={13} strokeWidth={1.5}/>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Totals */}
+            <div className="px-5 py-4 border-t-2 border-[#e5e7eb] bg-[#fafafa]">
+              <div className="flex justify-end gap-12 text-[12px] mb-2">
+                <div className="text-right">
+                  <div className="text-[9px] uppercase tracking-wide text-[#9ca3af] mb-1">Total Debit</div>
+                  <div className="mono font-semibold text-[#c1121f]">{totalDebit.toLocaleString()} ₫</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[9px] uppercase tracking-wide text-[#9ca3af] mb-1">Total Credit</div>
+                  <div className="mono font-semibold text-[#2d6a4f]">{totalCredit.toLocaleString()} ₫</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[9px] uppercase tracking-wide text-[#9ca3af] mb-1">Balance</div>
+                  <div className={`mono font-semibold text-[14px] ${balance>0?"text-[#c1121f]":"text-[#2d6a4f]"}`}>{balance.toLocaleString()} ₫</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// CHECKOUT COMPONENT
+// ─────────────────────────────────────────────
+function CheckOutPage({row, onClose}:{row:ArrivalRow; onClose:()=>void}){
+  const [coSaved,setCoSaved]=useState(false);
+  const [payMethod,setPayMethod]=useState("Tiền mặt (VND)");
+  const [discount,setDiscount]=useState(0);
+
+  const parseDate=(d:string)=>{const [day,month,year]=d.split("/").map(Number);return new Date(year,month-1,day);};
+  const nights=Math.max(1,Math.round((parseDate(row.departure).getTime()-parseDate(row.arrival).getTime())/(1000*60*60*24)));
+  const roomTotal=row.rate*nights;
+  const charges=[
+    {label:"Tiền phòng",    amount:roomTotal,   note:`${nights} đêm × ${row.rate.toLocaleString()} ₫`},
+    {label:"Minibar",       amount:0,            note:"Không phát sinh"},
+    {label:"Laundry",       amount:0,            note:"Không phát sinh"},
+    {label:"Restaurant",    amount:0,            note:"Không phát sinh"},
+    {label:"Dịch vụ khác", amount:0,            note:"Không phát sinh"},
+  ];
+  const subtotal=charges.reduce((s,c)=>s+c.amount,0);
+  const discountAmt=Math.round(subtotal*discount/100);
+  const total=subtotal-discountAmt;
+  const VAT=Math.round(total*0.08);
+  const grandTotal=total+VAT;
+
+  if(coSaved) return (
+    <div className="fixed inset-0 z-40 bg-[#f2f2ef] flex flex-col items-center justify-center gap-4" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
+      <div className="w-16 h-16 rounded-full bg-[#fff1f2] flex items-center justify-center">
+        <LogOut size={28} className="text-[#c1121f]" strokeWidth={1.5}/>
+      </div>
+      <div className="text-center">
+        <div className="text-[15px] font-semibold text-[#1a1a1a] mb-1">Check-Out thành công!</div>
+        <div className="mono text-[12px] text-[#9ca3af]">Phòng {row.rm} · {row.name}</div>
+      </div>
+      <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-8 py-5 space-y-2 text-[12px] w-80">
+        {[
+          {label:"Folio",      value:"#"+row.folio},
+          {label:"Phòng",      value:String(row.rm)+" · "+row.type},
+          {label:"Tổng bill",  value:grandTotal.toLocaleString()+" ₫"},
+          {label:"Thanh toán", value:payMethod},
+          {label:"Trạng thái", value:"✓ Đã thanh toán"},
+        ].map(({label,value})=>(
+          <div key={label} className="flex justify-between border-b border-[#f3f4f6] pb-2">
+            <span className="text-[#9ca3af]">{label}</span>
+            <span className="mono font-medium text-[#374151]">{value}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-3 mt-2">
+        <button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={13} strokeWidth={1.5}/> In hóa đơn</button>
+        <button onClick={onClose} className="px-5 py-2.5 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Đóng</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-40 bg-[#f2f2ef] flex flex-col overflow-y-auto" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
+      <style>{`.mono{font-family:'DM Mono','Courier New',monospace;}`}</style>
+      {/* Header */}
+      <div className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0 sticky top-0 z-10" style={{height:52}}>
+        <div className="flex items-center gap-3">
+          <button onClick={onClose} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors">
+            <ChevronLeft size={13} strokeWidth={1.5}/> Quay lại
+          </button>
+          <span className="text-[#e5e7eb]">|</span>
+          <span className="text-[12px] text-[#9ca3af]">Tìm kiếm</span>
+          <ChevronRight size={11} className="text-[#d1d5db]" strokeWidth={1.5}/>
+          <span className="text-[12px] font-medium text-[#1a1a1a]">Check-Out — {row.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="mono text-[11px] text-[#9ca3af]">Folio #{row.folio} · Phòng {row.rm}</span>
+          <div className="w-px h-4 bg-[#e5e7eb]"/>
+          <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={12} strokeWidth={1.5}/> In hóa đơn</button>
+          <button onClick={()=>setCoSaved(true)} className="flex items-center gap-1.5 px-5 py-1.5 bg-[#c1121f] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#9b1015] transition-colors"><LogOut size={12} strokeWidth={1.5}/> Xác nhận Check-Out</button>
+        </div>
+      </div>
+
+      <div className="p-7 max-w-5xl mx-auto w-full space-y-5">
+        {/* Summary bar */}
+        <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center gap-8 flex-wrap">
+          {[
+            {label:"Phòng",     value:String(row.rm)},
+            {label:"Loại",      value:row.type},
+            {label:"Arrival",   value:row.arrival},
+            {label:"Departure", value:row.departure},
+            {label:"Số đêm",    value:String(nights)},
+            {label:"Pax",       value:row.adtCh||"1"},
+            {label:"Nguồn",     value:row.company||"Direct"},
+          ].map(({label,value})=>(
+            <div key={label}>
+              <div className="text-[9px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">{label}</div>
+              <div className="mono text-[13px] font-semibold text-[#1a1a1a]">{value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-5">
+          {/* LEFT — Folio charges */}
+          <div className="col-span-2 space-y-4">
+            <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#f3f4f6]">
+                <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] flex items-center gap-2">
+                  <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Chi tiết folio
+                </h3>
+              </div>
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-[#f3f4f6] bg-[#fafafa]">
+                    {["Khoản mục","Ghi chú","Thành tiền"].map(h=>(
+                      <th key={h} className="px-5 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {charges.map((c,i)=>(
+                    <tr key={i} className="border-b border-[#f9f9f7] hover:bg-[#fafafa]">
+                      <td className="px-5 py-3 text-[12px] font-medium">{c.label}</td>
+                      <td className="px-5 py-3 text-[11px] text-[#9ca3af]">{c.note}</td>
+                      <td className="px-5 py-3 mono text-[12px] text-right font-medium">{c.amount>0?c.amount.toLocaleString()+" ₫":"—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="px-5 py-3 border-t-2 border-[#e5e7eb] space-y-2">
+                <div className="flex justify-between text-[12px]"><span className="text-[#9ca3af]">Tạm tính</span><span className="mono font-medium">{subtotal.toLocaleString()} ₫</span></div>
+                <div className="flex justify-between items-center text-[12px]">
+                  <span className="text-[#9ca3af]">Giảm giá</span>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min={0} max={100} value={discount} onChange={e=>setDiscount(Number(e.target.value))} className="mono w-14 border border-[#e5e7eb] rounded-[2px] px-2 py-1 text-[12px] outline-none focus:border-[#6b7280] text-right"/>
+                    <span className="text-[#9ca3af]">%</span>
+                    <span className="mono text-[#c1121f]">-{discountAmt.toLocaleString()} ₫</span>
+                  </div>
+                </div>
+                <div className="flex justify-between text-[12px]"><span className="text-[#9ca3af]">VAT (8%)</span><span className="mono">{VAT.toLocaleString()} ₫</span></div>
+                <div className="flex justify-between text-[14px] pt-2 border-t border-[#e5e7eb]">
+                  <span className="font-semibold">Tổng thanh toán</span>
+                  <span className="mono font-semibold text-[#2d6a4f]">{grandTotal.toLocaleString()} ₫</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT — Thanh toán */}
+          <div className="space-y-4">
+            <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+              <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
+                <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Thanh toán
+              </h3>
+              <div className="space-y-3">
+                <FieldRow label="Hình thức">
+                  <select className={selectCls} value={payMethod} onChange={e=>setPayMethod(e.target.value)}>
+                    {["Tiền mặt (VND)","Tiền mặt (USD)","Thẻ tín dụng","Chuyển khoản","Công nợ (AR)"].map(p=><option key={p}>{p}</option>)}
+                  </select>
+                </FieldRow>
+                <FieldRow label="Số tiền nhận"><input className={inputCls} placeholder={grandTotal.toLocaleString()+" ₫"} type="number"/></FieldRow>
+                <FieldRow label="Tiền thừa"><input className={inputCls} readOnly value="0 ₫"/></FieldRow>
+              </div>
+            </div>
+
+            <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+              <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-3 flex items-center gap-2">
+                <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Tóm tắt
+              </h3>
+              <div className="space-y-2 text-[12px]">
+                {[
+                  {label:"Khách",    value:row.name},
+                  {label:"Phòng",    value:String(row.rm)+" · "+row.type},
+                  {label:"Số đêm",   value:String(nights)},
+                  {label:"Tổng",     value:grandTotal.toLocaleString()+" ₫", green:true},
+                ].map(({label,value,green})=>(
+                  <div key={label} className="flex justify-between border-b border-[#f3f4f6] pb-1.5">
+                    <span className="text-[#9ca3af]">{label}</span>
+                    <span className={`mono font-medium ${green?"text-[#2d6a4f]":"text-[#374151]"}`}>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <button onClick={()=>setCoSaved(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#c1121f] text-white rounded-[2px] text-[12px] font-semibold hover:bg-[#9b1015] transition-colors">
+                <LogOut size={14} strokeWidth={1.5}/> Xác nhận Check-Out
+              </button>
+              <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
+                <DollarSign size={13} strokeWidth={1.5}/> Post Charge thêm
+              </button>
+              <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
+                <Printer size={13} strokeWidth={1.5}/> In hóa đơn
+              </button>
+              <button onClick={onClose} className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors">Hủy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // ROOM ASSIGN COMPONENT
 // ─────────────────────────────────────────────
 const AVAILABLE_ROOMS: Record<string,number[]> = {
@@ -928,6 +1315,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const [sortCol,setSortCol]=useState<keyof ArrivalRow>("rm");
   const [sortAsc,setSortAsc]=useState(true);
   const [checkInRow,setCheckInRow]=useState<ArrivalRow|null>(null);
+  const [checkOutRow,setCheckOutRow]=useState<ArrivalRow|null>(null);
   const [ciName,setCiName]=useState("");
   const [ciIdNo,setCiIdNo]=useState("");
   const [ciPhone,setCiPhone]=useState("");
@@ -1160,7 +1548,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                       const rowBg=isSelected?"bg-[#fffbeb]":isMain?(i%2===0?"bg-white":"bg-[#fafafa]"):"bg-[#f5f9ff]";
                       const mainRow=(
                         <tr key={r.folio+r.sales+i}
-                          onClick={()=>handleCheckInRowOpen(r)}
+                          onClick={()=>{ if(r.sts==='CO') setCheckOutRow(r); else handleCheckInRowOpen(r); }}
                           className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}
                           title="Click để xem chi tiết folio">
                           <td className={`pl-5 py-2.5 text-[11px] font-semibold mono ${r.sts==="CO"?"text-[#c1121f]":"text-[#2d6a4f]"}`}>{r.sts}</td>
@@ -1209,7 +1597,10 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
         </div>
       )}
 
-            {/* CHECK-IN FULLSCREEN PAGE */}
+            {/* CHECK-OUT FULLSCREEN PAGE */}
+      {checkOutRow&&<CheckOutPage row={checkOutRow} onClose={()=>setCheckOutRow(null)}/>}
+
+      {/* CHECK-IN FULLSCREEN PAGE */}
       {checkInRow&&(
         <div className="fixed inset-0 z-40 bg-[#f2f2ef] flex flex-col overflow-y-auto" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
           {/* SUCCESS SCREEN */}
