@@ -2202,10 +2202,10 @@ function AvantiLogin({onLogin}:{onLogin:(name:string,role:string)=>void}) {
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
 export default function AvantiPMS(){
+  // 1. ĐƯA TẤT CẢ CÁC HOOK LÊN TRÊN CÙNG (Không có lệnh return nào xen vào)
   const [loggedIn,setLoggedIn]=useState(false);
   const [staffName,setStaffName]=useState("");
   const [staffRole,setStaffRole]=useState("");
-  if(!loggedIn) return <AvantiLogin onLogin={(name,role)=>{setStaffName(name);setStaffRole(role);setLoggedIn(true);}}/>;
   const [currentTab,setCurrentTab]=useState<TabName>("Tổng quan");
   const [mapViewMode,setMapViewMode]=useState<MapViewMode>("hotelmap");
   const [selectedRoom,setSelectedRoom]=useState<number|null>(null);
@@ -2242,6 +2242,8 @@ export default function AvantiPMS(){
   const SimpleLegend=()=><div className="flex gap-5">{(Object.entries(ROOM_STATUS) as [RoomStatus,typeof ROOM_STATUS[RoomStatus]][]).map(([k,c])=><div key={k} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]"><span className={`w-2.5 h-2.5 rounded-[2px] border inline-block ${c.cell}`}/>{c.labelVi}</div>)}</div>;
   const MapLegend=()=><div className="flex gap-4">{(Object.entries(ROOM_STATUS) as [RoomStatus,typeof ROOM_STATUS[RoomStatus]][]).map(([k,c])=><div key={k} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]"><span className="inline-block rounded-full" style={{width:8,height:8,backgroundColor:c.dotColor,boxShadow:"0 0 0 1.5px rgba(0,0,0,0.1)"}}/>{c.labelVi}</div>)}</div>;
 
+  // 2. CHỈ ĐẶT LỆNH RETURN ĐĂNG NHẬP Ở ĐÂY (Dưới cùng sau khi đã gọi hết Hook)
+  if(!loggedIn) return <AvantiLogin onLogin={(name,role)=>{setStaffName(name);setStaffRole(role);setLoggedIn(true);}}/>;
   return (
     <div className="flex min-h-screen bg-[#f2f2ef] text-[#1a1a1a]" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
       <style>{`
