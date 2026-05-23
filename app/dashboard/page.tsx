@@ -1853,6 +1853,67 @@ function RoomPlanTab(){
 }
 
 // ─────────────────────────────────────────────
+// SIDEBAR PROPERTY SELECTOR
+// ─────────────────────────────────────────────
+const PROPERTIES = [
+  {id:"avanti",  name:"Avanti Hotel",    rooms:105, stars:4},
+  {id:"boutique",name:"Boutique Saigon", rooms:42,  stars:3},
+  {id:"resort",  name:"Avanti Resort",   rooms:78,  stars:5},
+];
+
+function SidebarProperty(){
+  const [open,setOpen]=useState(false);
+  const [selected,setSelected]=useState(PROPERTIES[0]);
+  return (
+    <div className="border-b border-[#252523]">
+      {/* Property name + toggle */}
+      <button
+        onClick={()=>setOpen(o=>!o)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#1c1c1a] transition-colors group"
+      >
+        <div className="text-left">
+          <div className="text-[9px] tracking-[0.2em] text-[#5c5c58] uppercase mb-0.5">Property Management</div>
+          <div className="text-[14px] font-semibold tracking-tight text-white leading-tight">{selected.name}</div>
+          <div className="mono text-[10px] text-[#5c5c58] mt-0.5">{selected.rooms} phòng · {"★".repeat(selected.stars)}</div>
+        </div>
+        <ChevronRight
+          size={13} strokeWidth={1.5}
+          className="text-[#3a3a38] group-hover:text-[#7a7a75] transition-all shrink-0"
+          style={{transform: open?"rotate(90deg)":"rotate(0deg)", transition:"transform 0.15s"}}
+        />
+      </button>
+      {/* Dropdown */}
+      {open&&(
+        <div className="border-t border-[#1c1c1a]">
+          {PROPERTIES.map(p=>(
+            <button
+              key={p.id}
+              onClick={()=>{setSelected(p);setOpen(false);}}
+              className={`w-full flex items-center justify-between px-5 py-3 text-left transition-colors hover:bg-[#1c1c1a] ${selected.id===p.id?"bg-[#1c1c1a]":""}`}
+            >
+              <div>
+                <div className={`text-[12px] font-medium ${selected.id===p.id?"text-white":"text-[#7a7a75]"}`}>{p.name}</div>
+                <div className="mono text-[9px] text-[#3a3a38]">{p.rooms} phòng</div>
+              </div>
+              {selected.id===p.id&&<span className="w-1.5 h-1.5 rounded-full bg-white shrink-0"/>}
+            </button>
+          ))}
+          <div className="px-5 py-2 border-t border-[#1c1c1a]">
+            <div className="mono text-[10px] text-[#3a3a38]">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})}</div>
+          </div>
+        </div>
+      )}
+      {/* Collapsed date */}
+      {!open&&(
+        <div className="px-5 pb-3">
+          <div className="mono text-[10px] text-[#5c5c58]">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // LOGIN PAGE
 // ─────────────────────────────────────────────
 
@@ -2205,8 +2266,7 @@ export default function AvantiPMS(){
 
       {/* SIDEBAR */}
       <aside className="w-52 shrink-0 flex flex-col bg-[#0f0f0e] text-white">
-        <div className="px-5 py-5 border-b border-[#252523]"><div className="text-[9px] tracking-[0.22em] text-[#5c5c58] uppercase mb-1">Property Management</div><div className="text-[16px] font-semibold tracking-tight">Avanti OS</div></div>
-        <div className="px-5 py-2.5 border-b border-[#252523]"><div className="mono text-[10px] text-[#5c5c58]">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})}</div></div>
+        <SidebarProperty/>
         <nav className="flex-1 py-2">
           {MENU_ITEMS.map(({name,icon:Icon})=>(
             <button key={name} onClick={()=>setCurrentTab(name)} className={`flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors text-[12.5px] ${currentTab===name?"text-white bg-[#252523] border-l-2 border-white":"text-[#7a7a75] hover:text-white hover:bg-[#1c1c1a] border-l-2 border-transparent"}`}>
