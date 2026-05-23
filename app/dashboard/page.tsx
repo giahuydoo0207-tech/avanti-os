@@ -1024,7 +1024,7 @@ function FolioDetail({row,onClose}:{row:ArrivalRow;onClose:()=>void}){
 // ─────────────────────────────────────────────
 // CHECKOUT COMPONENT
 // ─────────────────────────────────────────────
-function CheckOutPage({row, onClose}:{row:ArrivalRow; onClose:()=>void}){
+function CheckOutPage({row,onClose,onViewFolio}:{row:ArrivalRow;onClose:()=>void;onViewFolio:()=>void}){
   const [coSaved,setCoSaved]=useState(false);
   const [payMethod,setPayMethod]=useState("Tiền mặt (VND)");
   const [discount,setDiscount]=useState(0);
@@ -1202,8 +1202,8 @@ function CheckOutPage({row, onClose}:{row:ArrivalRow; onClose:()=>void}){
               <button onClick={()=>setCoSaved(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#c1121f] text-white rounded-[2px] text-[12px] font-semibold hover:bg-[#9b1015] transition-colors">
                 <LogOut size={14} strokeWidth={1.5}/> Xác nhận Check-Out
               </button>
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
-                <DollarSign size={13} strokeWidth={1.5}/> Post Charge thêm
+              <button onClick={onViewFolio} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
+                <DollarSign size={13} strokeWidth={1.5}/> Xem & Post Folio
               </button>
               <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
                 <Printer size={13} strokeWidth={1.5}/> In hóa đơn
@@ -1214,8 +1214,7 @@ function CheckOutPage({row, onClose}:{row:ArrivalRow; onClose:()=>void}){
         </div>
       </div>
     </div>
-  
-  )
+  );
 }
 
 // ─────────────────────────────────────────────
@@ -1302,12 +1301,10 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const [departureDate,setDepartureDate]=useState(false);
   const [departureFrom,setDepartureFrom]=useState("2026-05-14");
   const [departureTo,setDepartureTo]=useState("2026-05-14");
-  // advanced
   const [lastName,setLastName]=useState("");
   const [firstName,setFirstName]=useState("");
   const [company,setCompany]=useState("");
   const [filterStatuses,setFilterStatuses]=useState({Reserved:true,"In House":true,"Arrival Today":true,"C/O Today":true,Definite:true,Waiting:true});
-  // result state
   const [results,setResults]=useState<ArrivalRow[]|null>(null);
   const [searched,setSearched]=useState(false);
   const [searchMode,setSearchMode]=useState<"arrival"|"departure">("arrival");
@@ -1316,6 +1313,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const [sortAsc,setSortAsc]=useState(true);
   const [checkInRow,setCheckInRow]=useState<ArrivalRow|null>(null);
   const [checkOutRow,setCheckOutRow]=useState<ArrivalRow|null>(null);
+  const [folioRow,setFolioRow]=useState<ArrivalRow|null>(null);
   const [ciName,setCiName]=useState("");
   const [ciIdNo,setCiIdNo]=useState("");
   const [ciPhone,setCiPhone]=useState("");
@@ -1325,34 +1323,12 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const [ciErrors,setCiErrors]=useState<string[]>([]);
   const [ciInfoSaved,setCiInfoSaved]=useState(false);
   const [ciRoomSaved,setCiRoomSaved]=useState(false);
-  // Map lưu phòng đã gán: key = sales ref, value = {rm, type}
   const [assignedRooms,setAssignedRooms]=useState<Record<string,{rm:string;type:string}>>({});
-
-  const handleCheckInRowOpen=(r:ArrivalRow)=>{
-    setCheckInRow(r);
-    setCiName(r.name);
-    setCiIdNo("");setCiPhone("");
-    setCiRoom(r.rm?String(r.rm):"");
-    setCiRoomType(r.type||"SUPDN");
-    setCiSaved(false);setCiErrors([]);setCiInfoSaved(false);setCiRoomSaved(false);
-  };
-
-  const handleCheckInSave=()=>{
-    const hasName=!!ciName.trim();
-    const hasId=!!ciIdNo.trim();
-    const hasRoom=!!ciRoom;
-    if(!hasName&&!hasId&&!hasRoom){
-      setCiErrors(["Vui lòng nhập ít nhất một trong ba: Họ tên, CMND/Passport, hoặc Số phòng"]);
-      return;
-    }
-    setCiErrors([]);
-    setCiSaved(true);
-  };
 
   const handleSort=(col:keyof ArrivalRow)=>{if(sortCol===col)setSortAsc(a=>!a);else{setSortCol(col);setSortAsc(true);}};
 
   const doSearch=(mode:"arrival"|"departure")=>{
-    const baseData = mode==="departure" ? CHECKOUT_TODAY_DATA : ARRIVAL_TODAY_DATA;
+    const baseData=mode==="departure"?CHECKOUT_TODAY_DATA:ARRIVAL_TODAY_DATA;
     let rows=[...baseData];
     const q=(guestInfo+lastName+firstName).toLowerCase().trim();
     if(q) rows=rows.filter(r=>r.name.toLowerCase().includes(q)||r.folio.includes(q));
@@ -1363,13 +1339,28 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
       if(typeof av==="number"&&typeof bv==="number") return sortAsc?av-bv:bv-av;
       return sortAsc?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
     });
-    setSearchMode(mode);
-    setResults(rows);
-    setSearched(true);
-    setSelectedRow(null);
+    setSearchMode(mode);setResults(rows);setSearched(true);setSelectedRow(null);
   };
 
   const handleReset=()=>{setResults(null);setSearched(false);setGuestInfo("");setRoomInfo("");setLastName("");setFirstName("");setCompany("");setSelectedRow(null);};
+
+  const handleCheckInRowOpen=(r:ArrivalRow)=>{
+    setCheckInRow(r);setCiName(r.name);setCiIdNo("");setCiPhone("");
+    setCiRoom(r.rm?String(r.rm):"");setCiRoomType(r.type||"SUPDN");
+    setCiSaved(false);setCiErrors([]);setCiInfoSaved(false);setCiRoomSaved(false);
+  };
+
+  const handleCheckInSave=()=>{
+    const hasName=!!ciName.trim();const hasId=!!ciIdNo.trim();const hasRoom=!!ciRoom;
+    if(!hasName&&!hasId&&!hasRoom){setCiErrors(["Vui lòng nhập ít nhất một trong ba: Họ tên, CMND/Passport, hoặc Số phòng"]);return;}
+    setCiErrors([]);setCiSaved(true);
+  };
+
+  const natColor=(nat:string)=>{
+    if(nat==="VNM") return "text-[#15803d]";if(nat==="SGP") return "text-[#1d4ed8]";
+    if(nat==="AUS") return "text-[#b45309]";if(nat==="IDN") return "text-[#7c3aed]";
+    return "text-[#374151]";
+  };
 
   const SortTh=({col,label,className=""}:{col:keyof ArrivalRow;label:string;className?:string})=>(
     <th onClick={()=>handleSort(col)} className={`px-2 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium cursor-pointer hover:text-[#1a1a1a] select-none whitespace-nowrap ${className}`}>
@@ -1377,21 +1368,167 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
     </th>
   );
 
-  const natColor=(nat:string)=>{
-    if(nat==="VNM") return "text-[#15803d]";
-    if(nat==="SGP") return "text-[#1d4ed8]";
-    if(nat==="AUS") return "text-[#b45309]";
-    if(nat==="IDN") return "text-[#7c3aed]";
-    return "text-[#374151]";
-  };
-
   return (
     <div className="p-7 max-w-6xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-[15px] font-semibold">Tìm kiếm</h2>
-          <div className="mono text-[11px] text-[#9ca3af] mt-0.5">Guest & Reservation Search</div>
+
+      {/* FOLIO DETAIL PAGE */}
+      {folioRow&&<FolioDetail row={folioRow} onClose={()=>setFolioRow(null)}/>}
+
+      {/* CHECK-OUT PAGE */}
+      {checkOutRow&&<CheckOutPage row={checkOutRow} onClose={()=>setCheckOutRow(null)} onViewFolio={()=>{setFolioRow(checkOutRow);setCheckOutRow(null);}}/>}
+
+      {/* CHECK-IN PAGE */}
+      {checkInRow&&(
+        <div className="fixed inset-0 z-40 bg-[#f2f2ef] flex flex-col overflow-y-auto" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
+          {ciSaved?(
+            <div className="flex-1 flex flex-col items-center justify-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-[#f0fdf4] flex items-center justify-center">
+                <CheckCircle size={28} className="text-[#2d6a4f]" strokeWidth={1.5}/>
+              </div>
+              <div className="text-center">
+                <div className="text-[15px] font-semibold text-[#1a1a1a] mb-1">Check-In thành công!</div>
+                <div className="mono text-[12px] text-[#9ca3af]">Phòng {ciRoom} · {checkInRow.name}</div>
+              </div>
+              <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-8 py-5 space-y-2 text-[12px] w-80">
+                {[{label:"Folio",value:"#"+checkInRow.folio},{label:"Phòng",value:ciRoom+" · "+ciRoomType},{label:"Arrival",value:checkInRow.arrival},{label:"Departure",value:checkInRow.departure},{label:"Nguồn",value:checkInRow.company||"Direct"}].map(({label,value})=>(
+                  <div key={label} className="flex justify-between border-b border-[#f3f4f6] pb-2">
+                    <span className="text-[#9ca3af]">{label}</span>
+                    <span className="mono font-medium text-[#374151]">{value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3 mt-2">
+                <button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={13} strokeWidth={1.5}/> In Reg Card</button>
+                <button onClick={()=>{setCheckInRow(null);setCiSaved(false);}} className="px-5 py-2.5 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Đóng</button>
+              </div>
+            </div>
+          ):(
+            <>
+              {/* Header */}
+              <div className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0 sticky top-0 z-10" style={{height:52}}>
+                <div className="flex items-center gap-3">
+                  <button onClick={()=>setCheckInRow(null)} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors">
+                    <ChevronLeft size={13} strokeWidth={1.5}/> Quay lại
+                  </button>
+                  <span className="text-[#e5e7eb]">|</span>
+                  <span className="text-[12px] text-[#9ca3af]">Tìm kiếm</span>
+                  <ChevronRight size={11} className="text-[#d1d5db]" strokeWidth={1.5}/>
+                  <span className="text-[12px] font-medium text-[#1a1a1a]">Check-In — {checkInRow.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="mono text-[11px] text-[#9ca3af]">Folio #{checkInRow.folio} · Phòng {checkInRow.rm}</span>
+                  <div className="w-px h-4 bg-[#e5e7eb]"/>
+                  <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={12} strokeWidth={1.5}/> In Reg Card</button>
+                  <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><Download size={12} strokeWidth={1.5}/> Xuất PC06</button>
+                  <button onClick={()=>{setFolioRow(checkInRow);setCheckInRow(null);}} className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><DollarSign size={12} strokeWidth={1.5}/> Xem Folio</button>
+                  <button onClick={handleCheckInSave} className="flex items-center gap-1.5 px-5 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ Xác nhận Check-In</button>
+                </div>
+              </div>
+              {/* Body */}
+              <div className="p-7 max-w-6xl mx-auto w-full space-y-5">
+                {/* Summary bar */}
+                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center gap-8 flex-wrap">
+                  {[{label:"Phòng",value:String(checkInRow.rm||"—")},{label:"Loại",value:checkInRow.type||"—"},{label:"Arrival",value:checkInRow.arrival},{label:"Departure",value:checkInRow.departure},{label:"Pax",value:checkInRow.adtCh||"—"},{label:"Rate",value:checkInRow.rate>0?checkInRow.rate.toLocaleString()+" ₫":"—"},{label:"Nguồn",value:checkInRow.company||"Direct"}].map(({label,value})=>(
+                    <div key={label}>
+                      <div className="text-[9px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">{label}</div>
+                      <div className="mono text-[13px] font-semibold text-[#1a1a1a]">{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-5">
+                  {/* LEFT */}
+                  <div className="col-span-2 space-y-4">
+                    {/* Thông tin khách */}
+                    <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
+                      <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2"><span className="w-4 h-px bg-[#d1d5db] inline-block"/>Thông tin khách</h3>
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                        <div className="space-y-3">
+                          <FieldRow label="Quốc tịch"><select className={selectCls} defaultValue={checkInRow.nat==="VNM"?"VN":"OTHER"}><option value="VN">🇻🇳 Việt Nam</option>{COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}</select></FieldRow>
+                          <FieldRow label="Danh xưng"><select className={selectCls} defaultValue={checkInRow.title}>{["MR","MRS","MS","DR","PROF"].map(t=><option key={t}>{t}</option>)}</select></FieldRow>
+                          <FieldRow label="Họ và tên"><input className={inputCls} value={ciName} onChange={e=>setCiName(e.target.value)}/></FieldRow>
+                          <FieldRow label="Ngày sinh"><input type="date" className={inputCls}/></FieldRow>
+                          <FieldRow label="Giới tính"><select className={selectCls}><option>Nam / Male</option><option>Nữ / Female</option><option>Khác / Other</option></select></FieldRow>
+                          <FieldRow label="Điện thoại"><input className={inputCls} value={ciPhone} onChange={e=>setCiPhone(e.target.value)} placeholder="09xx xxx xxx / +xx xxx xxxx xxxx"/></FieldRow>
+                          <FieldRow label="Email"><input className={inputCls}/></FieldRow>
+                        </div>
+                        <div className="space-y-3">
+                          <FieldRow label="CMND / CCCD / Passport"><input className={`${inputCls} ${ciErrors.some(e=>e.includes("CMND"))?"border-[#fca5a5]":""}`} value={ciIdNo} onChange={e=>setCiIdNo(e.target.value)} placeholder="Số giấy tờ tuỳ thân"/></FieldRow>
+                          <FieldRow label="Ngày cấp"><input type="date" className={inputCls}/></FieldRow>
+                          <FieldRow label="Ngày hết hạn"><input type="date" className={inputCls}/></FieldRow>
+                          <FieldRow label="Địa chỉ / Country"><input className={inputCls} placeholder="Địa chỉ thường trú hoặc quốc gia"/></FieldRow>
+                          <FieldRow label="Công ty / TA"><input className={inputCls} defaultValue={checkInRow.company}/></FieldRow>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end pt-3 border-t border-[#f3f4f6] mt-3">
+                        {ciInfoSaved
+                          ? <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#2d6a4f]"><CheckCircle size={13} strokeWidth={1.5}/> Đã lưu thông tin</span>
+                          : <button onClick={()=>setCiInfoSaved(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ OK — Lưu thông tin</button>
+                        }
+                      </div>
+                    </div>
+                    {/* PC06 */}
+                    <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
+                      <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2"><span className="w-4 h-px bg-[#d1d5db] inline-block"/>Khai báo tạm trú (PC06) <span className="text-[9px] font-normal normal-case tracking-normal text-[#9ca3af]">— bắt buộc với khách nước ngoài</span></h3>
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                        <div className="space-y-3">
+                          <FieldRow label="Số visa"><input className={inputCls} placeholder="Để trống nếu không có"/></FieldRow>
+                          <FieldRow label="Ngày cấp visa"><input type="date" className={inputCls}/></FieldRow>
+                        </div>
+                        <div className="space-y-3">
+                          <FieldRow label="Ngày nhập cảnh"><input type="date" className={inputCls}/></FieldRow>
+                          <FieldRow label="Visa hết hạn"><input type="date" className={inputCls}/></FieldRow>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Gắn phòng */}
+                    <RoomAssign initType={checkInRow.type||"SUPDN"} initRm={checkInRow.rm||0} onChange={(rm,type)=>{setCiRoom(rm);setCiRoomType(type);setCiRoomSaved(false);}}/>
+                    <div className="flex items-center justify-end mt-1">
+                      {ciRoomSaved
+                        ? <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#2d6a4f]"><CheckCircle size={13} strokeWidth={1.5}/> Đã gắn phòng {ciRoom}</span>
+                        : <button onClick={()=>{if(ciRoom){setCiRoomSaved(true);setAssignedRooms(prev=>({...prev,[checkInRow.sales]:{rm:ciRoom,type:ciRoomType}}));setResults(prev=>prev?prev.map(r=>r.sales===checkInRow.sales?{...r,rm:Number(ciRoom),type:ciRoomType}:r):prev);}else{alert("Vui lòng chọn số phòng trước");}}} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ OK — Xác nhận phòng</button>
+                      }
+                    </div>
+                    {/* Ghi chú */}
+                    <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
+                      <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2"><span className="w-4 h-px bg-[#d1d5db] inline-block"/>Yêu cầu đặc biệt</h3>
+                      <textarea className="w-full border border-[#e5e7eb] rounded-[2px] px-3 py-2 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] resize-none h-20" placeholder="Non-smoking, high floor, extra pillow..."/>
+                    </div>
+                  </div>
+                  {/* RIGHT */}
+                  <div className="space-y-4">
+                    <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+                      <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2"><span className="w-4 h-px bg-[#d1d5db] inline-block"/>Tóm tắt folio</h3>
+                      <RateTable nights={3} roomType={checkInRow.type||"SUPDN"}/>
+                    </div>
+                    <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
+                      <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2"><span className="w-4 h-px bg-[#d1d5db] inline-block"/>Thanh toán</h3>
+                      <div className="space-y-3">
+                        <FieldRow label="Hình thức"><select className={selectCls}><option>Tiền mặt (VND)</option><option>Tiền mặt (USD)</option><option>Thẻ tín dụng</option><option>Chuyển khoản</option><option>Công nợ (AR)</option></select></FieldRow>
+                        <FieldRow label="Đặt cọc"><input className={inputCls} placeholder="0 ₫" type="number"/></FieldRow>
+                        <FieldRow label="Meal Plan"><select className={selectCls}><option>RO — Room Only</option><option>BB — Bed & Breakfast</option><option>HB — Half Board</option><option>FB — Full Board</option></select></FieldRow>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {ciErrors.length>0&&(
+                        <div className="border border-[#fca5a5] bg-[#fff1f2] rounded-[2px] px-4 py-3 space-y-1">
+                          {ciErrors.map((e,i)=><div key={i} className="text-[11px] text-[#c1121f] flex items-start gap-1.5"><span className="shrink-0 mt-0.5">•</span>{e}</div>)}
+                        </div>
+                      )}
+                      <button onClick={handleCheckInSave} className="w-full px-4 py-3 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-semibold hover:bg-[#252523] transition-colors">✓ Xác nhận Check-In</button>
+                      <button className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Lưu nháp</button>
+                      <button onClick={()=>setCheckInRow(null)} className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors">Hủy</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
+      )}
+
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-[15px] font-semibold">Tìm kiếm</h2><div className="mono text-[11px] text-[#9ca3af] mt-0.5">Guest & Reservation Search</div></div>
         <div className="flex gap-2">
           <button className="px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Walk In</button>
           <button className="px-4 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">+ New Reservation</button>
@@ -1416,14 +1553,10 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
           </div>
         </div>
         <div className="flex items-center justify-between pt-4 border-t border-[#f3f4f6]">
-          <label className="flex items-center gap-1.5 text-[12px] text-[#6b7280] cursor-pointer">
-            <input type="checkbox" checked={inHouse} onChange={e=>setInHouse(e.target.checked)} className="w-3 h-3 accent-[#0f0f0e]"/> In House
-          </label>
+          <label className="flex items-center gap-1.5 text-[12px] text-[#6b7280] cursor-pointer"><input type="checkbox" checked={inHouse} onChange={e=>setInHouse(e.target.checked)} className="w-3 h-3 accent-[#0f0f0e]"/> In House</label>
           <div className="flex gap-2">
             <button onClick={handleReset} className="px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">Xóa</button>
-            <button onClick={()=>doSearch(departureDate?"departure":"arrival")} className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">
-              <Search size={12} strokeWidth={1.5}/> Tìm kiếm
-            </button>
+            <button onClick={()=>doSearch(departureDate?"departure":"arrival")} className="flex items-center gap-2 px-5 py-2 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors"><Search size={12} strokeWidth={1.5}/> Tìm kiếm</button>
           </div>
         </div>
       </Card>
@@ -1443,14 +1576,11 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
             <FieldRow label="Market Segment"><input className={inputCls}/></FieldRow>
           </div>
         </div>
-
         {/* Date filters */}
         <div className="border border-[#e5e7eb] rounded-[2px] p-4 mb-3 bg-[#fafafa] space-y-3">
-          {/* Arrival date */}
           <div className="flex flex-wrap items-center gap-6">
             <label className="flex items-center gap-2 text-[12px] text-[#374151] font-medium cursor-pointer w-32">
-              <input type="checkbox" checked={arrivalDate} onChange={e=>{setArrivalDate(e.target.checked);if(e.target.checked)setDepartureDate(false);}} className="w-3.5 h-3.5 accent-[#0f0f0e]"/>
-              Arrival date
+              <input type="checkbox" checked={arrivalDate} onChange={e=>{setArrivalDate(e.target.checked);if(e.target.checked)setDepartureDate(false);}} className="w-3.5 h-3.5 accent-[#0f0f0e]"/>Arrival date
             </label>
             <div className="flex items-center gap-2 text-[12px]">
               <span className="text-[#9ca3af]">From</span>
@@ -1459,7 +1589,6 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
               <input type="date" value={arrivalTo} onChange={e=>setArrivalTo(e.target.value)} disabled={!arrivalDate} className="mono text-[12px] border border-[#e5e7eb] rounded-[2px] px-2 py-1 outline-none focus:border-[#6b7280] bg-white disabled:opacity-40"/>
             </div>
           </div>
-          {/* Departure date */}
           <div className="flex flex-wrap items-center gap-6 pt-2.5 border-t border-[#e5e7eb]">
             <label className="flex items-center gap-2 text-[12px] text-[#374151] font-medium cursor-pointer w-32">
               <input type="checkbox" checked={departureDate} onChange={e=>{setDepartureDate(e.target.checked);if(e.target.checked)setArrivalDate(false);}} className="w-3.5 h-3.5 accent-[#c1121f]"/>
@@ -1473,7 +1602,6 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
             </div>
           </div>
         </div>
-
         <div className="flex items-center justify-between border-t border-[#f3f4f6] pt-4">
           <div className="flex flex-wrap gap-4">
             {(Object.keys(filterStatuses) as (keyof typeof filterStatuses)[]).map(s=>(
@@ -1486,21 +1614,16 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
         </div>
       </Card>
 
-      {/* Results — fullscreen page, ẩn form và sidebar context */}
+      {/* FULLSCREEN RESULTS */}
       {searched && results !== null && (
         <div className="fixed inset-0 z-30 bg-[#f2f2ef] flex flex-col" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
-          {/* Header */}
           <div className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0" style={{height:52}}>
             <div className="flex items-center gap-3">
-              <button onClick={handleReset} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors">
-                <ChevronLeft size={13} strokeWidth={1.5}/> Quay lại
-              </button>
+              <button onClick={handleReset} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors"><ChevronLeft size={13} strokeWidth={1.5}/> Quay lại</button>
               <span className="text-[#e5e7eb]">|</span>
               <span className="text-[12px] text-[#9ca3af]">Tìm kiếm</span>
               <ChevronRight size={11} className="text-[#d1d5db]" strokeWidth={1.5}/>
-              <span className="text-[12px] font-medium text-[#1a1a1a]">
-                {searchMode==="departure" ? "Danh sách Check-out" : "Danh sách Check-in"}
-              </span>
+              <span className="text-[12px] font-medium text-[#1a1a1a]">{searchMode==="departure"?"Danh sách Check-out":"Danh sách Check-in"}</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -1512,8 +1635,6 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
               <span className="text-[11px] text-[#9ca3af] italic">Click vào tiêu đề cột để sắp xếp · Click dòng để xem chi tiết</span>
             </div>
           </div>
-
-          {/* Table */}
           <div className="flex-1 overflow-auto px-7 py-5">
             <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
               <div className="overflow-x-auto">
@@ -1548,9 +1669,8 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                       const rowBg=isSelected?"bg-[#fffbeb]":isMain?(i%2===0?"bg-white":"bg-[#fafafa]"):"bg-[#f5f9ff]";
                       const mainRow=(
                         <tr key={r.folio+r.sales+i}
-                          onClick={()=>{ if(r.sts==='CO') setCheckOutRow(r); else handleCheckInRowOpen(r); }}
-                          className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}
-                          title="Click để xem chi tiết folio">
+                          onClick={()=>{setSelectedRow(isSelected?null:r.folio+r.sales);if(r.sts==="CO")setCheckOutRow(r);else handleCheckInRowOpen(r);}}
+                          className={`border-b border-[#f3f4f6] cursor-pointer transition-colors hover:bg-[#fffbeb] ${rowBg}`}>
                           <td className={`pl-5 py-2.5 text-[11px] font-semibold mono ${r.sts==="CO"?"text-[#c1121f]":"text-[#2d6a4f]"}`}>{r.sts}</td>
                           <td className="px-2 py-2.5 mono text-[11px] text-[#9ca3af]">{r.stt}</td>
                           <td className="px-2 py-2.5 mono text-[11px] font-medium text-[#374151]">{r.folio}</td>
@@ -1559,9 +1679,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                           <td className="px-2 py-2.5 text-[12px] font-medium max-w-[160px] truncate">{r.name}</td>
                           <td className="px-2 py-2.5 mono text-[11px] text-right">{r.rate>0?r.rate.toLocaleString():""}</td>
                           <td className="px-2 py-2.5 mono text-[12px] font-semibold text-[#374151]">
-                            {assignedRooms[r.sales]?.rm
-                              ? <span className="text-[#15803d]">{assignedRooms[r.sales].rm}</span>
-                              : r.rm||""}
+                            {assignedRooms[r.sales]?.rm?<span className="text-[#15803d]">{assignedRooms[r.sales].rm}</span>:r.rm||""}
                           </td>
                           <td className="px-2 py-2.5">
                             {(assignedRooms[r.sales]?.type||r.type)&&<span className="mono text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium" style={{background:"#f0fdf4",color:"#15803d",border:"1px solid #86efac"}}>{assignedRooms[r.sales]?.type||r.type}</span>}
@@ -1585,248 +1703,19 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
               </div>
             </div>
           </div>
-
-          {/* Footer */}
           <div className="bg-white border-t border-[#e5e7eb] px-7 py-3 flex items-center gap-3 shrink-0">
             <span className="text-[12px] font-medium text-[#374151]">Total: {results.length}</span>
+            {selectedRow&&(
+              <>
+                <div className="w-px h-4 bg-[#e5e7eb]"/>
+                <span className="text-[11px] text-[#6b7280]">Click dòng để xem chi tiết</span>
+                {results&&(()=>{const r=results.find(r=>r.folio+r.sales===selectedRow);return r?<button onClick={()=>setFolioRow(r)} className="flex items-center gap-1.5 px-3 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#0f0f0e] hover:text-white hover:border-[#0f0f0e] transition-colors"><DollarSign size={11} strokeWidth={1.5}/> Xem Folio</button>:null;})()}
+              </>
+            )}
             <div className="flex-1"/>
-            <button onClick={handleReset} className="flex items-center gap-1.5 px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors">
-              <ChevronLeft size={12} strokeWidth={1.5}/> Quay lại tìm kiếm
-            </button>
+            <button onClick={handleReset} className="flex items-center gap-1.5 px-4 py-2 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors"><ChevronLeft size={12} strokeWidth={1.5}/> Quay lại tìm kiếm</button>
           </div>
         </div>
-      )}
-
-            {/* CHECK-OUT FULLSCREEN PAGE */}
-      {checkOutRow&&<CheckOutPage row={checkOutRow} onClose={()=>setCheckOutRow(null)}/>}
-
-      {/* CHECK-IN FULLSCREEN PAGE */}
-      {checkInRow&&(
-        <div className="fixed inset-0 z-40 bg-[#f2f2ef] flex flex-col overflow-y-auto" style={{fontFamily:"'DM Sans','Helvetica Neue',Arial,sans-serif"}}>
-          {/* SUCCESS SCREEN */}
-          {ciSaved&&(
-            <div className="flex-1 flex flex-col items-center justify-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-[#f0fdf4] flex items-center justify-center">
-                <CheckCircle size={32} className="text-[#2d6a4f]" strokeWidth={1.5}/>
-              </div>
-              <div className="text-center">
-                <div className="text-[15px] font-semibold text-[#1a1a1a] mb-1">Check-In thành công!</div>
-                <div className="mono text-[12px] text-[#9ca3af]">Phòng {ciRoom} · {checkInRow.name}</div>
-              </div>
-              <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-8 py-5 space-y-2 text-[12px] w-80">
-                {[
-                  {label:"Folio",   value:"#"+checkInRow.folio},
-                  {label:"Phòng",   value:ciRoom+" · "+ciRoomType},
-                  {label:"Arrival", value:checkInRow.arrival},
-                  {label:"Departure",value:checkInRow.departure},
-                  {label:"Nguồn",  value:checkInRow.company||"Direct"},
-                ].map(({label,value})=>(
-                  <div key={label} className="flex justify-between border-b border-[#f3f4f6] pb-2">
-                    <span className="text-[#9ca3af]">{label}</span>
-                    <span className="mono font-medium text-[#374151]">{value}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-3 mt-2">
-                <button className="flex items-center gap-1.5 px-5 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={13} strokeWidth={1.5}/> In Reg Card</button>
-                <button onClick={()=>{setCheckInRow(null);setCiSaved(false);}} className="px-5 py-2.5 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-medium hover:bg-[#252523] transition-colors">Đóng</button>
-              </div>
-            </div>
-          )}
-          {!ciSaved&&<>
-        {/* Header */}
-          <div className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0 sticky top-0 z-10" style={{height:52}}>
-            <div className="flex items-center gap-3">
-              <button onClick={()=>setCheckInRow(null)} className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#1a1a1a] font-medium transition-colors">
-                <ChevronLeft size={13} strokeWidth={1.5}/> Quay lại
-              </button>
-              <span className="text-[#e5e7eb]">|</span>
-              <span className="text-[12px] text-[#9ca3af]">Tìm kiếm</span>
-              <ChevronRight size={11} className="text-[#d1d5db]" strokeWidth={1.5}/>
-              <span className="text-[12px] font-medium text-[#1a1a1a]">Check-In — {checkInRow.name}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="mono text-[11px] text-[#9ca3af]">Folio #{checkInRow.folio} · Phòng {checkInRow.rm}</span>
-              <div className="w-px h-4 bg-[#e5e7eb]"/>
-              <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><Printer size={12} strokeWidth={1.5}/> In Reg Card</button>
-              <button className="flex items-center gap-1.5 px-4 py-1.5 border border-[#e5e7eb] rounded-[2px] text-[11px] font-medium hover:bg-[#f9f9f7] transition-colors"><Download size={12} strokeWidth={1.5}/> Xuất PC06</button>
-              <button onClick={handleCheckInSave} className="flex items-center gap-1.5 px-5 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ Xác nhận Check-In</button>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="p-7 max-w-6xl mx-auto w-full space-y-5">
-            {/* Booking summary bar */}
-            <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center gap-8 flex-wrap">
-              {[
-                {label:"Phòng",    value:String(checkInRow.rm),       mono:true},
-                {label:"Loại",     value:checkInRow.type||"—",         mono:true},
-                {label:"Arrival",  value:checkInRow.arrival,           mono:true},
-                {label:"Departure",value:checkInRow.departure,         mono:true},
-                {label:"Pax",      value:checkInRow.adtCh||"—",        mono:true},
-                {label:"Rate",     value:checkInRow.rate>0?checkInRow.rate.toLocaleString()+" ₫":"—", mono:true},
-                {label:"Nguồn",    value:checkInRow.company||"Direct", mono:false},
-              ].map(({label,value,mono})=>(
-                <div key={label}>
-                  <div className="text-[9px] uppercase tracking-[0.12em] text-[#9ca3af] mb-0.5">{label}</div>
-                  <div className={`text-[13px] font-semibold text-[#1a1a1a] ${mono?"mono":""}`}>{value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-3 gap-5">
-              {/* LEFT — Thông tin khách */}
-              <div className="col-span-2 space-y-4">
-
-                {/* Thông tin cá nhân */}
-                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
-                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
-                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Thông tin khách
-                  </h3>
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                    {/* Cột trái */}
-                    <div className="space-y-3">
-                      <FieldRow label="Quốc tịch">
-                        <select className={selectCls} defaultValue={checkInRow.nat==="VNM"?"VN":"OTHER"}>
-                          <option value="VN">🇻🇳 Việt Nam</option>
-                          {COUNTRIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}
-                        </select>
-                      </FieldRow>
-                      <FieldRow label="Danh xưng">
-                        <select className={selectCls} defaultValue={checkInRow.title}>
-                          {["MR","MRS","MS","DR","PROF"].map(t=><option key={t}>{t}</option>)}
-                        </select>
-                      </FieldRow>
-                      <FieldRow label="Họ và tên"><input className={inputCls} value={ciName} onChange={e=>setCiName(e.target.value)}/></FieldRow>
-                      <FieldRow label="Ngày sinh"><input type="date" className={inputCls}/></FieldRow>
-                      <FieldRow label="Giới tính">
-                        <select className={selectCls}><option>Nam / Male</option><option>Nữ / Female</option><option>Khác / Other</option></select>
-                      </FieldRow>
-                      <FieldRow label="Điện thoại"><input className={inputCls} value={ciPhone} onChange={e=>setCiPhone(e.target.value)} placeholder="09xx xxx xxx / +xx xxx xxxx xxxx"/></FieldRow>
-                      <FieldRow label="Email"><input className={inputCls} placeholder=""/></FieldRow>
-                    </div>
-                    {/* Cột phải */}
-                    <div className="space-y-3">
-                      <FieldRow label="CMND / CCCD / Passport"><input className={`${inputCls} ${ciErrors.some(e=>e.includes("CMND"))?"border-[#fca5a5]":""}`} value={ciIdNo} onChange={e=>setCiIdNo(e.target.value)} placeholder="Số giấy tờ tuỳ thân"/></FieldRow>
-                      <FieldRow label="Ngày cấp"><input type="date" className={inputCls}/></FieldRow>
-
-                      <FieldRow label="Ngày hết hạn"><input type="date" className={inputCls}/></FieldRow>
-                      <FieldRow label="Địa chỉ / Country of Residence"><input className={inputCls} placeholder="Địa chỉ thường trú hoặc quốc gia cư trú"/></FieldRow>
-                      <FieldRow label="Công ty / TA"><input className={inputCls} defaultValue={checkInRow.company}/></FieldRow>
-                    </div>
-                  </div>
-                  {/* OK Thông tin khách */}
-                  <div className="flex items-center justify-end pt-3 border-t border-[#f3f4f6] mt-1">
-                    {ciInfoSaved
-                      ? <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#2d6a4f]"><CheckCircle size={13} strokeWidth={1.5}/> Đã lưu thông tin</span>
-                      : <button onClick={()=>setCiInfoSaved(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ OK — Lưu thông tin</button>
-                    }
-                  </div>
-                </div>
-
-                {/* PC06 — Khai báo tạm trú (hiện cho cả 2 loại khách) */}
-                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
-                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
-                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Khai báo tạm trú (PC06)
-                    <span className="text-[9px] font-normal normal-case tracking-normal text-[#9ca3af]">— bắt buộc với khách nước ngoài</span>
-                  </h3>
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                    <div className="space-y-3">
-
-                      <FieldRow label="Số visa"><input className={inputCls} placeholder="Để trống nếu không có"/></FieldRow>
-                      <FieldRow label="Ngày cấp visa"><input type="date" className={inputCls}/></FieldRow>
-                    </div>
-                    <div className="space-y-3">
-
-                      <FieldRow label="Ngày nhập cảnh"><input type="date" className={inputCls}/></FieldRow>
-                      <FieldRow label="Visa hết hạn"><input type="date" className={inputCls}/></FieldRow>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Gắn phòng */}
-                <RoomAssign initType={checkInRow.type||"SUPDN"} initRm={checkInRow.rm||0} onChange={(rm,type)=>{setCiRoom(rm);setCiRoomType(type);setCiRoomSaved(false);}}/>
-                <div className="flex items-center justify-end mt-1">
-                  {ciRoomSaved
-                    ? <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#2d6a4f]"><CheckCircle size={13} strokeWidth={1.5}/> Đã gắn phòng {ciRoom}</span>
-                    : <button onClick={()=>{
-                        if(ciRoom){
-                          setCiRoomSaved(true);
-                          setAssignedRooms(prev=>({...prev,[checkInRow.sales]:{rm:ciRoom,type:ciRoomType}}));
-                          setResults(prev=>prev?prev.map(r=>r.sales===checkInRow.sales?{...r,rm:Number(ciRoom),type:ciRoomType}:r):prev);
-                        }else{alert("Vui lòng chọn số phòng trước");}
-                      }} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0f0f0e] text-white rounded-[2px] text-[11px] font-medium hover:bg-[#252523] transition-colors">✓ OK — Xác nhận phòng</button>
-                  }
-                </div>
-
-                {/* Ghi chú */}
-                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-6">
-                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
-                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Yêu cầu đặc biệt
-                  </h3>
-                  <textarea className="w-full border border-[#e5e7eb] rounded-[2px] px-3 py-2 text-[12px] outline-none focus:border-[#6b7280] bg-[#fafafa] resize-none h-20" placeholder="Non-smoking, high floor, extra pillow, early check-in, late check-out..."/>
-                </div>
-              </div>
-
-              {/* RIGHT — Tóm tắt + thanh toán */}
-              <div className="space-y-4">
-                {/* Tóm tắt folio */}
-                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
-                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
-                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Tóm tắt folio
-                  </h3>
-                  <RateTable nights={3} roomType={checkInRow.type||"SUPDN"}/>
-                </div>
-
-                {/* Thanh toán */}
-                <div className="bg-white border border-[#e5e7eb] rounded-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.05)] p-5">
-                  <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#9ca3af] mb-4 flex items-center gap-2">
-                    <span className="w-4 h-px bg-[#d1d5db] inline-block"/>Thanh toán
-                  </h3>
-                  <div className="space-y-3">
-                    <FieldRow label="Hình thức">
-                      <select className={selectCls}>
-                        <option>Tiền mặt (VND)</option>
-                        <option>Tiền mặt (USD)</option>
-                        <option>Thẻ tín dụng</option>
-                        <option>Chuyển khoản</option>
-                        <option>Công nợ (AR)</option>
-                      </select>
-                    </FieldRow>
-                    <FieldRow label="Đặt cọc"><input className={inputCls} placeholder="0 ₫" type="number"/></FieldRow>
-                    <FieldRow label="Meal Plan">
-                      <select className={selectCls}>
-                        <option>RO — Room Only</option>
-                        <option>BB — Bed & Breakfast</option>
-                        <option>HB — Half Board</option>
-                        <option>FB — Full Board</option>
-                      </select>
-                    </FieldRow>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="space-y-2">
-                  {ciErrors.length>0&&(
-                    <div className="border border-[#fca5a5] bg-[#fff1f2] rounded-[2px] px-4 py-3 space-y-1">
-                      {ciErrors.map((e,i)=><div key={i} className="text-[11px] text-[#c1121f] flex items-start gap-1.5"><span className="shrink-0 mt-0.5">•</span>{e}</div>)}
-                    </div>
-                  )}
-                  <button onClick={handleCheckInSave} className="w-full px-4 py-3 bg-[#0f0f0e] text-white rounded-[2px] text-[12px] font-semibold hover:bg-[#252523] transition-colors">
-                    ✓ Xác nhận Check-In
-                  </button>
-                  <button className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium hover:bg-[#f9f9f7] transition-colors">
-                    Lưu nháp
-                  </button>
-                  <button onClick={()=>setCheckInRow(null)} className="w-full px-4 py-2.5 border border-[#e5e7eb] rounded-[2px] text-[12px] font-medium text-[#9ca3af] hover:text-[#c1121f] hover:border-[#fca5a5] transition-colors">
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>}
-      </div>
       )}
 
       {/* Waiting list — always shown */}
@@ -1861,6 +1750,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────
 // ROOM PLAN TAB
