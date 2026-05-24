@@ -72,6 +72,8 @@ export default function AvantiLogin() {
     if (!name.trim()) { setError("Vui lòng nhập họ và tên"); return; }
     if (!selectedRole) { setError("Vui lòng chọn vai trò"); return; }
     setError("");
+    localStorage.setItem("staffName", name.trim());
+    localStorage.setItem("staffRole", selectedRole);
     router.push("/dashboard");
   };
 
