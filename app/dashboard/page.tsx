@@ -1927,13 +1927,18 @@ export default function AvantiPMS(){
   // Auth check — redirect nếu chưa đăng nhập
   useEffect(()=>{
     setIsMounted(true);
-    const savedName=localStorage.getItem("staffName");
-    const savedRole=localStorage.getItem("staffRole");
-    if(savedName&&savedRole){
-      setStaffName(savedName);
-      setStaffRole(savedRole);
-      setLoggedIn(true);
-    } else {
+    if(typeof window==="undefined") return;
+    try {
+      const savedName=localStorage.getItem("staffName");
+      const savedRole=localStorage.getItem("staffRole");
+      if(savedName&&savedRole){
+        setStaffName(savedName);
+        setStaffRole(savedRole);
+        setLoggedIn(true);
+      } else {
+        router.push("/");
+      }
+    } catch(e){
       router.push("/");
     }
   },[router]);
