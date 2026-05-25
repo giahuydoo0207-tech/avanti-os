@@ -1289,7 +1289,21 @@ function RoomAssign({initType,initRm,onChange}:{initType:string;initRm:number;on
 
 // ─────────────────────────────────────────────
 // SEARCH TAB (Tìm kiếm khách hàng)
+// ─────────────────────────────────────────────// ─────────────────────────────────────────────
+// SORT TH COMPONENT
 // ─────────────────────────────────────────────
+function SortTh({col,label,className="",sortCol,sortAsc,onSort}:{
+  col:keyof ArrivalRow;label:string;className?:string;
+  sortCol:keyof ArrivalRow;sortAsc:boolean;onSort:(col:keyof ArrivalRow)=>void;
+}){
+  return (
+    <th onClick={()=>onSort(col)} className={`px-2 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium cursor-pointer hover:text-[#1a1a1a] select-none whitespace-nowrap ${className}`}>
+      {label}{sortCol===col?<span className="ml-0.5 text-[#0f0f0e]">{sortAsc?"↑":"↓"}</span>:<span className="ml-0.5 opacity-0">↑</span>}
+    </th>
+  );
+}
+
+
 function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
   const router = useRouter();
   const [guestInfo,setGuestInfo]=useState("");
@@ -1362,11 +1376,7 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
     return "text-[#374151]";
   };
 
-  const SortTh=({col,label,className=""}:{col:keyof ArrivalRow;label:string;className?:string})=>(
-    <th onClick={()=>handleSort(col)} className={`px-2 py-2.5 text-[9px] tracking-[0.1em] uppercase text-[#9ca3af] font-medium cursor-pointer hover:text-[#1a1a1a] select-none whitespace-nowrap ${className}`}>
-      {label}{sortCol===col?<span className="ml-0.5 text-[#0f0f0e]">{sortAsc?"↑":"↓"}</span>:<span className="ml-0.5 opacity-0">↑</span>}
-    </th>
-  );
+
 
   return (
     <div className="p-7 max-w-6xl mx-auto space-y-4">
@@ -1641,23 +1651,23 @@ function SearchTab({onAssignRoom}:{onAssignRoom:()=>void}){
                 <table className="w-full text-left border-collapse" style={{minWidth:1100}}>
                   <thead>
                     <tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa] sticky top-0 z-10">
-                      <SortTh col="sts"       label="Sts"    className="pl-5"/>
-                      <SortTh col="stt"       label="Stt"/>
-                      <SortTh col="folio"     label="Folio #"/>
-                      <SortTh col="conf"      label="Conf #"/>
-                      <SortTh col="title"     label="Title"/>
-                      <SortTh col="name"      label="Tên khách"/>
-                      <SortTh col="rate"      label="Rate"/>
-                      <SortTh col="rm"        label="Rm"/>
-                      <SortTh col="type"      label="Type"/>
-                      <SortTh col="booked"    label="Booked"/>
-                      <SortTh col="arrival"   label="Arrival"/>
-                      <SortTh col="departure" label="Departure"/>
-                      <SortTh col="adtCh"     label="Adt/Ch"/>
-                      <SortTh col="company"   label="Company"/>
-                      <SortTh col="sales"     label="Sales"/>
-                      <SortTh col="bkSts"     label="BkSts"/>
-                      <SortTh col="nat"       label="NAT"    className="pr-5"/>
+                      <SortTh col="sts"       label="Sts"    className="pl-5" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="stt"       label="Stt" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="folio"     label="Folio #" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="conf"      label="Conf #" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="title"     label="Title" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="name"      label="Tên khách" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="rate"      label="Rate" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="rm"        label="Rm" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="type"      label="Type" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="booked"    label="Booked" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="arrival"   label="Arrival" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="departure" label="Departure" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="adtCh"     label="Adt/Ch" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="company"   label="Company" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="sales"     label="Sales" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="bkSts"     label="BkSts" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
+                      <SortTh col="nat"       label="NAT"    className="pr-5" sortCol={sortCol} sortAsc={sortAsc} onSort={handleSort}/>
                     </tr>
                   </thead>
                   <tbody>
@@ -1943,12 +1953,6 @@ export default function AvantiPMS(){
     }
   },[router]);
 
-  if(!isMounted) return null;
-  if(!loggedIn) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f2f2ef]" style={{fontFamily:"'DM Sans',sans-serif"}}>
-      <div className="text-[13px] text-[#9ca3af] mono">Đang chuyển hướng đến trang đăng nhập...</div>
-    </div>
-  );
   const [mapViewMode,setMapViewMode]=useState<MapViewMode>("hotelmap");
   const [selectedRoom,setSelectedRoom]=useState<number|null>(null);
   const [cashierView,setCashierView]=useState<"menu"|"postTransaction">("menu");
@@ -1961,7 +1965,6 @@ export default function AvantiPMS(){
     if(currentTab==="Thu ngân")setCashierView("menu");
     setSelectedRoom(null);
   },[currentTab]);
-
   const floors=useMemo(()=>buildFloors(),[]);
   const allRooms=useMemo(()=>floors.flatMap(f=>f.rooms),[floors]);
   const mapStats=useMemo(()=>({clean:allRooms.filter(r=>r.status==="clean").length,occupied:allRooms.filter(r=>r.status==="occupied").length,dirty:allRooms.filter(r=>r.status==="dirty").length}),[allRooms]);
@@ -1969,6 +1972,17 @@ export default function AvantiPMS(){
   const availDates=useMemo(()=>buildDates(availStartDate,availNumDays),[availStartDate,availNumDays]);
   const dailyTotals=useMemo(()=>Array.from({length:availNumDays},(_,i)=>ROOM_TYPES_AVAILABILITY.reduce((s,rt)=>s+(rt.available[i]??0),0)),[availNumDays]);
   const dailyDefinite=useMemo(()=>Array.from({length:availNumDays},(_,i)=>ROOM_TYPES_AVAILABILITY.reduce((s,rt)=>s+(rt.definite[i]??0),0)),[availNumDays]);
+
+  if(!isMounted) return null;
+  if(!loggedIn) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f2f2ef]" style={{fontFamily:"'DM Sans',sans-serif"}}>
+      <div className="text-[13px] text-[#9ca3af] mono">Đang chuyển hướng đến trang đăng nhập...</div>
+    </div>
+  );
+
+
+
+
   const totalAvailRooms=ROOM_TYPES_AVAILABILITY.reduce((s,rt)=>s+rt.total,0);
   const selectedRoomData=selectedRoom!==null?allRooms.find(r=>r.id===selectedRoom):null;
 
