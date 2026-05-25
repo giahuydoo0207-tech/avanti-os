@@ -67,13 +67,17 @@ export default function AvantiLogin() {
   const [name, setName] = useState("");
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState("avanti");
+  const [showBranchList, setShowBranchList] = useState(false);
 
   const handleLogin = () => {
     if (!name.trim()) { setError("Vui lòng nhập họ và tên"); return; }
     if (!selectedRole) { setError("Vui lòng chọn vai trò"); return; }
     setError("");
-    localStorage.setItem("staffName", name.trim());
-    localStorage.setItem("staffRole", selectedRole);
+    if(typeof window!=="undefined"){
+      localStorage.setItem("staffName", name.trim());
+      localStorage.setItem("staffRole", selectedRole!);
+    }
     router.push("/dashboard");
   };
 
@@ -93,43 +97,84 @@ export default function AvantiLogin() {
 
       {/* LEFT PANEL — branding */}
       <div
-        className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 px-12 py-12"
+        className="hidden lg:flex flex-col justify-between w-[420px] shrink-0"
         style={{ background: "#0f0f0e", borderRight: "1px solid #1c1c1a" }}
       >
-        {/* Logo */}
-        <div>
-          <div className="text-[9px] tracking-[0.22em] text-[#3a3a38] uppercase mb-2">Property Management System</div>
-          <div className="text-[28px] font-semibold tracking-tight text-white leading-tight">Avanti OS</div>
-          <div className="mono text-[11px] text-[#5c5c58] mt-1">v6.081 · Build 2026</div>
-        </div>
-
-        {/* Stats */}
-        <div className="space-y-6">
-          <div className="text-[9px] tracking-[0.18em] uppercase text-[#3a3a38] mb-4">Hôm nay</div>
-          {[
-            { label: "Arrivals", value: "15", color: "#22c55e" },
-            { label: "Departures", value: "8", color: "#ef4444" },
-            { label: "In House", value: "43", color: "#f59e0b" },
-            { label: "Available", value: "49", color: "#6b7280" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
-                <span className="text-[12px] text-[#7a7a75]">{label}</span>
-              </div>
-              <span className="mono text-[16px] font-light text-white">{value}</span>
+        {/* TOP — Avanti Hotel */}
+        <button
+          onClick={()=>setSelectedBranch("avanti")}
+          className="flex items-center justify-between px-10 py-8 transition-colors hover:bg-[#1c1c1a] text-left"
+          style={{borderBottom:"1px solid #1c1c1a", background: selectedBranch==="avanti"?"#1c1c1a":"transparent"}}
+        >
+          <div>
+            <div className="text-[9px] tracking-[0.22em] text-[#3a3a38] uppercase mb-2">Property Management System</div>
+            <div className="text-[26px] font-semibold tracking-tight text-white leading-tight">Avanti OS</div>
+            <div className="mono text-[11px] text-[#5c5c58] mt-1">v6.081 · Build 2026</div>
+            <div className="mt-4 text-[11px] font-medium" style={{color: selectedBranch==="avanti"?"#ffffff":"#5c5c58"}}>
+              Avanti Hotel
             </div>
-          ))}
+            <div className="text-[10px] text-[#3a3a38]">105 phòng · 4★ · Quận 1, TP.HCM</div>
+          </div>
+          <ChevronRight size={16} strokeWidth={1.5} style={{color: selectedBranch==="avanti"?"#ffffff":"#3a3a38", flexShrink:0}}/>
+        </button>
+
+        {/* MIDDLE — Branch location bar */}
+        <div className="flex-1 flex flex-col justify-center px-10">
+          <div className="text-[9px] tracking-[0.18em] uppercase text-[#3a3a38] mb-4">Chi nhánh đang chọn</div>
+          <div
+            className="flex items-center justify-between px-4 py-3 rounded-[2px] cursor-pointer"
+            style={{background:"#1c1c1a", border:"1px solid #2a2a28"}}
+            onClick={()=>setShowBranchList(s=>!s)}
+          >
+            <div>
+              <div className="text-[12px] font-semibold text-white">
+                {selectedBranch==="avanti"?"Avanti Hotel":"Avanti Boutique"}
+              </div>
+              <div className="mono text-[10px] text-[#5c5c58]">
+                {selectedBranch==="avanti"?"Quận 1, TP.HCM":"Quận 3, TP.HCM"}
+              </div>
+            </div>
+            <ChevronRight
+              size={14} strokeWidth={1.5}
+              style={{color:"#5c5c58", flexShrink:0, transform: showBranchList?"rotate(90deg)":"rotate(0deg)", transition:"transform 0.15s"}}
+            />
+          </div>
+          {showBranchList&&(
+            <div className="mt-1 rounded-[2px] overflow-hidden" style={{border:"1px solid #2a2a28"}}>
+              {[
+                {id:"avanti",  name:"Avanti Hotel",    addr:"Quận 1, TP.HCM",  rooms:105, stars:"4★"},
+                {id:"boutique",name:"Avanti Boutique",  addr:"Quận 3, TP.HCM",  rooms:42,  stars:"3★"},
+              ].map(b=>(
+                <button key={b.id} onClick={()=>{setSelectedBranch(b.id);setShowBranchList(false);}}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#252523]"
+                  style={{background: selectedBranch===b.id?"#252523":"#1c1c1a", borderBottom:"1px solid #2a2a28"}}
+                >
+                  <div>
+                    <div className={`text-[12px] font-medium ${selectedBranch===b.id?"text-white":"text-[#7a7a75]"}`}>{b.name}</div>
+                    <div className="mono text-[10px] text-[#3a3a38]">{b.addr} · {b.rooms} phòng · {b.stars}</div>
+                  </div>
+                  {selectedBranch===b.id&&<span className="w-1.5 h-1.5 rounded-full bg-white shrink-0"/>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div>
-          <div className="h-px bg-[#1c1c1a] mb-6" />
-          <div className="text-[10px] text-[#3a3a38]">
-            Avanti Hotel · 105 phòng · 9 tầng<br />
-            <span className="mono">avanti-os.vercel.app</span>
+        {/* BOTTOM — Avanti Boutique */}
+        <button
+          onClick={()=>setSelectedBranch("boutique")}
+          className="flex items-center justify-between px-10 py-8 transition-colors hover:bg-[#1c1c1a] text-left"
+          style={{borderTop:"1px solid #1c1c1a", background: selectedBranch==="boutique"?"#1c1c1a":"transparent"}}
+        >
+          <div>
+            <div className="text-[9px] tracking-[0.22em] text-[#3a3a38] uppercase mb-2">Chi nhánh 2</div>
+            <div className="text-[18px] font-semibold tracking-tight leading-tight" style={{color: selectedBranch==="boutique"?"#ffffff":"#5c5c58"}}>
+              Avanti Boutique
+            </div>
+            <div className="text-[10px] text-[#3a3a38] mt-1">42 phòng · 3★ · Quận 3, TP.HCM</div>
           </div>
-        </div>
+          <ChevronRight size={16} strokeWidth={1.5} style={{color: selectedBranch==="boutique"?"#ffffff":"#3a3a38", flexShrink:0}}/>
+        </button>
       </div>
 
       {/* RIGHT PANEL — login form */}
@@ -158,10 +203,11 @@ export default function AvantiLogin() {
             <div className="flex items-center gap-3 bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 focus-within:border-[#6b7280] transition-colors">
               <User size={14} strokeWidth={1.5} className="text-[#d1d5db] shrink-0" />
               <input
-                className="flex-1 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db]"
+                className="flex-1 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db] font-semibold"
+                style={{color: name ? "#0f0f0e" : undefined, letterSpacing: name ? "0.04em" : undefined}}
                 placeholder="NGUYỄN VĂN A"
                 value={name}
-                onChange={e => { setName(e.target.value); setError(""); }}
+                onChange={e => { setName(e.target.value.toUpperCase()); setError(""); }}
                 onKeyDown={e => e.key === "Enter" && handleLogin()}
               />
             </div>
