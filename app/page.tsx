@@ -18,16 +18,16 @@ const ROLES: Role[] = [
   {
     id: "gm",
     code: "GM",
-    label: "Giám Đốc",
+    label: "Tổng Giám Đốc",
     labelEn: "General Manager",
-    desc: "Tổng quan toàn hệ thống, báo cáo doanh thu, công suất phòng",
+    desc: "Tổng quan toàn hệ thống, báo cáo doanh thu, công việc phòng",
     icon: LayoutGrid,
     access: ["Tổng quan","Báo cáo","Room Availability","Sơ đồ phòng","Room Plan"],
   },
   {
     id: "kt",
     code: "KT",
-    label: "Kế Toán",
+    label: "Kế Toán Viên",
     labelEn: "Accountant",
     desc: "Folio, thu ngân, công nợ AR, báo cáo tài chính",
     icon: DollarSign,
@@ -45,18 +45,18 @@ const ROLES: Role[] = [
   {
     id: "ql",
     code: "QL",
-    label: "Quản Lý",
+    label: "Người Giám Sát",
     labelEn: "Supervisor",
-    desc: "Giám sát vận hành, sơ đồ phòng, room plan",
+    desc: "Giám sát vận hành, sơ đồ phòng, sơ đồ phòng",
     icon: Search,
     access: ["Tổng quan","Sơ đồ phòng","Room Plan","Tìm kiếm","Báo cáo","Room Availability"],
   },
   {
     id: "hk",
     code: "HK",
-    label: "Housekeeping",
+    label: "Dọn Dẹp Nhà Cửa",
     labelEn: "Housekeeping",
-    desc: "Trạng thái phòng, lịch dọn, báo cáo ca",
+    desc: "Phòng trang thái, lịch trình, báo cáo",
     icon: CalendarDays,
     access: ["Sơ đồ phòng","Báo cáo"],
   },
@@ -113,7 +113,7 @@ export default function AvantiLogin() {
             <div className="mt-4 text-[11px] font-medium" style={{color: selectedBranch==="avanti"?"#ffffff":"#5c5c58"}}>
               Avanti Hotel
             </div>
-            <div className="text-[10px] text-[#3a3a38]">105 phòng · 4★ · Quận 1, TP.HCM</div>
+
           </div>
           <ChevronRight size={16} strokeWidth={1.5} style={{color: selectedBranch==="avanti"?"#ffffff":"#3a3a38", flexShrink:0}}/>
         </button>
@@ -130,9 +130,7 @@ export default function AvantiLogin() {
               <div className="text-[12px] font-semibold text-white">
                 {selectedBranch==="avanti"?"Avanti Hotel":"Avanti Boutique"}
               </div>
-              <div className="mono text-[10px] text-[#5c5c58]">
-                {selectedBranch==="avanti"?"Quận 1, TP.HCM":"Quận 3, TP.HCM"}
-              </div>
+
             </div>
             <ChevronRight
               size={14} strokeWidth={1.5}
@@ -151,7 +149,7 @@ export default function AvantiLogin() {
                 >
                   <div>
                     <div className={`text-[12px] font-medium ${selectedBranch===b.id?"text-white":"text-[#7a7a75]"}`}>{b.name}</div>
-                    <div className="mono text-[10px] text-[#3a3a38]">{b.addr} · {b.rooms} phòng · {b.stars}</div>
+                    <div className="mono text-[10px] text-[#3a3a38]">{b.rooms} phòng · {b.stars}</div>
                   </div>
                   {selectedBranch===b.id&&<span className="w-1.5 h-1.5 rounded-full bg-white shrink-0"/>}
                 </button>
@@ -171,7 +169,7 @@ export default function AvantiLogin() {
             <div className="text-[18px] font-semibold tracking-tight leading-tight" style={{color: selectedBranch==="boutique"?"#ffffff":"#5c5c58"}}>
               Avanti Boutique
             </div>
-            <div className="text-[10px] text-[#3a3a38] mt-1">42 phòng · 3★ · Quận 3, TP.HCM</div>
+
           </div>
           <ChevronRight size={16} strokeWidth={1.5} style={{color: selectedBranch==="boutique"?"#ffffff":"#3a3a38", flexShrink:0}}/>
         </button>
@@ -282,26 +280,7 @@ export default function AvantiLogin() {
             </div>
           </div>
 
-          {/* Access preview */}
-          {role && (
-            <div
-              className="mb-5 px-4 py-3 rounded-[2px] border border-[#e5e7eb] bg-white"
-            >
-              <div className="text-[9px] uppercase tracking-[0.12em] text-[#9ca3af] mb-2">
-                Quyền truy cập — {role.label}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {role.access.map(a => (
-                  <span
-                    key={a}
-                    className="mono text-[10px] px-2 py-0.5 rounded-[2px] bg-[#f3f4f6] text-[#374151]"
-                  >
-                    {a}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+
 
           {/* Error */}
           {error && (
