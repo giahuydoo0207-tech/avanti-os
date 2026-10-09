@@ -2,96 +2,32 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, BedDouble, LayoutGrid, Search, DollarSign, ClipboardList, CalendarDays, User } from "lucide-react";
-
-type Role = {
-  id: string;
-  code: string;
-  label: string;
-  labelEn: string;
-  desc: string;
-  icon: React.ElementType;
-  access: string[];
-};
-
-const ROLES: Role[] = [
-  {
-    id: "gm",
-    code: "GM",
-    label: "Tổng Giám Đốc",
-    labelEn: "General Manager",
-    desc: "Tổng quan toàn hệ thống, báo cáo doanh thu, công việc phòng",
-    icon: LayoutGrid,
-    access: ["Tổng quan","Báo cáo","Room Availability","Sơ đồ phòng","Room Plan"],
-  },
-  {
-    id: "kt",
-    code: "KT",
-    label: "Kế Toán Viên",
-    labelEn: "Accountant",
-    desc: "Folio, thu ngân, công nợ AR, báo cáo tài chính",
-    icon: DollarSign,
-    access: ["Thu ngân","Báo cáo","Room Availability","Tìm kiếm"],
-  },
-  {
-    id: "lt",
-    code: "LT",
-    label: "Lễ Tân",
-    labelEn: "Front Desk",
-    desc: "Check-in, check-out, đặt phòng, giao ca",
-    icon: BedDouble,
-    access: ["Tổng quan","Tìm kiếm","Sơ đồ phòng","Room Plan","Đặt phòng","Báo cáo","Thu ngân"],
-  },
-  {
-    id: "ql",
-    code: "QL",
-    label: "Người Giám Sát",
-    labelEn: "Supervisor",
-    desc: "Giám sát vận hành, sơ đồ phòng, sơ đồ phòng",
-    icon: Search,
-    access: ["Tổng quan","Sơ đồ phòng","Room Plan","Tìm kiếm","Báo cáo","Room Availability"],
-  },
-  {
-    id: "hk",
-    code: "HK",
-    label: "Dọn Dẹp Nhà Cửa",
-    labelEn: "Housekeeping",
-    desc: "Phòng trang thái, lịch trình, báo cáo",
-    icon: CalendarDays,
-    access: ["Sơ đồ phòng","Báo cáo"],
-  },
-];
+import { ChevronRight, User } from "lucide-react";
 
 export default function AvantiLogin() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("avanti");
   const [showBranchList, setShowBranchList] = useState(false);
-  const [showRoleList, setShowRoleList] = useState(false);
 
   const handleLogin = () => {
     if (!name.trim()) { setError("Vui lòng nhập họ và tên"); return; }
-    if (!selectedRole) { setError("Vui lòng chọn vai trò"); return; }
     setError("");
     if(typeof window!=="undefined"){
       localStorage.setItem("staffName", name.trim());
-      localStorage.setItem("staffRole", selectedRole!);
+      localStorage.setItem("staffRole", "front_desk");
+      localStorage.setItem("branchId", selectedBranch === "boutique" ? "br-boutique" : "br-avanti");
     }
     router.push("/dashboard");
   };
 
-  const role = ROLES.find(r => r.id === selectedRole);
-
   return (
     <div
       className="min-h-screen flex"
-      style={{ fontFamily: "'DM Sans','Helvetica Neue',Arial,sans-serif", background: "#f2f2ef" }}
+      style={{ background: "#f2f2ef" }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap');
-        .mono { font-family: 'DM Mono', 'Courier New', monospace; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #3a3a38; border-radius: 2px; }
       `}</style>
@@ -212,75 +148,24 @@ export default function AvantiLogin() {
             </div>
           </div>
 
-          {/* Role selector — dropdown bar */}
+          {/* Vai trò — hệ thống chỉ dành cho Lễ tân */}
           <div className="mb-6">
             <label className="block text-[11px] font-medium text-[#374151] uppercase tracking-[0.1em] mb-2">
               Vai trò
             </label>
-            <button
-              onClick={() => setShowRoleList(s => !s)}
-              className="w-full flex items-center gap-4 px-4 py-3 rounded-[2px] border text-left transition-all bg-white"
-              style={{ borderColor: selectedRole ? "#0f0f0e" : "#e5e7eb" }}
-            >
-              {selectedRole ? (() => {
-                const r = ROLES.find(x => x.id === selectedRole)!;
-                return (
-                  <>
-                    <div className="w-9 h-9 rounded-[2px] flex items-center justify-center shrink-0 bg-[#0f0f0e]">
-                      <span className="mono text-[11px] font-semibold text-white">{r.code}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-[#1a1a1a]">{r.label}</span>
-                        <span className="text-[10px] text-[#9ca3af]">{r.labelEn}</span>
-                      </div>
-                      <div className="text-[11px] text-[#6b7280] truncate">{r.desc}</div>
-                    </div>
-                  </>
-                );
-              })() : (
-                <>
-                  <div className="w-9 h-9 rounded-[2px] flex items-center justify-center shrink-0 bg-[#f3f4f6]">
-                    <span className="mono text-[11px] font-semibold text-[#9ca3af]">—</span>
-                  </div>
-                  <span className="flex-1 text-[13px] text-[#d1d5db]">Chọn vai trò...</span>
-                </>
-              )}
-              <ChevronRight
-                size={14} strokeWidth={1.5}
-                style={{ color: "#9ca3af", flexShrink: 0, transform: showRoleList ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
-              />
-            </button>
-            {showRoleList && (
-              <div className="mt-1 rounded-[2px] overflow-hidden" style={{ border: "1px solid #e5e7eb", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                {ROLES.map(r => {
-                  const isSelected = selectedRole === r.id;
-                  return (
-                    <button
-                      key={r.id}
-                      onClick={() => { setSelectedRole(r.id); setError(""); setShowRoleList(false); }}
-                      className="w-full flex items-center gap-4 px-4 py-3 text-left transition-colors"
-                      style={{ background: isSelected ? "#0f0f0e" : "#ffffff", borderBottom: "1px solid #f3f4f6" }}
-                    >
-                      <div className="w-9 h-9 rounded-[2px] flex items-center justify-center shrink-0" style={{ background: isSelected ? "#252523" : "#f3f4f6" }}>
-                        <span className="mono text-[11px] font-semibold" style={{ color: isSelected ? "#fff" : "#374151" }}>{r.code}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-semibold" style={{ color: isSelected ? "#fff" : "#1a1a1a" }}>{r.label}</span>
-                          <span className="text-[10px]" style={{ color: isSelected ? "#7a7a75" : "#9ca3af" }}>{r.labelEn}</span>
-                        </div>
-                        <div className="text-[11px] truncate" style={{ color: isSelected ? "#9ca3af" : "#6b7280" }}>{r.desc}</div>
-                      </div>
-                      {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0"/>}
-                    </button>
-                  );
-                })}
+            <div className="w-full flex items-center gap-4 px-4 py-3 rounded-[2px] border bg-white" style={{ borderColor: "#0f0f0e" }}>
+              <div className="w-9 h-9 rounded-[2px] flex items-center justify-center shrink-0 bg-[#0f0f0e]">
+                <span className="mono text-[11px] font-semibold text-white">LT</span>
               </div>
-            )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-semibold text-[#1a1a1a]">Lễ Tân</span>
+                  <span className="text-[10px] text-[#9ca3af]">Front Desk</span>
+                </div>
+                <div className="text-[11px] text-[#6b7280] truncate">Đặt phòng, check-in/out, folio & thu ngân, sơ đồ phòng, giao ca</div>
+              </div>
+            </div>
           </div>
-
-
 
           {/* Error */}
           {error && (
@@ -294,9 +179,9 @@ export default function AvantiLogin() {
             onClick={handleLogin}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-[2px] text-[13px] font-semibold transition-colors"
             style={{
-              background: name.trim() && selectedRole ? "#0f0f0e" : "#e5e7eb",
-              color: name.trim() && selectedRole ? "#ffffff" : "#9ca3af",
-              cursor: name.trim() && selectedRole ? "pointer" : "not-allowed",
+              background: name.trim() ? "#0f0f0e" : "#e5e7eb",
+              color: name.trim() ? "#ffffff" : "#9ca3af",
+              cursor: name.trim() ? "pointer" : "not-allowed",
             }}
           >
             Vào hệ thống
