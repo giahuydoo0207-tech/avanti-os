@@ -45,4 +45,4 @@ scripts/seed-supabase.ts           Dữ liệu mẫu + tài khoản
 lib/pms/backend/supabase.ts        Đọc bảng, gọi RPC, Realtime
 ```
 
-Tài liệu: [ERD](docs/erd.md) · [API](docs/api.md) · [WBS & phân công](docs/phan-cong-wbs.md)
+Tài liệu: [Giao diện](docs/design-system.md) · [ERD](docs/erd.md) · [API](docs/api.md) · [WBS & phân công](docs/phan-cong-wbs.md)

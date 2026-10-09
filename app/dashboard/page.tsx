@@ -3,7 +3,8 @@
 // nên mọi thao tác (đặt phòng → check-in → folio → check-out → dọn phòng → giao ca) liên thông với nhau.
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDownCircle, ArrowUpCircle, BedDouble, CalendarDays, ChevronRight, ClipboardList, DollarSign, Home, LayoutGrid, LogOut, RotateCcw, Search, Table2 } from "lucide-react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { ArrowDownCircle, ArrowUpCircle, BedDouble, CheckCircle2, CalendarDays, ChevronRight, ClipboardList, DollarSign, Home, LayoutGrid, LogOut, RotateCcw, Search, Table2 } from "lucide-react";
 import { PmsProvider, usePms } from "@/lib/pms/store";
 import { dashboardStats } from "@/lib/pms/selectors";
 import type { Session } from "@/lib/pms/types";
@@ -53,45 +54,71 @@ function Shell() {
   };
   const reset = () => { if (window.confirm("Khôi phục toàn bộ dữ liệu demo về ban đầu? Mọi thao tác đã làm sẽ mất.")) { actions.resetDemo(); goTo("Tổng quan"); toast("Đã khôi phục dữ liệu demo"); } };
 
+  const badge = (name: TabName) => {
+    if (name === "Tìm kiếm" && st.arrivalsPending.length + st.departuresPending.length > 0)
+      return <span className="mono text-[10px] leading-none bg-night-3 text-accent-bright px-1.5 py-1 rounded" aria-label={`${st.arrivalsPending.length + st.departuresPending.length} khách chờ xử lý`}>{st.arrivalsPending.length + st.departuresPending.length}</span>;
+    if (name === "Sơ đồ phòng" && st.dirty > 0)
+      return <span className="mono text-[10px] leading-none bg-dirty/25 text-dirty-line px-1.5 py-1 rounded" aria-label={`${st.dirty} phòng chờ dọn`}>{st.dirty}</span>;
+    return null;
+  };
+
   return (
     <NavContext.Provider value={nav}>
-      <div className="flex min-h-screen bg-[#f2f2ef] text-[#1a1a1a]" style={{ fontWeight: 500 }}>
-        <aside className="w-52 shrink-0 flex flex-col bg-[#0f0f0e] text-white sticky top-0 h-screen">
-          <div className="px-5 py-4 border-b border-[#252523]">
-            <div className="text-[9px] tracking-[0.2em] text-[#5c5c58] uppercase mb-0.5 font-bold">Avanti OS · Lễ tân{mode === "demo" ? " · Demo" : ""}</div>
-            <div className="text-[15px] font-bold tracking-tight leading-tight">{branch?.name}</div>
-            <div className="mono text-[11px] text-[#5c5c58] mt-0.5">{st.total} phòng · {"★".repeat(branch?.stars ?? 0)}</div>
-            <div className="mono text-[11px] text-[#5c5c58] mt-1">{new Date().toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}</div>
+      <MotionConfig reducedMotion="user">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] pms-btn-accent">Bỏ qua tới nội dung</a>
+      <div className="flex min-h-screen bg-paper text-ink">
+        <aside className="w-56 shrink-0 flex flex-col bg-night text-white sticky top-0 h-screen">
+          <div className="px-5 pt-5 pb-4 border-b border-night-line">
+            <div className="flex items-center gap-2.5">
+              <div aria-hidden="true" className="w-8 h-8 rounded-ctl bg-accent flex items-center justify-center text-[13px] font-bold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.2)]">A</div>
+              <div className="min-w-0">
+                <div className="text-[14px] font-semibold tracking-tight leading-tight truncate">{branch?.name}</div>
+                <div className="text-[11px] text-night-muted leading-tight mt-0.5">{st.total} phòng · <span className="text-accent-bright" aria-label={`${branch?.stars ?? 0} sao`}>{"★".repeat(branch?.stars ?? 0)}</span></div>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[11px] text-night-muted">
+              <span suppressHydrationWarning>{new Date().toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+              {mode === "demo" && <span className="text-[10px] font-semibold uppercase tracking-wider text-accent-bright/80 border border-night-line rounded px-1.5 py-0.5">Demo</span>}
+            </div>
           </div>
-          <nav className="flex-1 py-2">
-            {MENU.map(({ name, icon: Icon }) => (
-              <button key={name} onClick={() => goTo(name)} className={`flex w-full items-center gap-3 px-5 py-2.5 text-left transition-all text-[13px] ${tab === name ? "text-white bg-[#252523] border-l-2 border-white" : "text-[#7a7a75] hover:text-white hover:bg-[#1c1c1a] border-l-2 border-transparent"}`}>
-                <Icon size={15} strokeWidth={tab === name ? 2 : 1.5} /><span className="font-bold flex-1">{name}</span>
-                {name === "Tìm kiếm" && st.arrivalsPending.length + st.departuresPending.length > 0 && <span className="mono text-[10px] bg-[#252523] text-[#e9c46a] px-1.5 rounded-[2px]">{st.arrivalsPending.length + st.departuresPending.length}</span>}
-                {name === "Sơ đồ phòng" && st.dirty > 0 && <span className="mono text-[10px] bg-[#3b1214] text-[#fca5a5] px-1.5 rounded-[2px]">{st.dirty}</span>}
-              </button>
-            ))}
+          <nav aria-label="Điều hướng chính" className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
+            {MENU.map(({ name, icon: Icon }) => {
+              const active = tab === name;
+              return (
+                <button key={name} onClick={() => goTo(name)} aria-current={active ? "page" : undefined}
+                  className={`relative flex w-full items-center gap-3 px-3 py-2 rounded-ctl text-left text-[13px] transition-colors ${active ? "text-white" : "text-night-text hover:text-white hover:bg-night-2"}`}>
+                  {active && <motion.span layoutId="nav-active" className="absolute inset-0 rounded-ctl bg-night-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]" transition={{ type: "spring", duration: 0.3, bounce: 0.15 }} />}
+                  {active && <motion.span layoutId="nav-bar" className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-accent-bright" transition={{ type: "spring", duration: 0.3, bounce: 0.15 }} />}
+                  <Icon size={16} strokeWidth={active ? 2 : 1.6} className="relative" aria-hidden="true" />
+                  <span className={`relative flex-1 ${active ? "font-semibold" : "font-medium"}`}>{name}</span>
+                  <span className="relative">{badge(name)}</span>
+                </button>
+              );
+            })}
           </nav>
-          <div className="px-5 py-4 border-t border-[#252523] space-y-0.5">
-            {mode === "demo" && <button onClick={reset} className="flex w-full items-center gap-2.5 py-2 text-[12px] text-[#5c5c58] hover:text-white font-semibold"><RotateCcw size={13} strokeWidth={1.5} /> Khôi phục dữ liệu demo</button>}
-            <button onClick={logout} className="flex w-full items-center gap-2.5 py-2 text-[12px] text-[#5c5c58] hover:text-[#ef4444] font-semibold"><LogOut size={13} strokeWidth={1.5} /> Đăng xuất</button>
+          <div className="px-2.5 py-3 border-t border-night-line space-y-0.5">
+            {mode === "demo" && <button onClick={reset} className="flex w-full items-center gap-2.5 px-3 py-2 rounded-ctl text-[12px] text-night-muted hover:text-white hover:bg-night-2 font-medium transition-colors"><RotateCcw size={14} strokeWidth={1.6} aria-hidden="true" /> Khôi phục dữ liệu demo</button>}
+            <button onClick={logout} className="flex w-full items-center gap-2.5 px-3 py-2 rounded-ctl text-[12px] text-night-muted hover:text-dirty-line hover:bg-night-2 font-medium transition-colors"><LogOut size={14} strokeWidth={1.6} aria-hidden="true" /> Đăng xuất</button>
           </div>
         </aside>
 
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.06)] sticky top-0 z-20" style={{ height: 56 }}>
-            <div className="flex items-center gap-2 text-[13px]"><span className="text-[#9ca3af] font-semibold">{branch?.name}</span><ChevronRight size={11} className="text-[#d1d5db]" /><span className="font-bold">{tab}</span></div>
-            <div className="flex items-center gap-5">
-              {pending > 0 && <span className="mono text-[11px] font-bold text-[#7a5800] bg-[#fff8e1] border border-[#fcd34d] px-2 py-0.5 rounded-[2px]">Đang lưu...</span>}
-              <div className="flex items-center gap-3 text-[12px] text-[#6b7280] font-semibold">
-                <button onClick={() => goTo("Tìm kiếm", { search: { preset: "arrivals" } })} className="flex items-center gap-1.5 hover:text-[#1a1a1a]"><ArrowDownCircle size={13} className="text-[#2d6a4f]" /><span className="mono font-bold">{st.arrivalsPending.length}/{st.arrivalsToday.length}</span> Khách đến</button>
-                <span className="text-[#e5e7eb]">|</span>
-                <button onClick={() => goTo("Tìm kiếm", { search: { preset: "departures" } })} className="flex items-center gap-1.5 hover:text-[#1a1a1a]"><ArrowUpCircle size={13} className="text-[#c1121f]" /><span className="mono font-bold">{st.departuresPending.length}/{st.departuresToday.length}</span> Khách đi</button>
+          <header className="bg-surface/85 backdrop-blur-md border-b border-line flex items-center justify-between px-7 shrink-0 sticky top-0 z-20" style={{ height: 56 }}>
+            <div className="flex items-center gap-2 text-[13px] min-w-0"><span className="text-muted font-medium truncate">{branch?.name}</span><ChevronRight size={12} className="text-faint shrink-0" aria-hidden="true" /><h1 className="font-semibold text-ink truncate">{tab}</h1></div>
+            <div className="flex items-center gap-4">
+              <AnimatePresence>
+                {pending > 0 && <motion.span key="saving" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} role="status"
+                  className="flex items-center gap-1.5 text-[11px] font-semibold text-occ-ink bg-occ-soft border border-occ-line px-2 py-1 rounded"><span className="w-1.5 h-1.5 rounded-full bg-occ animate-pulse" aria-hidden="true" />Đang lưu…</motion.span>}
+              </AnimatePresence>
+              <div className="flex items-center gap-1 text-[12px] text-ink-2 font-medium">
+                <button onClick={() => goTo("Tìm kiếm", { search: { preset: "arrivals" } })} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-ctl hover:bg-line-soft hover:text-ink transition-colors"><ArrowDownCircle size={14} className="text-clean" aria-hidden="true" /><span className="mono font-semibold text-ink">{st.arrivalsPending.length}/{st.arrivalsToday.length}</span> Khách đến</button>
+                <button onClick={() => goTo("Tìm kiếm", { search: { preset: "departures" } })} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-ctl hover:bg-line-soft hover:text-ink transition-colors"><ArrowUpCircle size={14} className="text-dirty" aria-hidden="true" /><span className="mono font-semibold text-ink">{st.departuresPending.length}/{st.departuresToday.length}</span> Khách đi</button>
               </div>
-              <div className="flex items-center gap-2"><div className="text-right"><div className="text-[12px] font-bold leading-tight">{session.staffName}</div><div className="text-[10px] text-[#9ca3af] font-semibold">Lễ tân · Front Desk</div></div><div className="w-8 h-8 rounded-full bg-[#0f0f0e] text-white text-[11px] font-bold flex items-center justify-center">{initials}</div></div>
+              <div className="flex items-center gap-2.5 pl-4 border-l border-line"><div className="text-right"><div className="text-[12px] font-semibold leading-tight">{session.staffName}</div><div className="text-[11px] text-muted">Lễ tân</div></div><div aria-hidden="true" className="w-8 h-8 rounded-full bg-accent-soft text-accent-strong ring-1 ring-accent/20 text-[11px] font-bold flex items-center justify-center">{initials}</div></div>
             </div>
           </header>
-          <main key={navKey} className="flex-1">
+          <motion.main id="main" key={navKey} className="flex-1 outline-none" tabIndex={-1}
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: "easeOut" }}>
             {tab === "Tổng quan" && <OverviewTab />}
             {tab === "Tìm kiếm" && <SearchTab />}
             {tab === "Sơ đồ phòng" && <RoomMapTab />}
@@ -100,13 +127,21 @@ function Shell() {
             {tab === "Thu ngân" && <CashierTab />}
             {tab === "Room Availability" && <AvailabilityTab />}
             {tab === "Báo cáo" && <ShiftReportTab />}
-          </main>
+          </motion.main>
         </div>
       </div>
-      {top && top.kind === "checkin" && <CheckInOverlay key={top.reservationId + "ci"} reservationId={top.reservationId} onClose={closeTop} />}
-      {top && top.kind === "checkout" && <CheckOutOverlay key={top.reservationId + "co"} reservationId={top.reservationId} onClose={closeTop} />}
-      {top && top.kind === "folio" && <FolioOverlay key={top.reservationId + "fo"} reservationId={top.reservationId} onClose={closeTop} />}
-      {toastMsg && <div className="fixed bottom-6 right-6 z-[60] bg-[#0f0f0e] text-white text-[13px] font-bold px-4 py-2.5 rounded-[3px] shadow-xl" style={{ animation: "pms-toast .2s ease" }}>{toastMsg}</div>}
+      <AnimatePresence>
+        {top && top.kind === "checkin" && <CheckInOverlay key={top.reservationId + "ci"} reservationId={top.reservationId} onClose={closeTop} />}
+        {top && top.kind === "checkout" && <CheckOutOverlay key={top.reservationId + "co"} reservationId={top.reservationId} onClose={closeTop} />}
+        {top && top.kind === "folio" && <FolioOverlay key={top.reservationId + "fo"} reservationId={top.reservationId} onClose={closeTop} />}
+      </AnimatePresence>
+      <div aria-live="polite" className="fixed bottom-6 right-6 z-[60]">
+        <AnimatePresence>
+          {toastMsg && <motion.div key={toastMsg} initial={{ opacity: 0, y: 12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }} transition={{ type: "spring", duration: 0.3, bounce: 0.2 }}
+            className="flex items-center gap-2 bg-night text-white text-[13px] font-medium pl-3 pr-4 py-2.5 rounded-ctl shadow-[0_12px_32px_-12px_rgb(23_21_18/0.6)]"><CheckCircle2 size={15} className="text-accent-bright" aria-hidden="true" />{toastMsg}</motion.div>}
+        </AnimatePresence>
+      </div>
+      </MotionConfig>
     </NavContext.Provider>
   );
 }
@@ -143,7 +178,7 @@ function SupabaseGate() {
 }
 
 function Loading() {
-  return <div className="min-h-screen flex items-center justify-center bg-[#f2f2ef] text-[13px] text-[#9ca3af] mono">Đang tải...</div>;
+  return <div className="min-h-screen flex items-center justify-center bg-paper text-[13px] text-muted" role="status"><span className="w-4 h-4 mr-2.5 rounded-full border-2 border-line-strong border-t-accent animate-spin" aria-hidden="true" />Đang tải…</div>;
 }
 
 export default function DashboardPage() {

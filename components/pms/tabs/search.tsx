@@ -65,7 +65,7 @@ export function SearchTab() {
     else openOverlay({ kind: "folio", reservationId: r.id });
   };
   const th = (label: string, col?: "arrival" | "room" | "name") => (
-    <th key={label} onClick={col ? () => setSort(s => ({ col, asc: s.col === col ? !s.asc : true })) : undefined} className={`px-3 py-2.5 text-[10px] tracking-[0.1em] uppercase text-[#6b7280] font-bold whitespace-nowrap ${col ? "cursor-pointer hover:text-[#1a1a1a]" : ""}`}>
+    <th key={label} onClick={col ? () => setSort(s => ({ col, asc: s.col === col ? !s.asc : true })) : undefined} className={`px-3 py-2.5 text-[10px] tracking-[0.1em] uppercase text-ink-2 font-semibold whitespace-nowrap ${col ? "cursor-pointer hover:text-ink" : ""}`}>
       {label}{col && sort.col === col ? (sort.asc ? " ↑" : " ↓") : ""}
     </th>
   );
@@ -73,7 +73,7 @@ export function SearchTab() {
   return (
     <div className="p-7 max-w-7xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <div><h2 className="text-[16px] font-bold">Tìm kiếm</h2><div className="mono text-[12px] text-[#9ca3af] mt-0.5 font-semibold">Guest & Reservation Search</div></div>
+        <div><h2 className="text-[20px] font-semibold tracking-tight text-ink">Tìm kiếm</h2><div className="text-[13px] text-muted mt-0.5">Guest & Reservation Search</div></div>
         <div className="flex gap-2">
           <button onClick={() => applyPreset("arrivals")} className="pms-btn-secondary">Khách đến hôm nay</button>
           <button onClick={() => applyPreset("departures")} className="pms-btn-secondary">Khách đi hôm nay</button>
@@ -89,24 +89,24 @@ export function SearchTab() {
           <FieldRow label="Phòng / loại"><input className={inputCls} value={roomText} onChange={e => setRoomText(e.target.value)} placeholder="305 hoặc DLXTC" /></FieldRow>
           <FieldRow label="Công ty"><input className={inputCls} value={company} onChange={e => setCompany(e.target.value)} /></FieldRow>
         </div>
-        <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-[#f3f4f6]">
-          <select value={dateMode} onChange={e => setDateMode(e.target.value as DateMode)} className="border border-[#e5e7eb] rounded-[3px] px-2 py-1.5 text-[13px] font-bold bg-[#fafafa]">
+        <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-line-soft">
+          <select value={dateMode} onChange={e => setDateMode(e.target.value as DateMode)} className="border border-line rounded-ctl px-2 py-1.5 text-[13px] font-semibold bg-sunken">
             <option value="none">Không lọc ngày</option><option value="arrival">Theo ngày đến</option><option value="departure">Theo ngày đi</option><option value="stay">Lưu trú trong khoảng</option>
           </select>
-          <span className="text-[13px] text-[#9ca3af] font-semibold">Từ</span>
-          <input type="date" value={from} disabled={dateMode === "none"} onChange={e => setFrom(e.target.value)} className="mono text-[13px] font-semibold border border-[#e5e7eb] rounded-[3px] px-2 py-1 bg-white disabled:opacity-40" />
-          <span className="text-[13px] text-[#9ca3af] font-semibold">Đến</span>
-          <input type="date" value={to} disabled={dateMode === "none"} onChange={e => setTo(e.target.value)} className="mono text-[13px] font-semibold border border-[#e5e7eb] rounded-[3px] px-2 py-1 bg-white disabled:opacity-40" />
-          <div className="w-px h-5 bg-[#e5e7eb]" />
-          {STATUS_FILTERS.map(([s, l]) => <label key={s} className="flex items-center gap-1.5 text-[12px] text-[#6b7280] cursor-pointer font-semibold"><input type="checkbox" checked={statuses[s]} onChange={e => setStatuses(x => ({ ...x, [s]: e.target.checked }))} className="w-3.5 h-3.5 accent-[#0f0f0e]" /> {l}</label>)}
+          <span className="text-[13px] text-muted font-medium">Từ</span>
+          <input type="date" value={from} disabled={dateMode === "none"} onChange={e => setFrom(e.target.value)} className="mono text-[13px] font-medium border border-line rounded-ctl px-2 py-1 bg-surface disabled:opacity-40" />
+          <span className="text-[13px] text-muted font-medium">Đến</span>
+          <input type="date" value={to} disabled={dateMode === "none"} onChange={e => setTo(e.target.value)} className="mono text-[13px] font-medium border border-line rounded-ctl px-2 py-1 bg-surface disabled:opacity-40" />
+          <div className="w-px h-5 bg-line" />
+          {STATUS_FILTERS.map(([s, l]) => <label key={s} className="flex items-center gap-1.5 text-[12px] text-ink-2 cursor-pointer font-medium"><input type="checkbox" checked={statuses[s]} onChange={e => setStatuses(x => ({ ...x, [s]: e.target.checked }))} className="w-3.5 h-3.5 accent-night" /> {l}</label>)}
         </div>
       </Card>
 
       <Card className="overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#f3f4f6] flex items-center justify-between"><span className="text-[13px] font-bold"><Search size={12} className="inline mr-1.5" />{results.length} kết quả</span><span className="text-[12px] text-[#9ca3af] font-semibold">Bấm vào dòng: chờ đến → Check-in · đang ở → Check-out · khác → Folio</span></div>
+        <div className="px-5 py-3 border-b border-line-soft flex items-center justify-between"><span className="text-[13px] font-semibold"><Search size={12} className="inline mr-1.5" />{results.length} kết quả</span><span className="text-[12px] text-muted font-medium">Bấm vào dòng: chờ đến → Check-in · đang ở → Check-out · khác → Folio</span></div>
         <div className="overflow-x-auto">
           <table className="w-full text-left" style={{ minWidth: 1100 }}>
-            <thead><tr className="border-b-2 border-[#e5e7eb] bg-[#fafafa]">
+            <thead><tr className="border-b-2 border-line bg-sunken">
               {th("Trạng thái")}{th("Xác nhận")}{th("Folio")}{th("Tên khách", "name")}{th("Quốc tịch")}{th("Phòng", "room")}{th("Loại")}
               {th("Đến", "arrival")}{th("Đi")}{th("Khách")}{th("Giá/đêm")}{th("Số dư")}{th("Nguồn")}
             </tr></thead>
@@ -116,20 +116,20 @@ export function SearchTab() {
                 const g = guestById(state, r.guestId); const room = roomById(state, r.roomId); const folio = folioOfReservation(state, r.id);
                 const bal = folio ? folioTotals(state, folio.id).balance : 0;
                 return (
-                  <tr key={r.id} onClick={() => open(r)} className={`border-b border-[#f3f4f6] cursor-pointer hover:bg-[#fffbeb] ${i % 2 ? "bg-[#fafafa]" : "bg-white"}`}>
+                  <tr key={r.id} onClick={() => open(r)} className={`border-b border-line-soft cursor-pointer hover:bg-occ-soft ${i % 2 ? "bg-sunken" : "bg-surface"}`}>
                     <td className="px-3 py-2.5"><ResBadge status={r.status} /></td>
-                    <td className="px-3 py-2.5 mono text-[12px] font-bold text-[#374151]">#{r.confirmationNo}</td>
-                    <td className="px-3 py-2.5 mono text-[12px] text-[#9ca3af] font-semibold">{folio?.folioNo}</td>
-                    <td className="px-3 py-2.5 text-[13px] font-bold max-w-[200px] truncate">{g?.fullName}</td>
-                    <td className="px-3 py-2.5 text-[12px] font-semibold text-[#6b7280]">{countryLabel(g?.nationality ?? "")}</td>
-                    <td className="px-3 py-2.5 mono text-[13px] font-bold">{room ? room.number : <span className="text-[11px] text-[#b45309]">Chưa gán</span>}</td>
-                    <td className="px-3 py-2.5"><span className="mono text-[11px] px-1.5 py-0.5 bg-[#f3f4f6] rounded-[2px] font-bold">{roomTypeById(state, room?.roomTypeId ?? r.roomTypeId)?.code}</span></td>
-                    <td className={`px-3 py-2.5 mono text-[12px] font-semibold ${r.arrivalDate === today ? "text-[#15803d]" : "text-[#374151]"}`}>{fmtDate(r.arrivalDate)}</td>
-                    <td className={`px-3 py-2.5 mono text-[12px] font-semibold ${r.departureDate === today ? "text-[#c1121f]" : "text-[#374151]"}`}>{fmtDate(r.departureDate)}</td>
-                    <td className="px-3 py-2.5 mono text-[12px] text-[#9ca3af] font-semibold">{r.adults}/{r.children}</td>
-                    <td className="px-3 py-2.5 mono text-[12px] text-right font-bold">{money(r.rate)}</td>
-                    <td className={`px-3 py-2.5 mono text-[12px] text-right font-bold ${bal > 0 ? "text-[#c1121f]" : "text-[#2d6a4f]"}`}>{money(bal)}</td>
-                    <td className="px-3 py-2.5 text-[12px] text-[#6b7280] font-semibold">{r.source}</td>
+                    <td className="px-3 py-2.5 mono text-[12px] font-semibold text-ink-2">#{r.confirmationNo}</td>
+                    <td className="px-3 py-2.5 mono text-[12px] text-muted font-medium">{folio?.folioNo}</td>
+                    <td className="px-3 py-2.5 text-[13px] font-semibold max-w-[200px] truncate">{g?.fullName}</td>
+                    <td className="px-3 py-2.5 text-[12px] font-medium text-ink-2">{countryLabel(g?.nationality ?? "")}</td>
+                    <td className="px-3 py-2.5 mono text-[13px] font-semibold">{room ? room.number : <span className="text-[11px] text-occ-ink">Chưa gán</span>}</td>
+                    <td className="px-3 py-2.5"><span className="mono text-[11px] px-1.5 py-0.5 bg-line-soft rounded font-semibold">{roomTypeById(state, room?.roomTypeId ?? r.roomTypeId)?.code}</span></td>
+                    <td className={`px-3 py-2.5 mono text-[12px] font-medium ${r.arrivalDate === today ? "text-clean" : "text-ink-2"}`}>{fmtDate(r.arrivalDate)}</td>
+                    <td className={`px-3 py-2.5 mono text-[12px] font-medium ${r.departureDate === today ? "text-dirty" : "text-ink-2"}`}>{fmtDate(r.departureDate)}</td>
+                    <td className="px-3 py-2.5 mono text-[12px] text-muted font-medium">{r.adults}/{r.children}</td>
+                    <td className="px-3 py-2.5 mono text-[12px] text-right font-semibold">{money(r.rate)}</td>
+                    <td className={`px-3 py-2.5 mono text-[12px] text-right font-semibold ${bal > 0 ? "text-dirty" : "text-clean"}`}>{money(bal)}</td>
+                    <td className="px-3 py-2.5 text-[12px] text-ink-2 font-medium">{r.source}</td>
                   </tr>
                 );
               })}

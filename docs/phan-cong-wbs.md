@@ -29,7 +29,7 @@ Cột **File bàn giao** là thứ đính kèm vào task tương ứng trên Cli
 |---|---|---|---|
 | 3.1 | ERD & từ điển dữ liệu | Backend | `docs/erd.md` |
 | 3.2 | Đặc tả API | Backend | `docs/api.md` |
-| 3.3 | Thiết kế giao diện & hệ thống component | Frontend | `components/pms/ui.tsx`, `app/globals.css` |
+| 3.3 | Thiết kế giao diện & hệ thống component | Frontend | `docs/design-system.md`, `components/pms/ui.tsx`, `app/globals.css`, sơ đồ luồng màn hình (Lucidchart) |
 
 ## 4.0 Phát triển Backend — Backend
 | Mã | Work package | File bàn giao | Nội dung chính |

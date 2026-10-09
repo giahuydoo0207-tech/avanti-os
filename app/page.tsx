@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Lock, Mail, User } from "lucide-react";
+import { ArrowRight, ConciergeBell, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { fetchStaffProfile, getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function AvantiLogin() {
@@ -10,7 +10,7 @@ export default function AvantiLogin() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("avanti");
-  const [showBranchList, setShowBranchList] = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,7 +27,7 @@ export default function AvantiLogin() {
     if (!profile) { await sb.auth.signOut(); setBusy(false); setError("Tài khoản chưa được cấp quyền lễ tân"); return; }
     if (profile.branchCode.toLowerCase() !== selectedBranch) {
       await sb.auth.signOut(); setBusy(false);
-      setError(`Tài khoản này thuộc chi nhánh ${profile.branchName} — chọn đúng chi nhánh bên trái`); return;
+      setError(`Tài khoản này thuộc chi nhánh ${profile.branchName}, hãy chọn đúng chi nhánh bên trái`); return;
     }
     router.push("/dashboard");
   };
@@ -44,199 +44,130 @@ export default function AvantiLogin() {
     router.push("/dashboard");
   };
 
+  const BRANCHES = [
+    { id: "avanti", name: "Avanti Hotel", addr: "Quận 1, TP.HCM", rooms: 105, stars: 4 },
+    { id: "boutique", name: "Avanti Boutique", addr: "Quận 3, TP.HCM", rooms: 42, stars: 3 },
+  ];
+  const fieldCls = "flex items-center gap-3 bg-surface border border-line rounded-ctl px-3.5 py-2.5 hover:border-line-strong focus-within:border-accent focus-within:ring-3 focus-within:ring-accent/15 transition-[border-color,box-shadow]";
+  const inputCls = "flex-1 min-w-0 text-[14px] outline-none bg-transparent placeholder:text-faint font-medium text-ink";
+  const labelCls = "block text-[12px] font-medium text-ink-2 mb-1.5";
+
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: "#f2f2ef" }}
-    >
-      <style>{`
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #3a3a38; border-radius: 2px; }
-      `}</style>
+    <div className="min-h-screen flex bg-paper">
+      {/* Cột trái: thương hiệu và chọn chi nhánh */}
+      <aside className="hidden lg:flex flex-col justify-between w-[440px] shrink-0 bg-night text-white relative overflow-hidden">
+        <div aria-hidden="true" className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-accent/25 blur-3xl" />
+        <div aria-hidden="true" className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-night-2 to-transparent" />
 
-      {/* LEFT PANEL — branding */}
-      <div
-        className="hidden lg:flex flex-col justify-between w-[420px] shrink-0"
-        style={{ background: "#0f0f0e", borderRight: "1px solid #1c1c1a" }}
-      >
-        {/* TOP — Avanti Hotel */}
-        <button
-          onClick={()=>setSelectedBranch("avanti")}
-          className="flex items-center justify-between px-10 py-8 transition-colors hover:bg-[#1c1c1a] text-left"
-          style={{borderBottom:"1px solid #1c1c1a", background: selectedBranch==="avanti"?"#1c1c1a":"transparent"}}
-        >
-          <div>
-            <div className="text-[9px] tracking-[0.22em] text-[#3a3a38] uppercase mb-2">Property Management System</div>
-            <div className="text-[26px] font-semibold tracking-tight text-white leading-tight">Avanti OS</div>
-            <div className="mono text-[11px] text-[#5c5c58] mt-1">v6.081 · Build 2026</div>
-            <div className="mt-4 text-[11px] font-medium" style={{color: selectedBranch==="avanti"?"#ffffff":"#5c5c58"}}>
-              Avanti Hotel
-            </div>
-
-          </div>
-          <ChevronRight size={16} strokeWidth={1.5} style={{color: selectedBranch==="avanti"?"#ffffff":"#3a3a38", flexShrink:0}}/>
-        </button>
-
-        {/* MIDDLE — Branch location bar */}
-        <div className="flex-1 flex flex-col justify-center px-10">
-          <div className="text-[9px] tracking-[0.18em] uppercase text-[#3a3a38] mb-4">Chi nhánh đang chọn</div>
-          <div
-            className="flex items-center justify-between px-4 py-3 rounded-[2px] cursor-pointer"
-            style={{background:"#1c1c1a", border:"1px solid #2a2a28"}}
-            onClick={()=>setShowBranchList(s=>!s)}
-          >
+        <div className="relative px-10 pt-10">
+          <div className="flex items-center gap-3">
+            <div aria-hidden="true" className="w-10 h-10 rounded-card bg-accent flex items-center justify-center text-[17px] font-bold shadow-[inset_0_1px_0_rgb(255_255_255/0.25)]">A</div>
             <div>
-              <div className="text-[12px] font-semibold text-white">
-                {selectedBranch==="avanti"?"Avanti Hotel":"Avanti Boutique"}
-              </div>
-
+              <div className="text-[20px] font-semibold tracking-tight leading-none">Avanti OS</div>
+              <div className="text-[12px] text-night-muted mt-1">Hệ thống quản lý khách sạn</div>
             </div>
-            <ChevronRight
-              size={14} strokeWidth={1.5}
-              style={{color:"#5c5c58", flexShrink:0, transform: showBranchList?"rotate(90deg)":"rotate(0deg)", transition:"transform 0.15s"}}
-            />
           </div>
-          {showBranchList&&(
-            <div className="mt-1 rounded-[2px] overflow-hidden" style={{border:"1px solid #2a2a28"}}>
-              {[
-                {id:"avanti",  name:"Avanti Hotel",    addr:"Quận 1, TP.HCM",  rooms:105, stars:"4★"},
-                {id:"boutique",name:"Avanti Boutique",  addr:"Quận 3, TP.HCM",  rooms:42,  stars:"3★"},
-              ].map(b=>(
-                <button key={b.id} onClick={()=>{setSelectedBranch(b.id);setShowBranchList(false);}}
-                  className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#252523]"
-                  style={{background: selectedBranch===b.id?"#252523":"#1c1c1a", borderBottom:"1px solid #2a2a28"}}
-                >
-                  <div>
-                    <div className={`text-[12px] font-medium ${selectedBranch===b.id?"text-white":"text-[#7a7a75]"}`}>{b.name}</div>
-                    <div className="mono text-[10px] text-[#3a3a38]">{b.rooms} phòng · {b.stars}</div>
-                  </div>
-                  {selectedBranch===b.id&&<span className="w-1.5 h-1.5 rounded-full bg-white shrink-0"/>}
-                </button>
-              ))}
-            </div>
-          )}
+          <p className="mt-10 text-[26px] leading-[1.25] font-semibold tracking-tight max-w-[18ch] text-pretty">Một màn hình cho cả ca trực lễ tân.</p>
+          <p className="mt-3 text-[14px] leading-relaxed text-night-text max-w-[34ch]">Đặt phòng, check-in, folio, sơ đồ phòng và giao ca đọc chung một nguồn dữ liệu.</p>
         </div>
 
-        {/* BOTTOM — Avanti Boutique */}
-        <button
-          onClick={()=>setSelectedBranch("boutique")}
-          className="flex items-center justify-between px-10 py-8 transition-colors hover:bg-[#1c1c1a] text-left"
-          style={{borderTop:"1px solid #1c1c1a", background: selectedBranch==="boutique"?"#1c1c1a":"transparent"}}
-        >
-          <div>
-            <div className="text-[9px] tracking-[0.22em] text-[#3a3a38] uppercase mb-2">Chi nhánh 2</div>
-            <div className="text-[18px] font-semibold tracking-tight leading-tight" style={{color: selectedBranch==="boutique"?"#ffffff":"#5c5c58"}}>
-              Avanti Boutique
-            </div>
-
+        <div className="relative px-10 pb-10">
+          <div id="branch-label" className="text-[12px] text-night-muted mb-3">Chi nhánh làm việc</div>
+          <div role="radiogroup" aria-labelledby="branch-label" className="space-y-2">
+            {BRANCHES.map(b => {
+              const on = selectedBranch === b.id;
+              return (
+                <button key={b.id} type="button" role="radio" aria-checked={on} onClick={() => { setSelectedBranch(b.id); setError(""); }}
+                  className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-card border text-left transition-colors ${on ? "bg-night-3 border-accent-bright/60" : "bg-night-2 border-night-line hover:border-night-muted"}`}>
+                  <span aria-hidden="true" className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${on ? "border-accent-bright" : "border-night-muted"}`}>{on && <span className="w-2 h-2 rounded-full bg-accent-bright" />}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className={`block text-[14px] font-semibold ${on ? "text-white" : "text-night-text"}`}>{b.name}</span>
+                    <span className="block text-[12px] text-night-muted mt-0.5">{b.addr} · {b.rooms} phòng · {"★".repeat(b.stars)}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <ChevronRight size={16} strokeWidth={1.5} style={{color: selectedBranch==="boutique"?"#ffffff":"#3a3a38", flexShrink:0}}/>
-        </button>
-      </div>
+          <div className="mt-8 text-[11px] text-night-muted mono">v6.081 · Build 2026</div>
+        </div>
+      </aside>
 
-      {/* RIGHT PANEL — login form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-
-          {/* Mobile logo */}
-          <div className="lg:hidden mb-8">
-            <div className="text-[9px] tracking-[0.2em] uppercase text-[#9ca3af] mb-1">Property Management</div>
-            <div className="text-[22px] font-semibold text-[#1a1a1a]">Avanti OS</div>
+      {/* Cột phải: form đăng nhập */}
+      <main className="flex-1 min-w-0 flex items-center justify-center px-4 sm:px-6 py-12">
+        <form className="w-full min-w-0 max-w-[400px]" onSubmit={e => { e.preventDefault(); handleLogin(); }} noValidate>
+          <div className="lg:hidden mb-8 flex items-center gap-3">
+            <div aria-hidden="true" className="w-9 h-9 rounded-card bg-accent flex items-center justify-center text-[15px] font-bold text-white">A</div>
+            <div className="text-[20px] font-semibold tracking-tight text-ink">Avanti OS</div>
           </div>
 
-          {/* Heading */}
-          <div className="mb-8">
-            <h1 className="text-[20px] font-semibold text-[#1a1a1a] mb-1">Đăng nhập</h1>
-            <div className="text-[12px] text-[#9ca3af]">
+          <div className="mb-7">
+            <h1 className="text-[24px] font-semibold tracking-tight text-ink">Đăng nhập ca trực</h1>
+            <p className="text-[13px] text-muted mt-1" suppressHydrationWarning>
               {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
-            </div>
+            </p>
+          </div>
+
+          {/* Chọn chi nhánh trên màn hình nhỏ */}
+          <div className="lg:hidden mb-5">
+            <label htmlFor="branch-select" className={labelCls}>Chi nhánh</label>
+            <select id="branch-select" value={selectedBranch} onChange={e => setSelectedBranch(e.target.value)} className={`${fieldCls} w-full text-[14px] font-medium`}>
+              {BRANCHES.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
           </div>
 
           {isSupabaseConfigured ? (<>
-          {/* Email + mật khẩu (Supabase Auth) */}
-          <div className="mb-4">
-            <label htmlFor="login-email" className="block text-[11px] font-medium text-[#374151] uppercase tracking-[0.1em] mb-2">Email</label>
-            <div className="flex items-center gap-3 bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 focus-within:border-[#6b7280] transition-colors">
-              <Mail size={14} strokeWidth={1.5} className="text-[#d1d5db] shrink-0" />
-              <input id="login-email" type="email" autoComplete="username" className="flex-1 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db] font-semibold"
-                placeholder="letan@avanti.vn" value={email} onChange={e => { setEmail(e.target.value); setError(""); }} onKeyDown={e => e.key === "Enter" && handleLogin()} />
-            </div>
-          </div>
-          <div className="mb-5">
-            <label htmlFor="login-password" className="block text-[11px] font-medium text-[#374151] uppercase tracking-[0.1em] mb-2">Mật khẩu</label>
-            <div className="flex items-center gap-3 bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 focus-within:border-[#6b7280] transition-colors">
-              <Lock size={14} strokeWidth={1.5} className="text-[#d1d5db] shrink-0" />
-              <input id="login-password" type="password" autoComplete="current-password" className="flex-1 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db] font-semibold"
-                placeholder="••••••••" value={password} onChange={e => { setPassword(e.target.value); setError(""); }} onKeyDown={e => e.key === "Enter" && handleLogin()} />
-            </div>
-          </div>
-
-          </>) : (<>
-          {/* Name input */}
-          <div className="mb-5">
-            <label className="block text-[11px] font-medium text-[#374151] uppercase tracking-[0.1em] mb-2">
-              Họ và tên nhân viên
-            </label>
-            <div className="flex items-center gap-3 bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 focus-within:border-[#6b7280] transition-colors">
-              <User size={14} strokeWidth={1.5} className="text-[#d1d5db] shrink-0" />
-              <input
-                className="flex-1 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db] font-semibold"
-                style={{color: name ? "#0f0f0e" : undefined, letterSpacing: name ? "0.04em" : undefined}}
-                placeholder="NGUYỄN VĂN A"
-                value={name}
-                onChange={e => { setName(e.target.value.toUpperCase()); setError(""); }}
-                onKeyDown={e => e.key === "Enter" && handleLogin()}
-              />
-            </div>
-          </div>
-
-          </>)}
-
-          {/* Vai trò — hệ thống chỉ dành cho Lễ tân */}
-          <div className="mb-6">
-            <label className="block text-[11px] font-medium text-[#374151] uppercase tracking-[0.1em] mb-2">
-              Vai trò
-            </label>
-            <div className="w-full flex items-center gap-4 px-4 py-3 rounded-[2px] border bg-white" style={{ borderColor: "#0f0f0e" }}>
-              <div className="w-9 h-9 rounded-[2px] flex items-center justify-center shrink-0 bg-[#0f0f0e]">
-                <span className="mono text-[11px] font-semibold text-white">LT</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold text-[#1a1a1a]">Lễ Tân</span>
-                  <span className="text-[10px] text-[#9ca3af]">Front Desk</span>
-                </div>
-                <div className="text-[11px] text-[#6b7280] truncate">Đặt phòng, check-in/out, folio & thu ngân, sơ đồ phòng, giao ca</div>
+            <div className="mb-4">
+              <label htmlFor="login-email" className={labelCls}>Email</label>
+              <div className={fieldCls}>
+                <Mail size={16} strokeWidth={1.75} className="text-faint shrink-0" aria-hidden="true" />
+                <input id="login-email" name="email" type="email" inputMode="email" autoComplete="username" spellCheck={false} className={inputCls}
+                  placeholder="letan@avanti.vn" value={email} onChange={e => { setEmail(e.target.value); setError(""); }} />
               </div>
             </div>
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div className="mb-4 px-4 py-2.5 rounded-[2px] bg-[#fff1f2] border border-[#fca5a5] text-[11px] text-[#c1121f]">
-              {error}
+            <div className="mb-6">
+              <label htmlFor="login-password" className={labelCls}>Mật khẩu</label>
+              <div className={fieldCls}>
+                <Lock size={16} strokeWidth={1.75} className="text-faint shrink-0" aria-hidden="true" />
+                <input id="login-password" name="password" type={showPw ? "text" : "password"} autoComplete="current-password" className={inputCls}
+                  placeholder="••••••••" value={password} onChange={e => { setPassword(e.target.value); setError(""); }} />
+                <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw ? "Ẩn mật khẩu" : "Hiện mật khẩu"} className="text-faint hover:text-ink-2 transition-colors rounded">
+                  {showPw ? <EyeOff size={16} strokeWidth={1.75} /> : <Eye size={16} strokeWidth={1.75} />}
+                </button>
+              </div>
+            </div>
+          </>) : (
+            <div className="mb-6">
+              <label htmlFor="login-name" className={labelCls}>Họ và tên nhân viên</label>
+              <div className={fieldCls}>
+                <User size={16} strokeWidth={1.75} className="text-faint shrink-0" aria-hidden="true" />
+                <input id="login-name" name="name" autoComplete="name" className={`${inputCls} uppercase tracking-wide`}
+                  placeholder="NGUYỄN VĂN A" value={name} onChange={e => { setName(e.target.value.toUpperCase()); setError(""); }} />
+              </div>
+              <p className="text-[12px] text-muted mt-1.5">Chế độ demo: nhập tên bất kỳ để vào, dữ liệu lưu trên trình duyệt này.</p>
             </div>
           )}
 
-          {/* Submit */}
-          <button
-            onClick={handleLogin}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-[2px] text-[13px] font-semibold transition-colors"
-            style={{
-              background: canSubmit ? "#0f0f0e" : "#e5e7eb",
-              color: canSubmit ? "#ffffff" : "#9ca3af",
-              cursor: canSubmit ? "pointer" : "not-allowed",
-            }}
-          >
-            {busy ? "Đang đăng nhập..." : "Vào hệ thống"}
-            <ChevronRight size={15} strokeWidth={2} />
+          <div className="mb-6 flex items-center gap-3 px-3.5 py-3 rounded-ctl bg-accent-soft/60 border border-accent/15">
+            <div aria-hidden="true" className="w-8 h-8 rounded-ctl flex items-center justify-center shrink-0 bg-surface border border-accent/20 text-accent"><ConciergeBell size={16} strokeWidth={1.75} /></div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-ink">Lễ tân <span className="font-normal text-muted">· Front Desk</span></div>
+              <div className="text-[12px] text-ink-2 truncate">Đặt phòng, check-in/out, folio & thu ngân, sơ đồ phòng, giao ca</div>
+            </div>
+          </div>
+
+          {error && (
+            <div role="alert" className="mb-4 px-3.5 py-2.5 rounded-ctl bg-dirty-soft border border-dirty-line text-[13px] text-dirty-ink">{error}</div>
+          )}
+
+          <button type="submit" disabled={busy} aria-disabled={!canSubmit} className="pms-btn-primary w-full py-3 text-[14px]">
+            {busy ? <><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" aria-hidden="true" />Đang đăng nhập…</> : <>Vào hệ thống <ArrowRight size={16} strokeWidth={2} aria-hidden="true" /></>}
           </button>
 
-          <div className="mt-4 text-center text-[11px] text-[#9ca3af]">
-            Avanti Hotel Management System · {new Date().getFullYear()}{isSupabaseConfigured ? "" : " · Chế độ demo (chưa nối Supabase)"}
-          </div>
-        </div>
-      </div>
+          <p className="mt-5 text-center text-[12px] text-muted">
+            Avanti OS · {new Date().getFullYear()}{isSupabaseConfigured ? "" : " · Chế độ demo"}
+          </p>
+        </form>
+      </main>
     </div>
   );
 }
