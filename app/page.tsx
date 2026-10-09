@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ConciergeBell, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { ArrowRight, ConciergeBell, Eye, EyeOff, Lock, User } from "lucide-react";
+import { isValidPin, PIN_LENGTH, usernameToEmail } from "@/lib/pms/staff-login";
 import { fetchStaffProfile, getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function AvantiLogin() {
@@ -11,18 +12,19 @@ export default function AvantiLogin() {
   const [error, setError] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("avanti");
   const [showPw, setShowPw] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
-  const canSubmit = isSupabaseConfigured ? Boolean(email.trim() && password) && !busy : Boolean(name.trim());
+  const canSubmit = isSupabaseConfigured ? Boolean(username.trim()) && isValidPin(pin) && !busy : Boolean(name.trim());
 
   // Đăng nhập thật bằng Supabase Auth; chi nhánh phải khớp với hồ sơ lễ tân của tài khoản
   const handleSupabaseLogin = async () => {
-    if (!email.trim() || !password) { setError("Nhập email và mật khẩu"); return; }
+    if (!username.trim()) { setError("Nhập tên đăng nhập"); return; }
+    if (!isValidPin(pin)) { setError(`Mã PIN gồm ${PIN_LENGTH} chữ số`); return; }
     setBusy(true); setError("");
     const sb = getSupabase();
-    const { error: authError } = await sb.auth.signInWithPassword({ email: email.trim(), password });
-    if (authError) { setBusy(false); setError(authError.message === "Invalid login credentials" ? "Sai email hoặc mật khẩu" : authError.message); return; }
+    const { error: authError } = await sb.auth.signInWithPassword({ email: usernameToEmail(username), password: pin });
+    if (authError) { setBusy(false); setError(authError.message === "Invalid login credentials" ? "Sai tên đăng nhập hoặc mã PIN" : authError.message); return; }
     const profile = await fetchStaffProfile();
     if (!profile) { await sb.auth.signOut(); setBusy(false); setError("Tài khoản chưa được cấp quyền lễ tân"); return; }
     if (profile.branchCode.toLowerCase() !== selectedBranch) {
@@ -56,12 +58,10 @@ export default function AvantiLogin() {
     <div className="min-h-screen flex bg-paper">
       {/* Cột trái: thương hiệu và chọn chi nhánh */}
       <aside className="hidden lg:flex flex-col justify-between w-[440px] shrink-0 bg-night text-white relative overflow-hidden">
-        <div aria-hidden="true" className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-accent/25 blur-3xl" />
-        <div aria-hidden="true" className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-night-2 to-transparent" />
 
         <div className="relative px-10 pt-10">
           <div className="flex items-center gap-3">
-            <div aria-hidden="true" className="w-10 h-10 rounded-card bg-accent flex items-center justify-center text-[17px] font-bold shadow-[inset_0_1px_0_rgb(255_255_255/0.25)]">A</div>
+            <div aria-hidden="true" className="w-10 h-10 rounded-card bg-accent flex items-center justify-center text-[17px] font-bold">A</div>
             <div>
               <div className="text-[20px] font-semibold tracking-tight leading-none">Avanti OS</div>
               <div className="text-[12px] text-night-muted mt-1">Hệ thống quản lý khách sạn</div>
@@ -117,20 +117,20 @@ export default function AvantiLogin() {
 
           {isSupabaseConfigured ? (<>
             <div className="mb-4">
-              <label htmlFor="login-email" className={labelCls}>Email</label>
+              <label htmlFor="login-username" className={labelCls}>Tên đăng nhập</label>
               <div className={fieldCls}>
-                <Mail size={16} strokeWidth={1.75} className="text-faint shrink-0" aria-hidden="true" />
-                <input id="login-email" name="email" type="email" inputMode="email" autoComplete="username" spellCheck={false} className={inputCls}
-                  placeholder="letan@avanti.vn" value={email} onChange={e => { setEmail(e.target.value); setError(""); }} />
+                <User size={16} strokeWidth={1.75} className="text-faint shrink-0" aria-hidden="true" />
+                <input id="login-username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} className={inputCls}
+                  placeholder="vd: hoa" value={username} onChange={e => { setUsername(e.target.value); setError(""); }} />
               </div>
             </div>
             <div className="mb-6">
-              <label htmlFor="login-password" className={labelCls}>Mật khẩu</label>
+              <label htmlFor="login-pin" className={labelCls}>Mã PIN <span className="font-normal text-muted">({PIN_LENGTH} số)</span></label>
               <div className={fieldCls}>
                 <Lock size={16} strokeWidth={1.75} className="text-faint shrink-0" aria-hidden="true" />
-                <input id="login-password" name="password" type={showPw ? "text" : "password"} autoComplete="current-password" className={inputCls}
-                  placeholder="••••••••" value={password} onChange={e => { setPassword(e.target.value); setError(""); }} />
-                <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw ? "Ẩn mật khẩu" : "Hiện mật khẩu"} className="text-faint hover:text-ink-2 transition-colors rounded">
+                <input id="login-pin" name="pin" type={showPw ? "text" : "password"} inputMode="numeric" pattern="[0-9]*" maxLength={PIN_LENGTH} autoComplete="current-password" className={`${inputCls} mono tracking-[0.4em]`}
+                  placeholder="••••••" value={pin} onChange={e => { setPin(e.target.value.replace(/\D/g, "").slice(0, PIN_LENGTH)); setError(""); }} />
+                <button type="button" onClick={() => setShowPw(v => !v)} aria-label={showPw ? "Ẩn mã PIN" : "Hiện mã PIN"} className="text-faint hover:text-ink-2 transition-colors rounded">
                   {showPw ? <EyeOff size={16} strokeWidth={1.75} /> : <Eye size={16} strokeWidth={1.75} />}
                 </button>
               </div>

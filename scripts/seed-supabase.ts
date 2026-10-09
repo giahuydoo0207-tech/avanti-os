@@ -2,10 +2,11 @@
 // Chạy:  npm run seed:supabase
 // Cần biến môi trường (đặt trong .env.local):
 //   NEXT_PUBLIC_SUPABASE_URL=...         SUPABASE_SERVICE_ROLE_KEY=...   (Settings → API, KHÔNG đưa key này lên frontend)
-// Tạo sẵn 3 tài khoản lễ tân, mật khẩu chung: Avanti@2026
+// Tạo sẵn 3 tài khoản lễ tân (tên đăng nhập + mã PIN 6 số), xem lib/pms/staff-login.ts
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { createSeedState } from "../lib/pms/seed";
+import { DEMO_STAFF, STAFF_LOGIN_DOMAIN, usernameToEmail } from "../lib/pms/staff-login";
 
 // Đọc .env.local nếu có (không cần thư viện dotenv)
 try {
@@ -20,12 +21,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !serviceKey) { console.error("Thiếu NEXT_PUBLIC_SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY"); process.exit(1); }
 const sb = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
-const PASSWORD = "Avanti@2026";
-const STAFF = [
-  { email: "letan.avanti@avanti-demo.vn", fullName: "NGUYỄN THỊ HOA", branch: "br-avanti" },
-  { email: "letan2.avanti@avanti-demo.vn", fullName: "TRẦN VĂN MINH", branch: "br-avanti" },
-  { email: "letan.boutique@avanti-demo.vn", fullName: "LÊ HOÀNG ANH", branch: "br-boutique" },
-];
+const STAFF = DEMO_STAFF.map(st => ({ ...st, email: usernameToEmail(st.username) }));
 
 const today = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10); // ngày theo giờ Việt Nam
 const ids = new Map<string, string>();
@@ -43,12 +39,28 @@ async function insert(table: string, rows: Record<string, unknown>[]) {
   console.log(`  ${table}: ${rows.length}`);
 }
 
-async function ensureUser(email: string, fullName: string): Promise<string> {
+async function ensureUser(email: string, password: string, fullName: string): Promise<string> {
   const list = await check(sb.auth.admin.listUsers({ page: 1, perPage: 1000 }), "listUsers");
   const found = list.users.find(u => u.email === email);
-  if (found) return found.id;
-  const created = await check(sb.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { full_name: fullName } }), `createUser ${email}`);
+  if (found) {
+    // đặt lại mã PIN cho tài khoản đã có
+    await check(sb.auth.admin.updateUserById(found.id, { password, user_metadata: { full_name: fullName } }), `updateUser ${email}`);
+    return found.id;
+  }
+  const created = await check(sb.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: fullName } }), `createUser ${email}`);
   return created.user!.id;
+}
+
+/** Xóa các tài khoản mẫu cũ (đăng nhập bằng email trước đây) để khỏi nhầm */
+async function removeOldDemoUsers() {
+  const keep = new Set(STAFF.map(st => st.email));
+  const list = await check(sb.auth.admin.listUsers({ page: 1, perPage: 1000 }), "listUsers");
+  for (const u of list.users) {
+    if (u.email?.endsWith(`@${STAFF_LOGIN_DOMAIN}`) && !keep.has(u.email)) {
+      await check(sb.auth.admin.deleteUser(u.id), `deleteUser ${u.email}`);
+      console.log(`  đã xóa tài khoản cũ ${u.email}`);
+    }
+  }
 }
 
 async function main() {
@@ -63,7 +75,8 @@ async function main() {
   console.log("Thêm dữ liệu...");
   await insert("branches", s.branches.map(b => ({ id: uuid(b.id), code: b.code, name: b.name, address: b.address, stars: b.stars })));
   const staffIds: Record<string, string> = {};
-  for (const st of STAFF) staffIds[st.email] = await ensureUser(st.email, st.fullName);
+  await removeOldDemoUsers();
+  for (const st of STAFF) staffIds[st.email] = await ensureUser(st.email, st.pin, st.fullName);
   await insert("staff_profiles", STAFF.map(st => ({ id: staffIds[st.email], branch_id: uuid(st.branch), full_name: st.fullName, role: "front_desk" })));
   await insert("room_types", s.roomTypes.map(t => ({ id: uuid(t.id), branch_id: uuid(t.branchId), code: t.code, name: t.name, base_rate: t.baseRate, max_pax: t.maxPax })));
   await insert("rooms", s.rooms.map(r => ({ id: uuid(r.id), branch_id: uuid(r.branchId), room_type_id: uuid(r.roomTypeId), number: r.number, floor: r.floor, hk_status: r.hkStatus })));
@@ -93,8 +106,8 @@ async function main() {
   await insert("shift_tasks", s.shiftTasks.map(t => ({ id: uuid(t.id), shift_report_id: uuid(t.shiftReportId), content: t.content, priority: t.priority, done: t.done })));
   await insert("activity_logs", s.activities.map(a => ({ branch_id: uuid(a.branchId), action: a.action, entity_type: a.entityType, message: a.message })));
 
-  console.log("\nXong. Tài khoản lễ tân (mật khẩu " + PASSWORD + "):");
-  for (const st of STAFF) console.log(`  ${st.email}  —  ${st.fullName} (${st.branch === "br-avanti" ? "Avanti Hotel" : "Avanti Boutique"})`);
+  console.log("\nXong. Tài khoản lễ tân:");
+  for (const st of STAFF) console.log(`  Tên đăng nhập: ${st.username.padEnd(6)}  Mã PIN: ${st.pin}   ${st.fullName} (${st.branchName})`);
 }
 
 main().catch(e => { console.error("Lỗi:", e.message); process.exit(1); });

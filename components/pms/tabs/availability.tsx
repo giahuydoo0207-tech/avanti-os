@@ -27,7 +27,7 @@ export function AvailabilityTab() {
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 56px)" }}>
-      <div className="bg-surface border-b border-line px-5 py-3 flex items-center gap-5 shrink-0 shadow-sm flex-wrap">
+      <div className="bg-surface border-b border-line px-5 py-3 flex items-center gap-5 shrink-0 flex-wrap">
         <input type="date" value={start} onChange={e => e.target.value && setStart(e.target.value)} className="mono text-[13px] font-semibold border border-line rounded-ctl px-2 py-1.5 bg-sunken" />
         <div className="flex items-center border border-line rounded-ctl overflow-hidden">
           <button onClick={() => setStart(d => addDays(d, -7))} className="px-2 py-1.5 hover:bg-line-soft border-r border-line"><ChevronLeft size={13} /></button>
@@ -38,7 +38,7 @@ export function AvailabilityTab() {
         <div className="flex items-center gap-2 text-[13px] text-ink-2 ml-auto"><span className="font-semibold">Số ngày</span><input type="number" value={days} min={1} max={31} onChange={e => setDays(Math.max(1, Math.min(31, Number(e.target.value))))} className="mono w-14 border border-line rounded-ctl px-2 py-1 text-[13px] font-semibold bg-sunken text-center" /></div>
       </div>
       <div className="flex-1 overflow-auto px-5 py-4">
-        <div className="bg-surface border border-line rounded-ctl shadow-[0_2px_6px_rgba(0,0,0,0.07)] overflow-hidden">
+        <div className="bg-surface border border-line rounded-ctl overflow-hidden">
           <table className="avail-table w-full text-left border-collapse text-[13px]" style={{ minWidth: 900 }}>
             <thead><tr className="border-b-2 border-line bg-sunken">
               <th className="px-4 py-3 text-[11px] tracking-[0.12em] uppercase text-ink-2 font-semibold sticky left-0 bg-sunken z-10 min-w-[180px]">Loại phòng</th>

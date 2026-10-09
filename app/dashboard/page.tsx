@@ -70,7 +70,7 @@ function Shell() {
         <aside className="w-56 shrink-0 flex flex-col bg-night text-white sticky top-0 h-screen">
           <div className="px-5 pt-5 pb-4 border-b border-night-line">
             <div className="flex items-center gap-2.5">
-              <div aria-hidden="true" className="w-8 h-8 rounded-ctl bg-accent flex items-center justify-center text-[13px] font-bold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.2)]">A</div>
+              <div aria-hidden="true" className="w-8 h-8 rounded-ctl bg-accent flex items-center justify-center text-[13px] font-bold text-white">A</div>
               <div className="min-w-0">
                 <div className="text-[14px] font-semibold tracking-tight leading-tight truncate">{branch?.name}</div>
                 <div className="text-[11px] text-night-muted leading-tight mt-0.5">{st.total} phòng · <span className="text-accent-bright" aria-label={`${branch?.stars ?? 0} sao`}>{"★".repeat(branch?.stars ?? 0)}</span></div>
@@ -87,7 +87,7 @@ function Shell() {
               return (
                 <button key={name} onClick={() => goTo(name)} aria-current={active ? "page" : undefined}
                   className={`relative flex w-full items-center gap-3 px-3 py-2 rounded-ctl text-left text-[13px] transition-colors ${active ? "text-white" : "text-night-text hover:text-white hover:bg-night-2"}`}>
-                  {active && <motion.span layoutId="nav-active" className="absolute inset-0 rounded-ctl bg-night-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]" transition={{ type: "spring", duration: 0.3, bounce: 0.15 }} />}
+                  {active && <motion.span layoutId="nav-active" className="absolute inset-0 rounded-ctl bg-night-3" transition={{ type: "spring", duration: 0.3, bounce: 0.15 }} />}
                   {active && <motion.span layoutId="nav-bar" className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-accent-bright" transition={{ type: "spring", duration: 0.3, bounce: 0.15 }} />}
                   <Icon size={16} strokeWidth={active ? 2 : 1.6} className="relative" aria-hidden="true" />
                   <span className={`relative flex-1 ${active ? "font-semibold" : "font-medium"}`}>{name}</span>
@@ -103,7 +103,7 @@ function Shell() {
         </aside>
 
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="bg-surface/85 backdrop-blur-md border-b border-line flex items-center justify-between px-7 shrink-0 sticky top-0 z-20" style={{ height: 56 }}>
+          <header className="bg-surface border-b border-line flex items-center justify-between px-7 shrink-0 sticky top-0 z-20" style={{ height: 56 }}>
             <div className="flex items-center gap-2 text-[13px] min-w-0"><span className="text-muted font-medium truncate">{branch?.name}</span><ChevronRight size={12} className="text-faint shrink-0" aria-hidden="true" /><h1 className="font-semibold text-ink truncate">{tab}</h1></div>
             <div className="flex items-center gap-4">
               <AnimatePresence>
@@ -138,7 +138,7 @@ function Shell() {
       <div aria-live="polite" className="fixed bottom-6 right-6 z-[60]">
         <AnimatePresence>
           {toastMsg && <motion.div key={toastMsg} initial={{ opacity: 0, y: 12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8 }} transition={{ type: "spring", duration: 0.3, bounce: 0.2 }}
-            className="flex items-center gap-2 bg-night text-white text-[13px] font-medium pl-3 pr-4 py-2.5 rounded-ctl shadow-[0_12px_32px_-12px_rgb(23_21_18/0.6)]"><CheckCircle2 size={15} className="text-accent-bright" aria-hidden="true" />{toastMsg}</motion.div>}
+            className="flex items-center gap-2 bg-night text-white text-[13px] font-medium pl-3 pr-4 py-2.5 rounded-ctl"><CheckCircle2 size={15} className="text-accent-bright" aria-hidden="true" />{toastMsg}</motion.div>}
         </AnimatePresence>
       </div>
       </MotionConfig>

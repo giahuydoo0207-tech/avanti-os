@@ -47,7 +47,7 @@ export function ShiftReportTab() {
   };
 
   const tabs = (
-    <div className="flex border border-line rounded-ctl overflow-hidden shadow-sm">
+    <div className="flex border border-line rounded-ctl overflow-hidden">
       <button onClick={() => { setView("new"); setSent(false); }} className={`px-4 py-2 text-[13px] font-semibold border-r border-line ${view === "new" ? "bg-night text-white" : "bg-surface text-ink-2"}`}>+ Tạo báo cáo</button>
       <button onClick={() => { setView("history"); setOpenId(null); }} className={`px-4 py-2 text-[13px] font-semibold ${view === "history" ? "bg-night text-white" : "bg-surface text-ink-2"}`}>Lịch sử ({reports.length})</button>
     </div>
@@ -96,7 +96,7 @@ export function ShiftReportTab() {
 
   if (sent) return (
     <div className="p-7 max-w-4xl mx-auto flex flex-col items-center justify-center gap-3" style={{ minHeight: 400 }}>
-      <div className="w-14 h-14 rounded-full bg-clean-soft flex items-center justify-center shadow-md"><CheckCircle size={28} className="text-clean" strokeWidth={1.5} /></div>
+      <div className="w-14 h-14 rounded-full bg-clean-soft flex items-center justify-center"><CheckCircle size={28} className="text-clean" strokeWidth={1.5} /></div>
       <h2 className="text-[20px] font-semibold tracking-tight text-ink">Đã gửi báo cáo giao ca</h2>
       <p className="text-[13px] text-muted font-medium">Người nhận ca xác nhận trong mục Lịch sử.</p>
       <div className="flex gap-2"><button onClick={() => setSent(false)} className="pms-btn-secondary">Tạo báo cáo mới</button><button onClick={() => setView("history")} className="pms-btn-primary">Xem lịch sử</button></div>

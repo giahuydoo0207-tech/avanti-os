@@ -7,6 +7,7 @@ Tài liệu cho WBS 3.3 (Thiết kế giao diện & hệ thống component). Tok
 - Nền trung tính ấm. Không trộn xám lạnh với xám ấm.
 - Màu trạng thái phòng giống nhau ở mọi màn hình (Tổng quan, Sơ đồ phòng, Room Plan, Availability).
 - Chữ: **Be Vietnam Pro** (thiết kế cho tiếng Việt), số liệu dùng **JetBrains Mono** hoặc `tabular-nums` để các cột số thẳng hàng.
+- Phẳng, không đổ bóng: tách lớp bằng viền mảnh và nền, mắt không mỏi khi nhìn cả ca trực.
 - Chuyển động nhẹ (thư viện `motion`): overlay trượt lên, tab mờ dần, toast. Tự tắt khi hệ điều hành bật "giảm chuyển động".
 
 ## Token màu (Tailwind: `bg-*`, `text-*`, `border-*`)

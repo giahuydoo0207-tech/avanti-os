@@ -29,7 +29,7 @@ export function CashierTab() {
     <div className="p-7 max-w-7xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <div><h2 className="text-[20px] font-semibold tracking-tight text-ink">Thu ngân</h2><div className="text-[13px] text-muted mt-0.5">Cashier · folio & giao dịch</div></div>
-        <div className="flex border border-line rounded-ctl overflow-hidden shadow-sm">
+        <div className="flex border border-line rounded-ctl overflow-hidden">
           <button onClick={() => setView("folios")} className={`px-4 py-2 text-[13px] font-semibold border-r border-line ${view === "folios" ? "bg-night text-white" : "bg-surface text-ink-2"}`}>Folio đang mở</button>
           <button onClick={() => setView("today")} className={`px-4 py-2 text-[13px] font-semibold ${view === "today" ? "bg-night text-white" : "bg-surface text-ink-2"}`}>Giao dịch hôm nay ({txns.length})</button>
         </div>

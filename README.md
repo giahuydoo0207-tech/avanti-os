@@ -20,12 +20,14 @@ npm run dev        # http://localhost:3000 — nhập tên bất kỳ để vào
    ```bash
    npm run seed:supabase
    ```
-5. `npm run dev`, đăng nhập (chọn đúng chi nhánh ở cột trái), mật khẩu `Avanti@2026`:
-   | Email | Lễ tân | Chi nhánh |
-   |---|---|---|
-   | letan.avanti@avanti-demo.vn | Nguyễn Thị Hoa | Avanti Hotel |
-   | letan2.avanti@avanti-demo.vn | Trần Văn Minh | Avanti Hotel |
-   | letan.boutique@avanti-demo.vn | Lê Hoàng Anh | Avanti Boutique |
+5. `npm run dev`, đăng nhập bằng **tên đăng nhập + mã PIN 6 số** (chọn đúng chi nhánh ở cột trái):
+   | Tên đăng nhập | Mã PIN | Lễ tân | Chi nhánh |
+   |---|---|---|---|
+   | `hoa` | `111111` | Nguyễn Thị Hoa | Avanti Hotel |
+   | `minh` | `222222` | Trần Văn Minh | Avanti Hotel |
+   | `anh` | `333333` | Lê Hoàng Anh | Avanti Boutique |
+
+   Tên đăng nhập được đổi ngầm thành email nội bộ `<tên>@avanti-demo.vn` cho Supabase Auth (xem `lib/pms/staff-login.ts`). Thêm nhân viên mới: sửa `DEMO_STAFF` rồi chạy lại seed.
 6. Vercel: thêm `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` vào Environment Variables rồi redeploy. Không đưa `service_role` lên Vercel.
 
 Mở 2 trình duyệt với 2 tài khoản Avanti Hotel để thấy hai quầy lễ tân cùng cập nhật (Realtime).

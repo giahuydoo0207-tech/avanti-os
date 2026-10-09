@@ -35,7 +35,7 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="text-[13px] font-semibold text-ink mb-4 flex items-center gap-2"><span aria-hidden="true" className="w-1 h-3.5 rounded-full bg-accent inline-block" />{children}</h3>;
 }
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`bg-surface border border-line rounded-card shadow-[0_1px_2px_rgb(31_28_24/0.04),0_4px_12px_-6px_rgb(31_28_24/0.08)] ${className}`}>{children}</div>;
+  return <div className={`bg-surface border border-line rounded-card ${className}`}>{children}</div>;
 }
 export function FieldRow({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
   return <div className="grid grid-cols-5 items-center gap-3"><label className="col-span-2 text-[12px] text-ink-2 font-medium">{label}{required && <span className="text-dirty" aria-hidden="true"> *</span>}</label><div className="col-span-3">{children}</div></div>;
@@ -52,7 +52,7 @@ export function EmptyRow({ cols, text }: { cols: number; text: string }) {
 }
 export function OverlayHeader({ title, onBack, children }: { title: React.ReactNode; onBack: () => void; children?: React.ReactNode }) {
   return (
-    <div className="bg-surface/90 backdrop-blur border-b border-line flex items-center justify-between px-7 shrink-0 sticky top-0 z-10" style={{ height: 56 }}>
+    <div className="bg-surface border-b border-line flex items-center justify-between px-7 shrink-0 sticky top-0 z-10" style={{ height: 56 }}>
       <div className="flex items-center gap-3 min-w-0">
         <button onClick={onBack} className="flex items-center gap-1.5 text-[13px] text-muted hover:text-ink font-semibold transition-colors rounded px-1 -ml-1">← Quay lại</button>
         <span aria-hidden="true" className="w-px h-4 bg-line" />

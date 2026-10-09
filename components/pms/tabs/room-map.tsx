@@ -11,7 +11,7 @@ import { ErrorBox, ROOM_STATUS, StatusDot, STATUS_ORDER } from "../ui";
 function Tooltip({ res, code, balance, guestName }: { res: Reservation; code: string; balance: number; guestName: string }) {
   return (
     <div className="absolute z-50 top-full mt-2 left-0 pointer-events-none" style={{ minWidth: 250 }}>
-      <div className="text-[12px] text-ink p-3 rounded-ctl bg-surface border border-line shadow-[0_12px_32px_-12px_rgb(31_28_24/0.35)]">
+      <div className="text-[12px] text-ink p-3 rounded-ctl bg-surface border border-line">
         <div className="font-semibold text-[13px] mb-1">{guestName}</div>
         <div className="text-ink-2 space-y-0.5">
           <div>#{res.confirmationNo} · {code} · {res.adults} NL{res.children ? ` + ${res.children} TE` : ""}</div>
@@ -62,8 +62,8 @@ export function RoomMapTab() {
           </div>
         </div>
         <div className="flex p-0.5 bg-line-soft border border-line rounded-ctl" role="group" aria-label="Kiểu hiển thị">
-          <button onClick={() => setMode("hotelmap")} aria-pressed={mode === "hotelmap"} className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[13px] font-medium transition-colors ${mode === "hotelmap" ? "bg-surface text-ink shadow-sm" : "text-ink-2 hover:text-ink"}`}><MapIcon size={14} strokeWidth={1.75} aria-hidden="true" /> Hotel Map</button>
-          <button onClick={() => setMode("block")} aria-pressed={mode === "block"} className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[13px] font-medium transition-colors ${mode === "block" ? "bg-surface text-ink shadow-sm" : "text-ink-2 hover:text-ink"}`}><LayoutGrid size={14} strokeWidth={1.75} aria-hidden="true" /> Block View</button>
+          <button onClick={() => setMode("hotelmap")} aria-pressed={mode === "hotelmap"} className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[13px] font-medium transition-colors ${mode === "hotelmap" ? "bg-surface text-ink" : "text-ink-2 hover:text-ink"}`}><MapIcon size={14} strokeWidth={1.75} aria-hidden="true" /> Hotel Map</button>
+          <button onClick={() => setMode("block")} aria-pressed={mode === "block"} className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[13px] font-medium transition-colors ${mode === "block" ? "bg-surface text-ink" : "text-ink-2 hover:text-ink"}`}><LayoutGrid size={14} strokeWidth={1.75} aria-hidden="true" /> Block View</button>
         </div>
       </div>
 
@@ -78,13 +78,13 @@ export function RoomMapTab() {
                 return (
                   <div key={room.id} className="relative" onMouseEnter={() => setHover(room.id)} onMouseLeave={() => setHover(null)} style={{ opacity: dim ? 0.25 : 1, transition: "opacity .2s ease" }}>
                     {mode === "hotelmap" ? (
-                      <button type="button" data-status={s} aria-pressed={isSel} aria-label={`Phòng ${room.number}, ${c.labelVi}${i.guest ? `, khách ${i.guest}` : ""}`} onClick={() => setSelected(p => (p === room.id ? null : room.id))} className={`block text-left cursor-pointer select-none transition-[box-shadow,transform] ${isSel ? "ring-2 ring-accent ring-offset-2 ring-offset-paper z-20 relative shadow-lg" : "hover:shadow-[0_6px_14px_-6px_rgb(31_28_24/0.3)] hover:-translate-y-0.5"}`}
+                      <button type="button" data-status={s} aria-pressed={isSel} aria-label={`Phòng ${room.number}, ${c.labelVi}${i.guest ? `, khách ${i.guest}` : ""}`} onClick={() => setSelected(p => (p === room.id ? null : room.id))} className={`block text-left cursor-pointer select-none outline-2 -outline-offset-1 transition-[outline-color] ${isSel ? "outline-accent z-20 relative" : "outline-transparent hover:outline-line-strong"}`}
                         style={{ width: 104, minHeight: 70, background: c.mapBg, border: `1px solid ${c.mapBorder}`, borderRadius: 8 }}>
                         <div className="flex items-center justify-between px-1.5 pt-1.5"><StatusDot status={s} />{arriving && <span className="text-[10px] font-semibold px-1.5 leading-4 rounded bg-arrive text-white">Đến</span>}{i.res && <span className="flex items-center gap-0.5 mono text-[11px] font-semibold" style={{ color: c.mapSubText }}>{i.res.adults + i.res.children}<UserIcon size={11} strokeWidth={2} aria-hidden="true" /></span>}</div>
                         <div className="px-1.5 pb-1.5"><div className="mono font-semibold text-[14px] leading-tight" style={{ color: c.mapText }}>{room.number}</div><div className="text-[10px] font-medium uppercase leading-tight opacity-80" style={{ color: c.mapSubText }}>{code}</div>{i.res && <div className="text-[10px] font-medium truncate" style={{ color: c.mapText, maxWidth: 88 }}>{i.guest}</div>}</div>
                       </button>
                     ) : (
-                      <button type="button" data-status={s} aria-pressed={isSel} aria-label={`Phòng ${room.number}, ${c.labelVi}`} onClick={() => setSelected(p => (p === room.id ? null : room.id))} className={`room-cell cursor-pointer border rounded-ctl flex flex-col items-center justify-center ${c.cell} ${isSel ? "ring-2 ring-accent ring-offset-2 relative z-20" : ""}`} style={{ width: 56, height: 46 }}>
+                      <button type="button" data-status={s} aria-pressed={isSel} aria-label={`Phòng ${room.number}, ${c.labelVi}`} onClick={() => setSelected(p => (p === room.id ? null : room.id))} className={`room-cell cursor-pointer border rounded-ctl flex flex-col items-center justify-center ${c.cell} ${isSel ? "outline-ink z-20 relative" : ""}`} style={{ width: 56, height: 46 }}>
                         <span className="mono text-[11px] font-semibold leading-tight">{room.number}</span><span className="text-[9px] font-medium opacity-80 uppercase">{code}</span>
                       </button>
                     )}
@@ -98,7 +98,7 @@ export function RoomMapTab() {
       </div>
 
       {sel && selStatus && selInfo && (
-        <div className="bg-surface border-t border-line px-7 py-3 flex items-center gap-4 shrink-0 text-[13px] shadow-[0_-8px_24px_-16px_rgb(31_28_24/0.25)] flex-wrap" role="region" aria-label={`Thao tác phòng ${sel.number}`}>
+        <div className="bg-surface border-t border-line px-7 py-3 flex items-center gap-4 shrink-0 text-[13px] flex-wrap" role="region" aria-label={`Thao tác phòng ${sel.number}`}>
           <div className="flex items-center gap-2 font-semibold shrink-0"><StatusDot status={selStatus} /><span className="mono text-[15px]">Phòng {sel.number}</span><span className="text-muted font-medium">· {roomTypeById(state, sel.roomTypeId)?.name}</span><span className="px-2 py-0.5 rounded text-[11px] font-semibold border" style={{ background: ROOM_STATUS[selStatus].mapBg, color: ROOM_STATUS[selStatus].mapText, borderColor: ROOM_STATUS[selStatus].mapBorder }}>{ROOM_STATUS[selStatus].labelVi}</span></div>
           <div className="w-px h-4 bg-line" />
           {selInfo.res ? <>

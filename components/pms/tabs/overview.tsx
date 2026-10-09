@@ -31,7 +31,7 @@ export function OverviewTab() {
   const row = (r: Reservation, action: React.ReactNode) => {
     const g = guestById(state, r.guestId); const room = roomById(state, r.roomId); const rt = roomTypeById(state, r.roomTypeId);
     return <div key={r.id} className="flex items-center justify-between py-2.5 border-b border-line-soft last:border-0 gap-3">
-      <div className="min-w-0"><div className="text-[13px] font-semibold truncate">{g?.fullName}</div><div className="text-[12px] text-muted mt-0.5"><span className="mono text-ink-2">{room ? `P.${room.number}` : "Chưa gán"}</span> · {rt?.code} · {fmtDate(r.arrivalDate)}</div></div>
+      <div className="min-w-0"><div className="text-[13px] font-semibold truncate">{g?.fullName}</div><div className="text-[12px] text-muted mt-0.5">{room ? <span className="mono text-ink-2">P.{room.number}</span> : <span className="text-occ-ink">Chưa gán</span>} · {rt?.code} · {fmtDate(r.arrivalDate)}</div></div>
       {action}
     </div>;
   };

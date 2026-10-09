@@ -71,7 +71,7 @@ export function ReservationTab() {
     const room = roomById(state, res.roomId);
     return (
       <div className="p-7 max-w-3xl mx-auto flex flex-col items-center gap-4 py-16">
-        <div className="w-14 h-14 rounded-full bg-clean-soft flex items-center justify-center shadow-md"><CheckCircle size={28} className="text-clean" strokeWidth={1.5} /></div>
+        <div className="w-14 h-14 rounded-full bg-clean-soft flex items-center justify-center"><CheckCircle size={28} className="text-clean" strokeWidth={1.5} /></div>
         <h2 className="text-[20px] font-semibold tracking-tight text-ink">{res.status === "checked_in" ? "Walk-in đã nhận phòng" : "Đã lưu đặt phòng"}</h2>
         <Card className="px-8 py-5 w-96 space-y-2 text-[13px]">
           {([["Số xác nhận", `#${res.confirmationNo}`], ["Khách", state.guests.find(g => g.id === res.guestId)?.fullName ?? ""], ["Phòng", room ? `${room.number} · ${rt?.code}` : `Chưa gán · ${rt?.code}`], ["Lưu trú", `${fmtDate(res.arrivalDate)} → ${fmtDate(res.departureDate)}`], ["Trạng thái", res.status]] as Array<[string, string]>).map(([l, v]) => <div key={l} className="flex justify-between border-b border-line-soft pb-2"><span className="text-muted font-medium">{l}</span><span className="mono font-semibold">{v}</span></div>)}
@@ -92,7 +92,7 @@ export function ReservationTab() {
     <div className="p-7 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-5">
         <div><h2 className="text-[20px] font-semibold tracking-tight text-ink">Đặt phòng mới</h2><div className="text-[13px] text-muted mt-0.5">New Reservation · Walk-in</div></div>
-        <div className="flex border border-line rounded-ctl overflow-hidden shadow-sm">
+        <div className="flex border border-line rounded-ctl overflow-hidden">
           <button onClick={() => switchType("vietnamese")} className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold border-r border-line ${guestType === "vietnamese" ? "bg-night text-white" : "bg-surface text-ink-2"}`}>Khách Việt Nam</button>
           <button onClick={() => switchType("foreign")} className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold ${guestType === "foreign" ? "bg-night text-white" : "bg-surface text-ink-2"}`}><Globe size={15} strokeWidth={1.5} /> Khách nước ngoài</button>
         </div>
@@ -106,7 +106,7 @@ export function ReservationTab() {
               {existing
                 ? <div className="flex items-center justify-between px-3 py-2 bg-arrive-soft border border-arrive-line rounded-ctl text-[12px] font-semibold text-arrive">Khách cũ: {existing.fullName}<button onClick={() => { setExisting(null); setGuest(emptyGuest(guestType)); }} className="text-ink-2 hover:text-dirty">Bỏ chọn ✕</button></div>
                 : <input className={inputCls} value={lookup} onChange={e => setLookup(e.target.value)} placeholder="Tìm khách cũ theo tên / SĐT / giấy tờ…" />}
-              {matches.length > 0 && <div className="absolute z-20 left-0 right-0 mt-1 bg-surface border border-line rounded-ctl shadow-lg">{matches.map(g => <button key={g.id} onClick={() => pickGuest(g)} className="w-full text-left px-3 py-2 text-[13px] hover:bg-line-soft border-b border-line-soft"><b>{g.fullName}</b> <span className="text-muted mono text-[11px]">{g.idNumber} {g.phone}</span></button>)}</div>}
+              {matches.length > 0 && <div className="absolute z-20 left-0 right-0 mt-1 bg-surface border border-line rounded-ctl">{matches.map(g => <button key={g.id} onClick={() => pickGuest(g)} className="w-full text-left px-3 py-2 text-[13px] hover:bg-line-soft border-b border-line-soft"><b>{g.fullName}</b> <span className="text-muted mono text-[11px]">{g.idNumber} {g.phone}</span></button>)}</div>}
             </div>
             <GuestFields value={guest} onChange={setGuest} />
           </div>

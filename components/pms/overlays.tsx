@@ -22,10 +22,10 @@ function Done({ title, lines, actions }: { title: string; lines: Array<[string, 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-4 py-16" role="status" aria-live="polite">
       <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", duration: 0.5, bounce: 0.35 }}
-        className="w-16 h-16 rounded-full bg-clean-soft ring-8 ring-clean-soft/40 flex items-center justify-center"><CheckCircle size={30} className="text-clean" strokeWidth={1.75} /></motion.div>
+        className="w-16 h-16 rounded-full bg-clean-soft flex items-center justify-center"><CheckCircle size={30} className="text-clean" strokeWidth={1.75} /></motion.div>
       <h2 className="text-[18px] font-semibold tracking-tight">{title}</h2>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.25 }}
-        className="bg-surface border border-line rounded-card shadow-[0_8px_24px_-12px_rgb(31_28_24/0.25)] px-7 py-5 space-y-2.5 text-[13px] w-80">
+        className="bg-surface border border-line rounded-card px-7 py-5 space-y-2.5 text-[13px] w-80">
         {lines.map(([l, v]) => <div key={l} className="flex justify-between gap-4 border-b border-line-soft pb-2.5 last:border-0 last:pb-0"><span className="text-muted font-medium">{l}</span><span className="mono font-semibold text-ink text-right">{v}</span></div>)}
       </motion.div>
       <div className="flex gap-3 mt-2">{actions}</div>
