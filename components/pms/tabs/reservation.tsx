@@ -4,7 +4,7 @@ import { CheckCircle, Globe, Printer } from "lucide-react";
 import { usePms, type GuestInput } from "@/lib/pms/store";
 import { addDays, diffDays, fmtDate, money, PAYMENT_METHOD_LABEL, VAT_RATE } from "@/lib/pms/format";
 import { branchRoomTypes, freeRooms, roomById, roomTypeById } from "@/lib/pms/selectors";
-import type { BookingSource, Guest, GuestType, MealPlan, PaymentMethod, Reservation } from "@/lib/pms/types";
+import type { BookingSource, Guest, GuestType, MealPlan, PaymentMethod } from "@/lib/pms/types";
 import { emptyGuest, GuestFields, guestToInput } from "../guest-form";
 import { useNav } from "../nav";
 import { Card, ErrorBox, FieldRow, inputCls, SectionTitle, selectCls, textareaCls } from "../ui";
@@ -35,7 +35,7 @@ export function ReservationTab() {
   const [method, setMethod] = useState<PaymentMethod>("bank_transfer");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<Reservation | null>(null);
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
   const nights = Math.max(0, diffDays(arrival, departure));
   const rt = roomTypeById(state, roomTypeId);
@@ -48,11 +48,11 @@ export function ReservationTab() {
   const switchType = (t: GuestType) => { setGuestType(t); setExisting(null); setGuest(emptyGuest(t)); };
   const pickGuest = (g: Guest) => { setExisting(g); setGuestType(g.guestType); setGuest(guestToInput(g)); setLookup(""); };
   const changeType = (id: string) => { setRoomTypeId(id); setRoomId(""); setRate(roomTypeById(state, id)?.baseRate ?? 0); };
-  const reset = () => { setCreated(null); setExisting(null); setGuest(emptyGuest(guestType)); setRoomId(""); setDeposit(""); setNote(""); setError(null); setSource("Direct"); setArrival(today); setDeparture(addDays(today, 1)); };
+  const reset = () => { setCreatedId(null); setExisting(null); setGuest(emptyGuest(guestType)); setRoomId(""); setDeposit(""); setNote(""); setError(null); setSource("Direct"); setArrival(today); setDeparture(addDays(today, 1)); };
 
-  const save = (status: "confirmed" | "tentative", walkIn = false) => {
-    if (existing) { const u = actions.updateGuest(existing.id, guest); if (!u.ok) return setError(u.error); }
-    const r = actions.createReservation({
+  const save = async (status: "confirmed" | "tentative", walkIn = false) => {
+    if (existing) { const u = await actions.updateGuest(existing.id, guest); if (!u.ok) return setError(u.error); }
+    const r = await actions.createReservation({
       guestId: existing?.id, guest: existing ? undefined : guest, roomTypeId, roomId: roomId || null, arrivalDate: arrival, departureDate: departure,
       adults, children, rate, mealPlan: meal, source: walkIn ? "Walk-in" : source, status, note,
       deposit: Number(deposit) > 0 ? { amount: Number(deposit), method } : undefined,
@@ -60,14 +60,14 @@ export function ReservationTab() {
     if (!r.ok) return setError(r.error);
     setError(null);
     if (walkIn) {
-      const c = actions.checkIn(r.value.id);
-      if (!c.ok) { setCreated(r.value); return setError(`Đã tạo đặt phòng nhưng chưa check-in được: ${c.error}`); }
+      const c = await actions.checkIn(r.value.id);
+      if (!c.ok) { setCreatedId(r.value.id); return setError(`Đã tạo đặt phòng nhưng chưa check-in được: ${c.error}`); }
     }
-    setCreated(r.value);
+    setCreatedId(r.value.id);
   };
 
-  if (created) {
-    const res = state.reservations.find(r => r.id === created.id) ?? created;
+  const res = createdId ? state.reservations.find(r => r.id === createdId) : undefined;
+  if (res) {
     const room = roomById(state, res.roomId);
     return (
       <div className="p-7 max-w-3xl mx-auto flex flex-col items-center gap-4 py-16">

@@ -20,6 +20,8 @@ export const fmtDayMonth = (d: ISODate) => { const [, m, day] = d.split("-"); re
 /** Danh sách các đêm lưu trú: arrival .. departure-1 */
 export const stayNights = (arrival: ISODate, departure: ISODate): ISODate[] =>
   Array.from({ length: Math.max(0, diffDays(arrival, departure)) }, (_, i) => addDays(arrival, i));
+/** Trả phòng sớm: void tiền phòng từ đêm này trở đi (luôn giữ đêm đầu tiên) */
+export const earlyVoidFrom = (arrival: ISODate, today: ISODate): ISODate => { const a1 = addDays(arrival, 1); return a1 > today ? a1 : today; };
 /** Hai khoảng [a1,d1) và [a2,d2) có chồng nhau không */
 export const overlaps = (a1: ISODate, d1: ISODate, a2: ISODate, d2: ISODate) => a1 < d2 && a2 < d1;
 

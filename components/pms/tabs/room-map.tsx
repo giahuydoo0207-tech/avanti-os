@@ -47,7 +47,7 @@ export function RoomMapTab() {
   const selStatus = sel ? displayStatus(sel, inHouse) : null;
   const selInfo = sel ? info(sel) : null;
   const selArrival = sel ? arrivalFor(sel.id) : undefined;
-  const hk = (roomId: string, s: "clean" | "dirty" | "out_of_order") => { const r = actions.setHousekeeping(roomId, s); if (!r.ok) setError(r.error); else { setError(null); toast("Đã cập nhật trạng thái phòng"); } };
+  const hk = async (roomId: string, s: "clean" | "dirty" | "out_of_order") => { const r = await actions.setHousekeeping(roomId, s); if (!r.ok) setError(r.error); else { setError(null); toast("Đã cập nhật trạng thái phòng"); } };
   const count: Record<RoomDisplayStatus, number> = { clean: st.clean, occupied: st.occupied, dirty: st.dirty, out_of_order: st.ooo };
 
   return (

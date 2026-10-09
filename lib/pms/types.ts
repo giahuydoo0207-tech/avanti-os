@@ -114,6 +114,6 @@ export interface PmsState {
   activities: ActivityLog[];
 }
 
-export interface Session { staffName: string; branchId: string }
+export interface Session { staffName: string; branchId: string; userId?: string }
 
 export type Result<T = undefined> = { ok: true; value: T } | { ok: false; error: string };

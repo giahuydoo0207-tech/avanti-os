@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle, DollarSign, LogOut, Printer } from "lucide-react";
 import { usePms } from "@/lib/pms/store";
-import { diffDays, fmtDate, money, PAYMENT_METHOD_LABEL, VAT_RATE } from "@/lib/pms/format";
+import { diffDays, earlyVoidFrom, fmtDate, money, PAYMENT_METHOD_LABEL, VAT_RATE } from "@/lib/pms/format";
 import { folioOfReservation, folioTransactions, freeRooms, guestById, roomById, roomTypeById } from "@/lib/pms/selectors";
 import type { PaymentMethod } from "@/lib/pms/types";
 import { FolioPanel } from "./folio";
@@ -53,17 +53,17 @@ export function CheckInOverlay({ reservationId, onClose }: { reservationId: stri
   const occupant = selected ? state.reservations.find(r => r.roomId === selected.id && r.status === "checked_in") : undefined;
   const canCheckIn = res.status === "confirmed" || res.status === "tentative";
 
-  const confirm = () => {
+  const confirm = async () => {
     if (!roomId) return setError("Chọn phòng trước khi nhận phòng");
-    const u = actions.updateGuest(guest.id, g); if (!u.ok) return setError(u.error);
-    if (roomId !== res.roomId) { const a = actions.assignRoom(res.id, roomId); if (!a.ok) return setError(a.error); }
-    const c = actions.checkIn(res.id, Number(deposit) > 0 ? { amount: Number(deposit), method } : undefined);
+    const u = await actions.updateGuest(guest.id, g); if (!u.ok) return setError(u.error);
+    if (roomId !== res.roomId) { const a = await actions.assignRoom(res.id, roomId); if (!a.ok) return setError(a.error); }
+    const c = await actions.checkIn(res.id, Number(deposit) > 0 ? { amount: Number(deposit), method } : undefined);
     if (!c.ok) return setError(c.error);
     setError(null); setDone(true);
   };
-  const cancel = () => {
+  const cancel = async () => {
     if (!window.confirm(`Hủy đặt phòng #${res.confirmationNo}?`)) return;
-    const r = actions.cancelReservation(res.id);
+    const r = await actions.cancelReservation(res.id);
     if (!r.ok) return setError(r.error);
     onClose();
   };
@@ -100,11 +100,11 @@ export function CheckInOverlay({ reservationId, onClose }: { reservationId: stri
                 {selected && <FieldRow label="Tình trạng"><div className="flex items-center gap-2">
                   {occupant ? <span className="text-[12px] font-bold text-[#c1121f]">Đang có khách</span>
                     : selected.hkStatus === "clean" ? <span className="text-[12px] font-bold text-[#15803d]">● Sạch — sẵn sàng</span>
-                      : <><span className="text-[12px] font-bold text-[#c1121f]">● Chờ dọn</span><button onClick={() => { const r = actions.setHousekeeping(selected.id, "clean"); setError(r.ok ? null : r.error); }} className="pms-btn-secondary text-[11px] py-1">Đánh dấu đã dọn</button></>}
+                      : <><span className="text-[12px] font-bold text-[#c1121f]">● Chờ dọn</span><button onClick={async () => { const r = await actions.setHousekeeping(selected.id, "clean"); setError(r.ok ? null : r.error); }} className="pms-btn-secondary text-[11px] py-1">Đánh dấu đã dọn</button></>}
                 </div></FieldRow>}
               </div>
               {canCheckIn && roomId && roomId !== res.roomId && (
-                <div className="flex justify-end mt-3"><button onClick={() => { const r = actions.assignRoom(res.id, roomId); setError(r.ok ? null : r.error); }} className="pms-btn-secondary">Lưu gán phòng (chưa check-in)</button></div>
+                <div className="flex justify-end mt-3"><button onClick={async () => { const r = await actions.assignRoom(res.id, roomId); setError(r.ok ? null : r.error); }} className="pms-btn-secondary">Lưu gán phòng (chưa check-in)</button></div>
               )}
               {options.length === 0 && <p className="mt-3 text-[12px] text-[#9ca3af] font-semibold">Không còn phòng {bookedType?.code} trống cho kỳ lưu trú — bật “Hiện mọi loại phòng” để nâng hạng.</p>}
             </Card>
@@ -150,7 +150,7 @@ export function CheckOutOverlay({ reservationId, onClose }: { reservationId: str
   const early = res.departureDate > today;
 
   // Xem trước đúng như action checkOut sẽ tính
-  const txns = folioTransactions(state, folio.id).filter(t => !(early && (t.code === "ROOM" || t.code === "TAX") && t.businessDate >= today));
+  const txns = folioTransactions(state, folio.id).filter(t => !(early && (t.code === "ROOM" || t.code === "TAX") && t.businessDate >= earlyVoidFrom(res.arrivalDate, today)));
   const debit = txns.filter(t => t.kind === "debit").reduce((a, t) => a + t.amount, 0);
   const credit = txns.filter(t => t.kind === "credit").reduce((a, t) => a + t.amount, 0);
   const roomCharges = txns.filter(t => t.code === "ROOM" || t.code === "TAX").reduce((a, t) => a + t.amount, 0);
@@ -159,8 +159,8 @@ export function CheckOutOverlay({ reservationId, onClose }: { reservationId: str
   const receivedNum = received === "" ? Math.max(0, due) : Number(received);
   const groups = Object.entries(txns.filter(t => t.kind === "debit").reduce<Record<string, number>>((acc, t) => { acc[t.code] = (acc[t.code] ?? 0) + t.amount; return acc; }, {}));
 
-  const confirm = () => {
-    const r = actions.checkOut(res.id, { discountPercent: discount, payment: due > 0 ? { method, amount: receivedNum } : null });
+  const confirm = async () => {
+    const r = await actions.checkOut(res.id, { discountPercent: discount, payment: due > 0 ? { method, amount: receivedNum } : null });
     if (!r.ok) return setError(r.error);
     setError(null); setResult({ total: Math.max(0, due), change: r.value.change });
   };
@@ -179,7 +179,7 @@ export function CheckOutOverlay({ reservationId, onClose }: { reservationId: str
           <Stat label="Phòng" value={room?.number} /><Stat label="Đến" value={fmtDate(res.arrivalDate)} /><Stat label="Đi" value={fmtDate(res.departureDate)} />
           <Stat label="Folio" value={`#${folio.folioNo}`} /><Stat label="Nguồn" value={res.source} />
         </Card>
-        {early && <div className="border border-[#fcd34d] bg-[#fffbeb] rounded-[3px] px-4 py-2.5 text-[12px] font-bold text-[#7a5800]">Trả phòng sớm: tiền phòng từ đêm {fmtDate(today)} trở đi sẽ được void tự động.</div>}
+        {early && <div className="border border-[#fcd34d] bg-[#fffbeb] rounded-[3px] px-4 py-2.5 text-[12px] font-bold text-[#7a5800]">Trả phòng sớm: tiền phòng từ đêm {fmtDate(earlyVoidFrom(res.arrivalDate, today))} trở đi sẽ được void tự động (luôn tính đêm đầu).</div>}
         <div className="grid grid-cols-3 gap-5">
           <Card className="col-span-2 overflow-hidden">
             <div className="px-5 py-4 border-b border-[#f3f4f6]"><SectionTitle>Tổng hợp folio</SectionTitle></div>

@@ -40,8 +40,8 @@ export function ShiftReportTab() {
   const checkOuts = state.reservations.filter(r => r.branchId === session.branchId && r.checkedOutAt && localDateOf(r.checkedOutAt) === today).length;
   const reports = state.shiftReports.filter(r => r.branchId === session.branchId);
 
-  const submit = () => {
-    const r = actions.submitShiftReport({ businessDate: today, shift, handoverToName: handover, cashBalance: cashBalance === "" ? cash : Number(cashBalance), generalNote, incidentNote, tasks });
+  const submit = async () => {
+    const r = await actions.submitShiftReport({ businessDate: today, shift, handoverToName: handover, cashBalance: cashBalance === "" ? cash : Number(cashBalance), generalNote, incidentNote, tasks });
     if (!r.ok) return setError(r.error);
     setError(null); setSent(true); setTasks(t => [{ key: t.length ? Math.max(...t.map(x => x.key)) + 1 : 1, content: "", priority: "normal", done: false }]); setGeneralNote(""); setIncidentNote(""); setHandover(""); setCashBalance("");
   };
@@ -72,7 +72,7 @@ export function ShiftReportTab() {
             ))}</div>
           </Card>
           {(rep.generalNote || rep.incidentNote) && <div className="grid grid-cols-2 gap-4">{rep.generalNote && <Card className="p-5"><SectionTitle>Ghi chú chung</SectionTitle><p className="text-[13px] font-semibold">{rep.generalNote}</p></Card>}{rep.incidentNote && <Card className="p-5"><SectionTitle>Sự cố / phàn nàn</SectionTitle><p className="text-[13px] text-[#c1121f] font-bold">{rep.incidentNote}</p></Card>}</div>}
-          {rep.status === "submitted" && <button onClick={() => { const r = actions.confirmShiftReport(rep.id); setError(r.ok ? null : r.error); }} className="pms-btn-primary"><CheckCircle size={13} /> Xác nhận nhận ca ({session.staffName})</button>}
+          {rep.status === "submitted" && <button onClick={async () => { const r = await actions.confirmShiftReport(rep.id); setError(r.ok ? null : r.error); }} className="pms-btn-primary"><CheckCircle size={13} /> Xác nhận nhận ca ({session.staffName})</button>}
           <ErrorBox message={error} />
         </div>
       );

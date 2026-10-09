@@ -1,31 +1,48 @@
 # Avanti OS — phân hệ Lễ tân
 
-Hệ thống quản lý khách sạn (PMS) cho Avanti Hotel / Avanti Boutique. Chỉ có một vai trò: **Lễ tân (Front Desk)**.
+Web quản lý khách sạn (PMS) cho Avanti Hotel và Avanti Boutique. Một vai trò duy nhất: **Lễ tân**.
+Next.js 16 + Supabase (Postgres, Auth, RLS, RPC, Realtime).
 
+Luồng nghiệp vụ liên thông: **Đặt phòng → Check-in → Folio / Thu ngân → Check-out → Dọn phòng → Giao ca**.
+Mọi màn hình (Tổng quan, Sơ đồ phòng, Room Plan, Availability, Báo cáo) đọc cùng một nguồn dữ liệu nên luôn khớp nhau.
+
+## Chạy nhanh (chế độ demo, không cần Supabase)
 ```bash
 npm install
-npm run dev   # http://localhost:3000
+npm run dev        # http://localhost:3000 — nhập tên bất kỳ để vào
 ```
 
-## Kiến trúc frontend (một mạch dữ liệu)
+## Chạy với Supabase thật
+1. Tạo project tại supabase.com (region Singapore).
+2. **SQL Editor** → chạy lần lượt `supabase/migrations/0001_init.sql` rồi `0002_rpc.sql`.
+3. **Project Settings → API**: sao chép `.env.example` thành `.env.local`, điền URL, `anon` key và `service_role` key (dùng mục *Legacy API keys* nếu có).
+4. Nạp dữ liệu mẫu và tạo tài khoản lễ tân:
+   ```bash
+   npm run seed:supabase
+   ```
+5. `npm run dev`, đăng nhập (chọn đúng chi nhánh ở cột trái), mật khẩu `Avanti@2026`:
+   | Email | Lễ tân | Chi nhánh |
+   |---|---|---|
+   | letan.avanti@avanti-demo.vn | Nguyễn Thị Hoa | Avanti Hotel |
+   | letan2.avanti@avanti-demo.vn | Trần Văn Minh | Avanti Hotel |
+   | letan.boutique@avanti-demo.vn | Lê Hoàng Anh | Avanti Boutique |
+6. Vercel: thêm `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` vào Environment Variables rồi redeploy. Không đưa `service_role` lên Vercel.
 
+Mở 2 trình duyệt với 2 tài khoản Avanti Hotel để thấy hai quầy lễ tân cùng cập nhật (Realtime).
+
+## Cấu trúc
 ```
-lib/pms/types.ts      Kiểu dữ liệu — khớp 1-1 với bảng Supabase
-lib/pms/seed.ts       Dữ liệu demo (tên giả), sinh theo ngày hôm nay
-lib/pms/store.tsx     Kho dữ liệu chung + mọi thao tác nghiệp vụ (đặt phòng, check-in, folio, check-out, dọn phòng, giao ca)
-lib/pms/selectors.ts  Các phép tính dùng chung (thống kê, phòng trống, availability, số dư folio)
-components/pms/       Tab, overlay Check-in / Check-out / Folio, form khách
-app/dashboard/        Khung màn hình Lễ tân
+FRONTEND
+app/                    Trang đăng nhập, khung dashboard
+components/pms/         8 tab + overlay Check-in / Check-out / Folio
+lib/pms/store.tsx       Kho dữ liệu chung, chọn backend demo hoặc Supabase
+lib/pms/backend/local.ts  Chế độ demo (localStorage), cùng luật nghiệp vụ với RPC
+
+BACKEND
+supabase/migrations/0001_init.sql  12 bảng, ràng buộc, RLS theo chi nhánh
+supabase/migrations/0002_rpc.sql   12 API nghiệp vụ (RPC)
+scripts/seed-supabase.ts           Dữ liệu mẫu + tài khoản
+lib/pms/backend/supabase.ts        Đọc bảng, gọi RPC, Realtime
 ```
 
-Mọi tab đọc cùng một state, nên thao tác ở đâu cũng phản ánh ở mọi nơi:
-Đặt phòng → Room Plan / Availability → Check-in (phòng: Có khách, post tiền phòng) → Folio / Thu ngân → Check-out (thu tiền, phòng: Chờ dọn) → Sơ đồ phòng: Đánh dấu đã dọn → Báo cáo giao ca tự tổng hợp số liệu.
-
-Hiện state lưu ở `localStorage` (nút “Khôi phục dữ liệu demo” để làm lại từ đầu).
-
-## Backend Supabase
-
-- Schema + RLS + RPC: [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)
-- ERD và quy tắc nghiệp vụ: [`docs/erd.md`](docs/erd.md)
-
-Khi nối Supabase, thay phần thân từng action trong `lib/pms/store.tsx` bằng truy vấn / RPC tương ứng; giao diện không cần đổi.
+Tài liệu: [ERD](docs/erd.md) · [API](docs/api.md) · [WBS & phân công](docs/phan-cong-wbs.md)

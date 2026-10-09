@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, User } from "lucide-react";
+import { ChevronRight, Lock, Mail, User } from "lucide-react";
+import { fetchStaffProfile, getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function AvantiLogin() {
   const router = useRouter();
@@ -10,8 +11,29 @@ export default function AvantiLogin() {
   const [error, setError] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("avanti");
   const [showBranchList, setShowBranchList] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const canSubmit = isSupabaseConfigured ? Boolean(email.trim() && password) && !busy : Boolean(name.trim());
+
+  // Đăng nhập thật bằng Supabase Auth; chi nhánh phải khớp với hồ sơ lễ tân của tài khoản
+  const handleSupabaseLogin = async () => {
+    if (!email.trim() || !password) { setError("Nhập email và mật khẩu"); return; }
+    setBusy(true); setError("");
+    const sb = getSupabase();
+    const { error: authError } = await sb.auth.signInWithPassword({ email: email.trim(), password });
+    if (authError) { setBusy(false); setError(authError.message === "Invalid login credentials" ? "Sai email hoặc mật khẩu" : authError.message); return; }
+    const profile = await fetchStaffProfile();
+    if (!profile) { await sb.auth.signOut(); setBusy(false); setError("Tài khoản chưa được cấp quyền lễ tân"); return; }
+    if (profile.branchCode.toLowerCase() !== selectedBranch) {
+      await sb.auth.signOut(); setBusy(false);
+      setError(`Tài khoản này thuộc chi nhánh ${profile.branchName} — chọn đúng chi nhánh bên trái`); return;
+    }
+    router.push("/dashboard");
+  };
 
   const handleLogin = () => {
+    if (isSupabaseConfigured) { void handleSupabaseLogin(); return; }
     if (!name.trim()) { setError("Vui lòng nhập họ và tên"); return; }
     setError("");
     if(typeof window!=="undefined"){
@@ -130,6 +152,26 @@ export default function AvantiLogin() {
             </div>
           </div>
 
+          {isSupabaseConfigured ? (<>
+          {/* Email + mật khẩu (Supabase Auth) */}
+          <div className="mb-4">
+            <label htmlFor="login-email" className="block text-[11px] font-medium text-[#374151] uppercase tracking-[0.1em] mb-2">Email</label>
+            <div className="flex items-center gap-3 bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 focus-within:border-[#6b7280] transition-colors">
+              <Mail size={14} strokeWidth={1.5} className="text-[#d1d5db] shrink-0" />
+              <input id="login-email" type="email" autoComplete="username" className="flex-1 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db] font-semibold"
+                placeholder="letan@avanti.vn" value={email} onChange={e => { setEmail(e.target.value); setError(""); }} onKeyDown={e => e.key === "Enter" && handleLogin()} />
+            </div>
+          </div>
+          <div className="mb-5">
+            <label htmlFor="login-password" className="block text-[11px] font-medium text-[#374151] uppercase tracking-[0.1em] mb-2">Mật khẩu</label>
+            <div className="flex items-center gap-3 bg-white border border-[#e5e7eb] rounded-[2px] px-4 py-3 focus-within:border-[#6b7280] transition-colors">
+              <Lock size={14} strokeWidth={1.5} className="text-[#d1d5db] shrink-0" />
+              <input id="login-password" type="password" autoComplete="current-password" className="flex-1 text-[13px] outline-none bg-transparent placeholder:text-[#d1d5db] font-semibold"
+                placeholder="••••••••" value={password} onChange={e => { setPassword(e.target.value); setError(""); }} onKeyDown={e => e.key === "Enter" && handleLogin()} />
+            </div>
+          </div>
+
+          </>) : (<>
           {/* Name input */}
           <div className="mb-5">
             <label className="block text-[11px] font-medium text-[#374151] uppercase tracking-[0.1em] mb-2">
@@ -147,6 +189,8 @@ export default function AvantiLogin() {
               />
             </div>
           </div>
+
+          </>)}
 
           {/* Vai trò — hệ thống chỉ dành cho Lễ tân */}
           <div className="mb-6">
@@ -179,17 +223,17 @@ export default function AvantiLogin() {
             onClick={handleLogin}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-[2px] text-[13px] font-semibold transition-colors"
             style={{
-              background: name.trim() ? "#0f0f0e" : "#e5e7eb",
-              color: name.trim() ? "#ffffff" : "#9ca3af",
-              cursor: name.trim() ? "pointer" : "not-allowed",
+              background: canSubmit ? "#0f0f0e" : "#e5e7eb",
+              color: canSubmit ? "#ffffff" : "#9ca3af",
+              cursor: canSubmit ? "pointer" : "not-allowed",
             }}
           >
-            Vào hệ thống
+            {busy ? "Đang đăng nhập..." : "Vào hệ thống"}
             <ChevronRight size={15} strokeWidth={2} />
           </button>
 
           <div className="mt-4 text-center text-[11px] text-[#9ca3af]">
-            Avanti Hotel Management System · {new Date().getFullYear()}
+            Avanti Hotel Management System · {new Date().getFullYear()}{isSupabaseConfigured ? "" : " · Chế độ demo (chưa nối Supabase)"}
           </div>
         </div>
       </div>

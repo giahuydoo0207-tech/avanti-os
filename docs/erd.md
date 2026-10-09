@@ -1,6 +1,6 @@
 # Avanti OS — ERD (Supabase)
 
-Schema đầy đủ: [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql).
+Schema đầy đủ: [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql). API nghiệp vụ: [`0002_rpc.sql`](../supabase/migrations/0002_rpc.sql), mô tả ở [api.md](api.md).
 Kiểu dữ liệu frontend tương ứng: [`lib/pms/types.ts`](../lib/pms/types.ts) (camelCase ↔ snake_case).
 
 ```mermaid

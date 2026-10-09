@@ -26,14 +26,14 @@ export function FolioPanel({ folioId, showHeader = true }: { folioId: string; sh
   const isCredit = ["PAYMENT", "DEPOSIT", "DISCOUNT"].includes(form.code);
   const closed = folio.status === "closed";
 
-  const submit = () => {
-    const r = actions.postTransaction(folio.id, { code: form.code, description: form.description || TXN_CODE_LABEL[form.code], amount: Number(form.amount), paymentMethod: isCredit && form.code !== "DISCOUNT" ? form.method : null });
+  const submit = async () => {
+    const r = await actions.postTransaction(folio.id, { code: form.code, description: form.description || TXN_CODE_LABEL[form.code], amount: Number(form.amount), paymentMethod: isCredit && form.code !== "DISCOUNT" ? form.method : null });
     if (!r.ok) return setError(r.error);
     setError(null); setForm(f => ({ ...f, open: false, description: "", amount: "" }));
   };
-  const voidTxn = (id: string, label: string) => {
+  const voidTxn = async (id: string, label: string) => {
     if (!window.confirm(`Void giao dịch "${label}"? Giao dịch vẫn được lưu vết nhưng không còn tính vào số dư.`)) return;
-    const r = actions.voidTransaction(id);
+    const r = await actions.voidTransaction(id);
     setError(r.ok ? null : r.error);
   };
 

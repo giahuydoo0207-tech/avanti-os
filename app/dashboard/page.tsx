@@ -7,6 +7,7 @@ import { ArrowDownCircle, ArrowUpCircle, BedDouble, CalendarDays, ChevronRight, 
 import { PmsProvider, usePms } from "@/lib/pms/store";
 import { dashboardStats } from "@/lib/pms/selectors";
 import type { Session } from "@/lib/pms/types";
+import { fetchStaffProfile, getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Intent, NavContext, Overlay, TabName } from "@/components/pms/nav";
 import { CheckInOverlay, CheckOutOverlay, FolioOverlay } from "@/components/pms/overlays";
 import { OverviewTab } from "@/components/pms/tabs/overview";
@@ -25,7 +26,7 @@ const MENU: Array<{ name: TabName; icon: React.ElementType }> = [
 ];
 
 function Shell() {
-  const { state, session, today, actions } = usePms();
+  const { state, session, today, actions, mode, pending } = usePms();
   const [tab, setTab] = useState<TabName>("Tổng quan");
   const [intent, setIntent] = useState<Intent>({});
   const [navKey, setNavKey] = useState(0);
@@ -45,7 +46,11 @@ function Shell() {
   const top = overlays[overlays.length - 1];
   const initials = session.staffName.split(" ").filter(Boolean).slice(-2).map(w => w[0]).join("") || "LT";
 
-  const logout = () => { try { localStorage.removeItem("staffName"); localStorage.removeItem("staffRole"); localStorage.removeItem("branchId"); } catch { /* */ } window.location.href = "/"; };
+  const logout = async () => {
+    if (mode === "supabase") await getSupabase().auth.signOut();
+    try { localStorage.removeItem("staffName"); localStorage.removeItem("staffRole"); localStorage.removeItem("branchId"); } catch { /* */ }
+    window.location.href = "/";
+  };
   const reset = () => { if (window.confirm("Khôi phục toàn bộ dữ liệu demo về ban đầu? Mọi thao tác đã làm sẽ mất.")) { actions.resetDemo(); goTo("Tổng quan"); toast("Đã khôi phục dữ liệu demo"); } };
 
   return (
@@ -53,7 +58,7 @@ function Shell() {
       <div className="flex min-h-screen bg-[#f2f2ef] text-[#1a1a1a]" style={{ fontWeight: 500 }}>
         <aside className="w-52 shrink-0 flex flex-col bg-[#0f0f0e] text-white sticky top-0 h-screen">
           <div className="px-5 py-4 border-b border-[#252523]">
-            <div className="text-[9px] tracking-[0.2em] text-[#5c5c58] uppercase mb-0.5 font-bold">Avanti OS · Lễ tân</div>
+            <div className="text-[9px] tracking-[0.2em] text-[#5c5c58] uppercase mb-0.5 font-bold">Avanti OS · Lễ tân{mode === "demo" ? " · Demo" : ""}</div>
             <div className="text-[15px] font-bold tracking-tight leading-tight">{branch?.name}</div>
             <div className="mono text-[11px] text-[#5c5c58] mt-0.5">{st.total} phòng · {"★".repeat(branch?.stars ?? 0)}</div>
             <div className="mono text-[11px] text-[#5c5c58] mt-1">{new Date().toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}</div>
@@ -68,7 +73,7 @@ function Shell() {
             ))}
           </nav>
           <div className="px-5 py-4 border-t border-[#252523] space-y-0.5">
-            <button onClick={reset} className="flex w-full items-center gap-2.5 py-2 text-[12px] text-[#5c5c58] hover:text-white font-semibold"><RotateCcw size={13} strokeWidth={1.5} /> Khôi phục dữ liệu demo</button>
+            {mode === "demo" && <button onClick={reset} className="flex w-full items-center gap-2.5 py-2 text-[12px] text-[#5c5c58] hover:text-white font-semibold"><RotateCcw size={13} strokeWidth={1.5} /> Khôi phục dữ liệu demo</button>}
             <button onClick={logout} className="flex w-full items-center gap-2.5 py-2 text-[12px] text-[#5c5c58] hover:text-[#ef4444] font-semibold"><LogOut size={13} strokeWidth={1.5} /> Đăng xuất</button>
           </div>
         </aside>
@@ -77,6 +82,7 @@ function Shell() {
           <header className="bg-white border-b border-[#e5e7eb] flex items-center justify-between px-7 shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.06)] sticky top-0 z-20" style={{ height: 56 }}>
             <div className="flex items-center gap-2 text-[13px]"><span className="text-[#9ca3af] font-semibold">{branch?.name}</span><ChevronRight size={11} className="text-[#d1d5db]" /><span className="font-bold">{tab}</span></div>
             <div className="flex items-center gap-5">
+              {pending > 0 && <span className="mono text-[11px] font-bold text-[#7a5800] bg-[#fff8e1] border border-[#fcd34d] px-2 py-0.5 rounded-[2px]">Đang lưu...</span>}
               <div className="flex items-center gap-3 text-[12px] text-[#6b7280] font-semibold">
                 <button onClick={() => goTo("Tìm kiếm", { search: { preset: "arrivals" } })} className="flex items-center gap-1.5 hover:text-[#1a1a1a]"><ArrowDownCircle size={13} className="text-[#2d6a4f]" /><span className="mono font-bold">{st.arrivalsPending.length}/{st.arrivalsToday.length}</span> Khách đến</button>
                 <span className="text-[#e5e7eb]">|</span>
@@ -108,12 +114,38 @@ function Shell() {
 const noopSubscribe = () => () => {};
 const readSession = () => { try { const n = localStorage.getItem("staffName"); return n ? `${n}|${localStorage.getItem("branchId") ?? "br-avanti"}` : ""; } catch { return ""; } };
 
-export default function DashboardPage() {
+/** Chế độ demo: phiên đăng nhập lưu trong localStorage */
+function DemoGate() {
   const router = useRouter();
   // null khi render phía server; "" khi chưa đăng nhập
   const raw = useSyncExternalStore(noopSubscribe, readSession, () => null);
   const session = useMemo<Session | null>(() => { if (!raw) return null; const [staffName, branchId] = raw.split("|"); return { staffName, branchId }; }, [raw]);
   useEffect(() => { if (raw === "") router.replace("/"); }, [raw, router]);
-  if (!session) return <div className="min-h-screen flex items-center justify-center bg-[#f2f2ef] text-[13px] text-[#9ca3af] mono">Đang tải...</div>;
+  if (!session) return <Loading />;
   return <PmsProvider session={session}><Shell /></PmsProvider>;
+}
+
+/** Chế độ Supabase: phiên đăng nhập thật, chi nhánh lấy từ hồ sơ lễ tân của tài khoản */
+function SupabaseGate() {
+  const router = useRouter();
+  const [session, setSession] = useState<Session | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetchStaffProfile().then(p => {
+      if (!alive) return;
+      if (!p) router.replace("/");
+      else setSession({ staffName: p.fullName, branchId: p.branchId, userId: p.userId });
+    });
+    return () => { alive = false; };
+  }, [router]);
+  if (!session) return <Loading />;
+  return <PmsProvider session={session}><Shell /></PmsProvider>;
+}
+
+function Loading() {
+  return <div className="min-h-screen flex items-center justify-center bg-[#f2f2ef] text-[13px] text-[#9ca3af] mono">Đang tải...</div>;
+}
+
+export default function DashboardPage() {
+  return isSupabaseConfigured ? <SupabaseGate /> : <DemoGate />;
 }

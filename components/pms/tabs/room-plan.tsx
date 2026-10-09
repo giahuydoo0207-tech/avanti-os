@@ -34,10 +34,10 @@ export function RoomPlanTab() {
   const rooms = allRooms.filter(r => (typeFilter === "ALL" || r.roomTypeId === typeFilter) && (floorFilter === "ALL" || r.floor === Number(floorFilter))
     && (!q || (byRoom.get(r.id) ?? []).some(res => guestById(state, res.guestId)?.fullName.toLowerCase().includes(q))));
 
-  const onDrop = (roomId: string, day: number) => {
+  const onDrop = async (roomId: string, day: number) => {
     if (!drag) return;
     const newArrival = addDays(start, day - drag.offset);
-    const r = actions.moveReservation(drag.id, roomId, newArrival);
+    const r = await actions.moveReservation(drag.id, roomId, newArrival);
     if (!r.ok) setError(r.error); else { setError(null); toast("Đã dời đặt phòng"); }
     setDrag(null); setOver(null);
   };
