@@ -13,6 +13,10 @@ grant usage on schema public to authenticated;
 grant select, insert, update on all tables in schema public to authenticated;
 grant select on public.folio_balances to authenticated;
 grant usage on all sequences in schema public to authenticated;
+-- service_role (script nạp dữ liệu mẫu) — cần khi tắt "Automatically expose new tables" lúc tạo project
+grant usage on schema public to service_role;
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
 
 -- ─── Hàm nội bộ ─────────────────────────────────────────────────────
 create or replace function private.today()
