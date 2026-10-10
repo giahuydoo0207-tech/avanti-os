@@ -8,6 +8,7 @@ import { folioOfReservation, folioTransactions, freeRooms, guestById, roomById, 
 import type { PaymentMethod } from "@/lib/pms/types";
 import { FolioPanel } from "./folio";
 import { GuestFields, guestToInput } from "./guest-form";
+import { GuestStayDetails } from "./guest-profile";
 import { useNav } from "./nav";
 import { Card, ErrorBox, FieldRow, inputCls, OverlayHeader, ResBadge, SectionTitle, selectCls, Stat } from "./ui";
 
@@ -211,6 +212,10 @@ export function CheckOutOverlay({ reservationId, onClose }: { reservationId: str
             <button onClick={confirm} className="w-full pms-btn-danger justify-center"><LogOut size={14} strokeWidth={1.5} /> Xác nhận check-out</button>
           </div>
         </div>
+        <Card className="p-6">
+          <SectionTitle>Hồ sơ khách & lưu trú</SectionTitle>
+          <GuestStayDetails reservationId={res.id} />
+        </Card>
       </div>
     </Shell>
   );

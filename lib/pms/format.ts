@@ -52,3 +52,21 @@ export const TXN_CODE_LABEL: Record<TxnCode, string> = {
 };
 export const CREDIT_CODES: TxnCode[] = ["DEPOSIT", "PAYMENT", "DISCOUNT"];
 export const CHARGE_CODES: TxnCode[] = ["MINIBAR", "LAUNDRY", "RESTAURANT", "TRANSPORT", "SPA", "MISC"];
+
+// ─── Hồ sơ khách ───
+/** Tên lưu dạng "HỌ ĐỆM TÊN" (họ đứng đầu, kể cả khách nước ngoài trong dữ liệu mẫu): Họ = từ đầu, Tên = phần còn lại */
+export function splitName(fullName: string): { last: string; first: string } {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return { last: parts[0] ?? "", first: "" };
+  return { last: parts[0], first: parts.slice(1).join(" ") };
+}
+/** Bỏ dấu + chữ thường để tìm kiếm không phân biệt dấu ("nguyen" khớp "NGUYỄN") */
+export const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().trim();
+export function ageOn(dob: ISODate | null, today: ISODate): number | null {
+  if (!dob) return null;
+  const [y, m, d] = dob.split("-").map(Number); const [ty, tm, td] = today.split("-").map(Number);
+  return ty - y - (tm < m || (tm === m && td < d) ? 1 : 0);
+}
+export const GENDER_LABEL = { male: "Nam", female: "Nữ", other: "Khác" } as const;
+export const ID_TYPE_LABEL = { cccd: "CCCD", passport: "Hộ chiếu" } as const;
+export const MEAL_PLAN_LABEL = { RO: "RO · Room Only", BB: "BB · Bed & Breakfast", HB: "HB · Half Board", FB: "FB · Full Board" } as const;

@@ -35,7 +35,10 @@ export function GuestFields({ value, onChange, disabled }: { value: GuestInput; 
     <div className="space-y-3">
       <FieldRow label="Họ và tên" required><input disabled={disabled} className={inputCls} value={value.fullName} onChange={e => set("fullName", e.target.value.toUpperCase())} placeholder={vn ? "NGUYỄN VĂN A" : "TANAKA HIROSHI"} /></FieldRow>
       {!vn && <FieldRow label="Quốc tịch"><select disabled={disabled} className={selectCls} value={value.nationality} onChange={e => set("nationality", e.target.value)}>{COUNTRIES.filter(c => c.code !== "VN").map(c => <option key={c.code} value={c.code}>{c.name} · {c.code}</option>)}</select></FieldRow>}
-      <FieldRow label={vn ? "Số CCCD" : "Passport No."}><input disabled={disabled} className={inputCls} value={value.idNumber} onChange={e => set("idNumber", e.target.value.toUpperCase())} placeholder={vn ? "0xx xxxx xxxx" : "TK1234567"} /></FieldRow>
+      <FieldRow label={vn ? "Số CCCD (ID)" : "Số hộ chiếu (Passport ID)"}><input disabled={disabled} className={`${inputCls} mono`} value={value.idNumber}
+        onChange={e => set("idNumber", vn ? e.target.value.replace(/\D/g, "").slice(0, 12) : e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))}
+        inputMode={vn ? "numeric" : "text"} spellCheck={false} placeholder={vn ? "12 số, vd: 079203001234" : "vd: TK1234567"} />
+        {vn && value.idNumber.length > 0 && value.idNumber.length !== 12 && <p className="text-[11px] text-occ-ink mt-1">CCCD gồm đúng 12 chữ số (đang có {value.idNumber.length})</p>}</FieldRow>
       {vn
         ? <>
           <FieldRow label="Nơi cấp"><input disabled={disabled} className={inputCls} value={value.idIssuedPlace} onChange={e => set("idIssuedPlace", e.target.value)} placeholder="Cục CS QLHC về TTXH" /></FieldRow>
