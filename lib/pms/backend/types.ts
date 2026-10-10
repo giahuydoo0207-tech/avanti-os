@@ -20,6 +20,8 @@ export interface PmsActions {
   createReservation(input: NewReservationInput): Promise<Result<Pick<Reservation, "id">>>;
   updateGuest(guestId: string, patch: Partial<GuestInput>): Promise<Result>;
   assignRoom(reservationId: string, roomId: string | null): Promise<Result>;
+  /** Đổi loại phòng / số phòng từ Hồ sơ khách (kể cả đổi phòng cho khách đang ở) */
+  updateStay(reservationId: string, roomTypeId: string, roomId: string | null): Promise<Result>;
   moveReservation(reservationId: string, roomId: string, arrivalDate: ISODate): Promise<Result>;
   cancelReservation(reservationId: string): Promise<Result>;
   checkIn(reservationId: string, deposit?: { amount: number; method: PaymentMethod }): Promise<Result>;

@@ -18,6 +18,7 @@ Quy ước chung:
 |---|---|---|---|
 | `create_reservation` | `p` (jsonb): `guest_id` hoặc `guest{...}`, `room_type_id`, `room_id?`, `arrival_date`, `departure_date`, `adults`, `children`, `rate`, `meal_plan`, `source`, `status` (confirmed/tentative), `note`, `deposit_amount?`, `deposit_method?` | `uuid` đặt phòng | Ngày đến ≥ hôm nay, ≥1 đêm, số khách ≤ sức chứa +1, phòng không hỏng & không trùng lịch. Tự tạo khách mới, folio, giao dịch cọc |
 | `assign_room` | `p_reservation_id`, `p_room_id` (null = bỏ gán) | — | Chỉ đặt phòng chưa nhận phòng; phòng không trùng lịch |
+| `update_stay` | `p_reservation_id`, `p_room_type_id`, `p_room_id` (null = bỏ gán) | — | Sửa từ Hồ sơ khách (migration 0004). Phòng phải đúng loại, không hỏng, không trùng lịch. Khách đang ở: bắt buộc có phòng, phòng mới phải sạch, phòng cũ → `dirty` |
 | `move_reservation` | `p_reservation_id`, `p_room_id`, `p_arrival` | — | Kéo-thả Room Plan; giữ nguyên số đêm, không dời về quá khứ |
 | `cancel_reservation` | `p_reservation_id` | — | Chưa nhận phòng, folio không còn tiền cọc |
 

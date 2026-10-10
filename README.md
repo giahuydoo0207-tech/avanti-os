@@ -14,7 +14,7 @@ npm run dev        # http://localhost:3000 — nhập tên bất kỳ để vào
 
 ## Chạy với Supabase thật
 1. Tạo project tại supabase.com (region Singapore).
-2. **SQL Editor** → chạy lần lượt `supabase/migrations/0001_init.sql`, `0002_rpc.sql` rồi `0003_guest_changes.sql`.
+2. **SQL Editor** → chạy lần lượt `supabase/migrations/0001_init.sql`, `0002_rpc.sql`, `0003_guest_changes.sql` rồi `0004_update_stay.sql`.
 3. **Project Settings → API**: sao chép `.env.example` thành `.env.local`, điền URL, `anon` key và `service_role` key (dùng mục *Legacy API keys* nếu có).
 4. Nạp dữ liệu mẫu và tạo tài khoản lễ tân:
    ```bash
@@ -44,6 +44,7 @@ BACKEND
 supabase/migrations/0001_init.sql  12 bảng, ràng buộc, RLS theo chi nhánh
 supabase/migrations/0002_rpc.sql   12 API nghiệp vụ (RPC)
 supabase/migrations/0003_guest_changes.sql   Lịch sử thay đổi hồ sơ khách (trigger)
+supabase/migrations/0004_update_stay.sql     Đổi loại phòng / số phòng từ Hồ sơ khách (RPC update_stay)
 scripts/seed-supabase.ts           Dữ liệu mẫu + tài khoản
 lib/pms/backend/supabase.ts        Đọc bảng, gọi RPC, Realtime
 ```

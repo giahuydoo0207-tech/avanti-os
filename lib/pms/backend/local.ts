@@ -116,6 +116,36 @@ function makeActions(get: () => PmsState, set: (s: PmsState) => void, session: S
       return ok(undefined);
     },
 
+    updateStay(reservationId: string, roomTypeId: string, roomId: string | null): Result {
+      const s = get();
+      const r = s.reservations.find(x => x.id === reservationId);
+      if (!r) return fail("Không tìm thấy đặt phòng");
+      if (r.status !== "confirmed" && r.status !== "tentative" && r.status !== "checked_in") return fail("Đặt phòng đã kết thúc — không đổi phòng được");
+      const t = roomTypeById(s, roomTypeId);
+      if (!t || t.branchId !== session.branchId) return fail("Loại phòng không tồn tại");
+      if (r.status === "checked_in" && !roomId) return fail("Khách đang ở phải có phòng");
+      let room: ReturnType<typeof roomById> = undefined;
+      if (roomId) {
+        room = roomById(s, roomId);
+        if (!room || room.branchId !== session.branchId) return fail("Phòng không tồn tại");
+        if (room.hkStatus === "out_of_order") return fail(`Phòng ${room.number} đang hỏng (OOO)`);
+        const c = roomConflict(s, roomId, r.arrivalDate, r.departureDate, r.id);
+        if (c) return fail(`Phòng ${room.number} đã có đặt phòng #${c.confirmationNo} trùng ngày`);
+        if (room.roomTypeId !== t.id) return fail(`Phòng ${room.number} không thuộc loại ${t.code}`);
+        if (r.status === "checked_in" && roomId !== r.roomId && room.hkStatus === "dirty") return fail(`Phòng ${room.number} chưa dọn — chọn phòng sạch để chuyển khách`);
+      }
+      if (roomId === r.roomId && t.id === r.roomTypeId) return ok(undefined);
+      const oldLabel = `${roomById(s, r.roomId)?.number ?? "chưa gán"} · ${roomTypeById(s, r.roomTypeId)?.code ?? ""}`;
+      const moveOut = r.status === "checked_in" && r.roomId && roomId !== r.roomId ? r.roomId : null;
+      commit({
+        ...s,
+        rooms: moveOut ? s.rooms.map(x => (x.id === moveOut ? { ...x, hkStatus: "dirty" as HkStatus } : x)) : s.rooms,
+        reservations: s.reservations.map(x => (x.id === r.id ? { ...x, roomTypeId: t.id, roomId } : x)),
+        activities: log(s, { action: "reservation.update_stay", entityType: "reservation", entityId: r.id, message: `Đổi phòng #${r.confirmationNo}: ${oldLabel} → ${room?.number ?? "chưa gán"} · ${t.code}` }),
+      });
+      return ok(undefined);
+    },
+
     /** Kéo-thả trên Room Plan: đổi phòng và/hoặc dời ngày, giữ nguyên số đêm */
     moveReservation(reservationId: string, roomId: string, arrivalDate: ISODate): Result {
       const s = get();
