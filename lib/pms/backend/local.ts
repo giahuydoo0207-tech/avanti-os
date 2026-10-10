@@ -4,7 +4,7 @@
 import { addDays, CREDIT_CODES, diffDays, earlyVoidFrom, stayNights, VAT_RATE } from "../format";
 import { createSeedState, STATE_VERSION } from "../seed";
 import { folioOfReservation, folioTotals, roomById, roomConflict, roomTypeById } from "../selectors";
-import type { ActivityLog, FolioTransaction, Guest, HkStatus, ISODate, PaymentMethod, PmsState, Reservation, Result, Session, ShiftTask } from "../types";
+import type { ActivityLog, FolioTransaction, Guest, GuestChange, HkStatus, ISODate, PaymentMethod, PmsState, Reservation, Result, Session, ShiftTask } from "../types";
 import type { ChargeInput, GuestInput, NewReservationInput, PmsActions, PmsBackend, ShiftReportInput } from "./types";
 
 const STORAGE_KEY = "avanti-pms-state";
@@ -83,7 +83,17 @@ function makeActions(get: () => PmsState, set: (s: PmsState) => void, session: S
     updateGuest(guestId: string, patch: Partial<GuestInput>): Result {
       const s = get();
       if (patch.fullName !== undefined && !patch.fullName.trim()) return fail("Họ tên không được để trống");
-      commit({ ...s, guests: s.guests.map(g => (g.id === guestId ? { ...g, ...patch, fullName: (patch.fullName ?? g.fullName).trim().toUpperCase() } : g)) });
+      const cur = s.guests.find(g => g.id === guestId);
+      if (!cur) return fail("Không tìm thấy hồ sơ khách");
+      const next: Guest = { ...cur, ...patch, fullName: (patch.fullName ?? cur.fullName).trim().toUpperCase() };
+      // Ghi lịch sử từng trường thay đổi (giống trigger guests_track_changes trên Supabase)
+      const at = now();
+      const str = (v: unknown) => (v === null || v === undefined ? null : String(v));
+      const changes: GuestChange[] = (Object.keys(next) as Array<keyof Guest>)
+        .filter(k => k !== "id" && k !== "branchId" && k !== "createdAt" && str(cur[k]) !== str(next[k]))
+        .map(k => ({ id: uid("gc"), branchId: cur.branchId, guestId, field: k, oldValue: str(cur[k]), newValue: str(next[k]), changedBy: actor, changedAt: at }));
+      if (changes.length === 0) return ok(undefined);
+      commit({ ...s, guests: s.guests.map(g => (g.id === guestId ? next : g)), guestChanges: [...changes, ...(s.guestChanges ?? [])].slice(0, 2000) });
       return ok(undefined);
     },
 

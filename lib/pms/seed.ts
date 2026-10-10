@@ -5,7 +5,7 @@ import type {
   ActivityLog, Branch, Folio, FolioTransaction, Guest, ISODate, PmsState, Reservation, Room, RoomType, ShiftReport, ShiftTask,
 } from "./types";
 
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 4;
 
 function prng(seed: number) {
   let a = seed;
@@ -204,6 +204,6 @@ export function createSeedState(today: ISODate): PmsState {
 
   return {
     version: STATE_VERSION, seededFor: today, seq: { confirmation: conf, folio: folioNo },
-    branches: BRANCHES, roomTypes, rooms, guests, reservations, folios, transactions, hkLogs: [], shiftReports, shiftTasks, activities,
+    branches: BRANCHES, roomTypes, rooms, guests, reservations, folios, transactions, hkLogs: [], shiftReports, shiftTasks, activities, guestChanges: [],
   };
 }

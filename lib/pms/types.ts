@@ -97,6 +97,12 @@ export interface ActivityLog {
   entityType: "reservation" | "room" | "folio" | "shift_report"; entityId: string; createdAt: ISODateTime;
 }
 
+/** Một trường của hồ sơ khách bị sửa: giá trị cũ → mới, ai sửa, lúc nào */
+export interface GuestChange {
+  id: string; branchId: string; guestId: string; field: string;
+  oldValue: string | null; newValue: string | null; changedBy: string; changedAt: ISODateTime;
+}
+
 export interface PmsState {
   version: number;
   seededFor: ISODate; // ngày tạo dữ liệu mẫu
@@ -112,6 +118,7 @@ export interface PmsState {
   shiftReports: ShiftReport[];
   shiftTasks: ShiftTask[];
   activities: ActivityLog[];
+  guestChanges: GuestChange[];
 }
 
 export interface Session { staffName: string; branchId: string; userId?: string }

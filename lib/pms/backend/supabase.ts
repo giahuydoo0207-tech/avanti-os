@@ -35,6 +35,8 @@ export async function loadPmsState(sb: SupabaseClient, today: ISODate): Promise<
     fetchAll(sb, "staff_profiles", "full_name"), fetchAll(sb, "housekeeping_logs", "changed_at", false, 300),
     fetchAll(sb, "shift_reports", "created_at", false), fetchAll(sb, "shift_tasks", "id"), fetchAll(sb, "activity_logs", "created_at", false, 300),
   ]);
+  // Bảng lịch sử hồ sơ khách (migration 0003). Nếu chưa chạy migration thì coi như chưa có lịch sử.
+  const guestChanges = await fetchAll(sb, "guest_changes", "changed_at", false, 3000).catch(() => [] as Row[]);
   const names = new Map(staff.map(s => [s.id as string, s.full_name as string]));
   const nameOf = (id: unknown) => (id ? names.get(id as string) ?? "NHÂN VIÊN" : SYSTEM);
   return {
@@ -53,6 +55,7 @@ export async function loadPmsState(sb: SupabaseClient, today: ISODate): Promise<
     })),
     shiftTasks: shiftTasks.map(r => toCamel(r)),
     activities: activities.map(r => ({ ...toCamel<PmsState["activities"][number]>(r), actorName: nameOf(r.actor_id) })),
+    guestChanges: guestChanges.map(r => ({ ...toCamel<PmsState["guestChanges"][number]>(r), changedBy: nameOf(r.changed_by) })),
   };
 }
 
@@ -121,7 +124,7 @@ export function createSupabaseBackend(sb: SupabaseClient, session: Session, toda
         // Quầy lễ tân khác thay đổi dữ liệu → tải lại (gom nhiều thay đổi trong 400ms)
         const onChange = () => { if (timer) clearTimeout(timer); timer = setTimeout(() => { reload().catch(() => {}); }, 400); };
         channel = sb.channel(`pms-${session.branchId}`);
-        for (const table of ["rooms", "reservations", "folio_transactions", "shift_reports", "activity_logs"])
+        for (const table of ["rooms", "reservations", "folio_transactions", "shift_reports", "activity_logs", "guest_changes"])
           channel.on("postgres_changes", { event: "*", schema: "public", table }, onChange);
         channel.subscribe();
       }

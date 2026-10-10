@@ -19,6 +19,7 @@ import { ReservationTab } from "@/components/pms/tabs/reservation";
 import { ShiftReportTab } from "@/components/pms/tabs/shift-report";
 import { CashierTab } from "@/components/pms/tabs/cashier";
 import { AvailabilityTab } from "@/components/pms/tabs/availability";
+import { GuestProfileTab } from "@/components/pms/tabs/guest-profile";
 
 const MENU: Array<{ name: TabName; icon: React.ElementType }> = [
   { name: "Tổng quan", icon: Home }, { name: "Tìm kiếm", icon: Search }, { name: "Sơ đồ phòng", icon: LayoutGrid },
@@ -82,7 +83,7 @@ function Shell() {
           </div>
           <nav aria-label="Điều hướng chính" className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
             {MENU.map(({ name, icon: Icon }) => {
-              const active = tab === name;
+              const active = tab === name || (name === "Tìm kiếm" && tab === "Hồ sơ khách");
               return (
                 <button key={name} onClick={() => goTo(name)} aria-current={active ? "page" : undefined}
                   className={`relative flex w-full items-center gap-3 px-3 py-2 rounded-ctl text-left text-[13px] transition-colors ${active ? "text-white" : "text-night-text hover:text-white hover:bg-night-2"}`}>
@@ -103,7 +104,7 @@ function Shell() {
 
         <div className="flex flex-col flex-1 min-w-0">
           <header className="bg-surface border-b border-line flex items-center justify-between px-7 shrink-0 sticky top-0 z-20" style={{ height: 56 }}>
-            <div className="flex items-center gap-2 text-[13px] min-w-0"><span className="text-muted font-medium truncate">{branch?.name}</span><ChevronRight size={12} className="text-faint shrink-0" aria-hidden="true" /><h1 className="font-semibold text-ink truncate">{tab}</h1></div>
+            <div className="flex items-center gap-2 text-[13px] min-w-0"><span className="text-muted font-medium truncate">{branch?.name}</span><ChevronRight size={12} className="text-faint shrink-0" aria-hidden="true" />{tab === "Hồ sơ khách" && <><button onClick={() => goTo("Tìm kiếm", { search: { restore: true } })} className="text-muted font-medium hover:text-ink">Tìm kiếm</button><ChevronRight size={12} className="text-faint shrink-0" aria-hidden="true" /></>}<h1 className="font-semibold text-ink truncate">{tab}</h1></div>
             <div className="flex items-center gap-4">
               <AnimatePresence>
                 {pending > 0 && <motion.span key="saving" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} role="status"
@@ -126,6 +127,7 @@ function Shell() {
             {tab === "Thu ngân" && <CashierTab />}
             {tab === "Room Availability" && <AvailabilityTab />}
             {tab === "Báo cáo" && <ShiftReportTab />}
+            {tab === "Hồ sơ khách" && <GuestProfileTab />}
           </motion.main>
         </div>
       </div>

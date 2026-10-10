@@ -1,15 +1,14 @@
 "use client";
 // Tìm kiếm khách / đặt phòng. Bố cục theo màn hình "Search Folio" của SMILE PMS mà lễ tân Avanti quen dùng:
-// Thông tin tìm kiếm (trên) · Tìm nâng cao (dưới) · Trạng thái folio + trạng thái đặt phòng · phím tắt F2–F10.
+// Thông tin tìm kiếm (trên) · Tìm nâng cao (dưới) · Trạng thái folio + trạng thái đặt phòng.
+// Bấm một dòng → mở tab Hồ sơ khách; quay lại thì bộ lọc được giữ nguyên.
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import { BedDouble, DollarSign, LogIn, LogOut, RotateCcw, Search, User, X } from "lucide-react";
+import { BedDouble, ChevronRight, RotateCcw, Search, User } from "lucide-react";
 import { usePms } from "@/lib/pms/store";
 import { diffDays, fmtDate, fold, localDateOf, MEAL_PLAN_LABEL, money, splitName } from "@/lib/pms/format";
 import { branchReservations, folioOfReservation, folioTotals, guestById, roomById, roomTypeById } from "@/lib/pms/selectors";
 import type { BookingSource, MealPlan, Reservation } from "@/lib/pms/types";
 import { COUNTRIES, countryLabel } from "../guest-form";
-import { GuestStayDetails } from "../guest-profile";
 import { useNav } from "../nav";
 import { Card, EmptyRow, ResBadge, SectionTitle } from "../ui";
 
@@ -17,16 +16,15 @@ const SOURCES: BookingSource[] = ["Direct", "Walk-in", "Booking.com", "Agoda", "
 const MEALS: MealPlan[] = ["RO", "BB", "HB", "FB"];
 
 type FolioKey = "reserved" | "arrivalToday" | "cancelled" | "noShow" | "inHouse" | "coToday" | "allCo";
-const FOLIO_STATUS: Array<{ key: FolioKey; label: string; fkey: string }> = [
-  { key: "reserved", label: "Đặt trước", fkey: "F4" },
-  { key: "inHouse", label: "Đang ở", fkey: "F5" },
-  { key: "arrivalToday", label: "Đến hôm nay", fkey: "F6" },
-  { key: "coToday", label: "Đi hôm nay", fkey: "F7" },
-  { key: "cancelled", label: "Đã hủy", fkey: "F8" },
-  { key: "allCo", label: "Đã trả phòng", fkey: "F10" },
-  { key: "noShow", label: "No-show", fkey: "F11" },
+const FOLIO_STATUS: Array<{ key: FolioKey; label: string }> = [
+  { key: "reserved", label: "Đặt trước" },
+  { key: "inHouse", label: "Đang ở" },
+  { key: "arrivalToday", label: "Đến hôm nay" },
+  { key: "coToday", label: "Đi hôm nay" },
+  { key: "cancelled", label: "Đã hủy" },
+  { key: "allCo", label: "Đã trả phòng" },
+  { key: "noShow", label: "No-show" },
 ];
-const FKEY_TO_STATUS: Record<string, FolioKey> = { F4: "reserved", F5: "inHouse", F6: "arrivalToday", F7: "coToday", F8: "cancelled", F10: "allCo", F11: "noShow" };
 type FolioSet = Record<FolioKey, boolean>;
 const NONE: FolioSet = { reserved: false, arrivalToday: false, cancelled: false, noShow: false, inHouse: false, coToday: false, allCo: false };
 const DEFAULT_SET: FolioSet = { ...NONE, reserved: true, arrivalToday: true, inHouse: true };
@@ -40,10 +38,23 @@ interface Filters {
   stayOver: string; exact: boolean;
   folio: FolioSet; definite: boolean; tentative: boolean;
 }
+type SortState = { col: "arrival" | "room" | "last"; asc: boolean };
+// Bộ lọc gần nhất, để quay lại từ Hồ sơ khách vẫn thấy đúng danh sách cũ
+let lastSearch: { f: Filters; sort: SortState } | null = null;
+
+/** Ô tích dạng thẻ, mọi ô cùng kích thước để bảng lọc thẳng hàng */
+function CheckTile({ checked, onChange, children, title }: { checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode; title?: string }) {
+  return (
+    <label title={title} className={`flex items-center gap-2.5 h-9 px-3 rounded-ctl border text-[13px] font-medium cursor-pointer select-none transition-colors ${checked ? "border-accent/60 bg-accent-soft text-ink" : "border-line bg-surface text-ink-2 hover:border-line-strong"}`}>
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="w-4 h-4 shrink-0 accent-accent" />
+      <span className="truncate">{children}</span>
+    </label>
+  );
+}
 
 export function SearchTab() {
   const { state, session, today } = usePms();
-  const { intent, openOverlay, goTo } = useNav();
+  const { intent, goTo } = useNav();
   const types = state.roomTypes.filter(t => t.branchId === session.branchId);
 
   const blank = useCallback((): Filters => ({
@@ -52,6 +63,7 @@ export function SearchTab() {
     stayOver: "", exact: false, folio: DEFAULT_SET, definite: true, tentative: true,
   }), [today]);
   const fromIntent = (): Filters => {
+    if (intent.search?.restore && lastSearch) return lastSearch.f;
     const f = blank();
     f.guest = intent.search?.query ?? "";
     const p = intent.search?.preset;
@@ -61,24 +73,12 @@ export function SearchTab() {
     return f;
   };
   const [f, setF] = useState<Filters>(fromIntent);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [sort, setSort] = useState<{ col: "arrival" | "room" | "last"; asc: boolean }>({ col: "arrival", asc: true });
+  const [sort, setSort] = useState<SortState>(() => (intent.search?.restore && lastSearch ? lastSearch.sort : { col: "arrival", asc: true }));
+  useEffect(() => { lastSearch = { f, sort }; }, [f, sort]);
+  const openProfile = (id: string) => goTo("Hồ sơ khách", { profile: { reservationId: id } });
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => setF(x => ({ ...x, [k]: v }));
   const toggleFolio = (k: FolioKey) => setF(x => ({ ...x, folio: { ...x.folio, [k]: !x.folio[k] } }));
   const only = (k: FolioKey) => setF({ ...blank(), folio: { ...NONE, [k]: true } });
-
-  // Phím tắt như SMILE: F2 lọc ngày đến, F3 lọc ngày đi, F4–F11 trạng thái folio
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (selected) return;
-      if (e.key === "F2") { e.preventDefault(); setF(x => ({ ...x, arrivalOn: !x.arrivalOn })); return; }
-      if (e.key === "F3") { e.preventDefault(); setF(x => ({ ...x, departOn: !x.departOn })); return; }
-      const k = FKEY_TO_STATUS[e.key];
-      if (k) { e.preventDefault(); setF(x => ({ ...x, folio: { ...x.folio, [k]: !x.folio[k] } })); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [selected]);
 
   const results = useMemo(() => {
     const m = (hay: string, needle: string) => { const n = fold(needle); if (!n) return true; const h = fold(hay); return f.exact ? h === n : h.includes(n); };
@@ -126,7 +126,6 @@ export function SearchTab() {
     return list.sort((a, b) => (sort.asc ? 1 : -1) * key(a).localeCompare(key(b)));
   }, [state, session.branchId, f, sort, today]);
 
-  const sel = selected ? state.reservations.find(r => r.id === selected) ?? null : null;
   const lbl = "text-[12px] font-medium text-ink-2";
   const ctl = "w-full border border-line rounded-ctl px-2.5 py-1.5 text-[13px] font-medium text-ink bg-surface outline-none hover:border-line-strong focus:border-accent focus:ring-3 focus:ring-accent/15 transition-[border-color,box-shadow] disabled:opacity-40 disabled:bg-sunken";
   const dateCtl = `${ctl} mono`;
@@ -135,7 +134,6 @@ export function SearchTab() {
       {col ? <button type="button" onClick={() => setSort(s => ({ col, asc: s.col === col ? !s.asc : true }))} className="hover:text-ink">{label}{sort.col === col ? (sort.asc ? " ↑" : " ↓") : ""}</button> : label}
     </th>
   );
-  const kbd = (k: string) => <kbd className="mono text-[10px] px-1 py-px rounded border border-line bg-sunken text-muted ml-1.5">{k}</kbd>;
 
   return (
     <div className="p-7 max-w-7xl mx-auto space-y-4">
@@ -189,34 +187,30 @@ export function SearchTab() {
               <div className="col-span-6" aria-hidden="true" />
 
               <div className="col-span-5 space-y-1">
-                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={f.arrivalOn} onChange={e => set("arrivalOn", e.target.checked)} className="w-3.5 h-3.5 accent-accent" /><span className={lbl}>Ngày đến</span>{kbd("F2")}</label>
+                <label className="flex items-center gap-2 h-5 cursor-pointer"><input type="checkbox" checked={f.arrivalOn} onChange={e => set("arrivalOn", e.target.checked)} className="w-4 h-4 accent-accent" /><span className={lbl}>Lọc theo ngày đến</span></label>
                 <div className="flex items-center gap-2"><input type="date" aria-label="Ngày đến từ" className={dateCtl} disabled={!f.arrivalOn} value={f.arrFrom} onChange={e => set("arrFrom", e.target.value)} /><span className="text-muted text-[12px]">đến</span><input type="date" aria-label="Ngày đến tới" className={dateCtl} disabled={!f.arrivalOn} value={f.arrTo} onChange={e => set("arrTo", e.target.value)} /></div>
               </div>
               <div className="col-span-5 space-y-1">
-                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={f.departOn} onChange={e => set("departOn", e.target.checked)} className="w-3.5 h-3.5 accent-accent" /><span className={lbl}>Ngày đi</span>{kbd("F3")}</label>
+                <label className="flex items-center gap-2 h-5 cursor-pointer"><input type="checkbox" checked={f.departOn} onChange={e => set("departOn", e.target.checked)} className="w-4 h-4 accent-accent" /><span className={lbl}>Lọc theo ngày đi</span></label>
                 <div className="flex items-center gap-2"><input type="date" aria-label="Ngày đi từ" className={dateCtl} disabled={!f.departOn} value={f.depFrom} onChange={e => set("depFrom", e.target.value)} /><span className="text-muted text-[12px]">đến</span><input type="date" aria-label="Ngày đi tới" className={dateCtl} disabled={!f.departOn} value={f.depTo} onChange={e => set("depTo", e.target.value)} /></div>
               </div>
-              <label className="col-span-2 space-y-1"><span className={lbl}>Đang lưu trú vào ngày</span>
+              <label className="col-span-2 space-y-1"><span className={`${lbl} flex items-center h-5`}>Đang lưu trú vào ngày</span>
                 <input type="date" className={dateCtl} value={f.stayOver} onChange={e => set("stayOver", e.target.value)} /></label>
             </div>
 
             <div className="grid grid-cols-12 gap-4 mt-4">
-              <fieldset className="col-span-8 border border-line rounded-ctl px-4 pt-2 pb-3">
+              <fieldset className="col-span-12 lg:col-span-8 border border-line rounded-ctl px-4 pt-2 pb-4">
                 <legend className="px-1 text-[12px] font-semibold text-ink-2">Trạng thái folio</legend>
-                <div className="grid grid-cols-4 gap-x-4 gap-y-2">
-                  {FOLIO_STATUS.map(s => (
-                    <label key={s.key} className="flex items-center gap-2 text-[13px] text-ink cursor-pointer">
-                      <input type="checkbox" checked={f.folio[s.key]} onChange={() => toggleFolio(s.key)} className="w-3.5 h-3.5 accent-accent" />{s.label}{kbd(s.fkey)}
-                    </label>
-                  ))}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {FOLIO_STATUS.map(s => <CheckTile key={s.key} checked={f.folio[s.key]} onChange={() => toggleFolio(s.key)}>{s.label}</CheckTile>)}
                 </div>
               </fieldset>
-              <fieldset className="col-span-4 border border-line rounded-ctl px-4 pt-2 pb-3">
+              <fieldset className="col-span-12 lg:col-span-4 border border-line rounded-ctl px-4 pt-2 pb-4">
                 <legend className="px-1 text-[12px] font-semibold text-ink-2">Trạng thái đặt phòng</legend>
-                <div className="flex flex-wrap gap-x-5 gap-y-2">
-                  <label className="flex items-center gap-2 text-[13px] text-ink cursor-pointer"><input type="checkbox" checked={f.definite} onChange={e => set("definite", e.target.checked)} className="w-3.5 h-3.5 accent-accent" />Confirmed</label>
-                  <label className="flex items-center gap-2 text-[13px] text-ink cursor-pointer"><input type="checkbox" checked={f.tentative} onChange={e => set("tentative", e.target.checked)} className="w-3.5 h-3.5 accent-accent" />Tentative</label>
-                  <label className="flex items-center gap-2 text-[13px] text-ink cursor-pointer" title="Họ / Tên phải khớp đúng từng chữ"><input type="checkbox" checked={f.exact} onChange={e => set("exact", e.target.checked)} className="w-3.5 h-3.5 accent-accent" />Khớp chính xác Họ/Tên</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <CheckTile checked={f.definite} onChange={v => set("definite", v)}>Confirmed</CheckTile>
+                  <CheckTile checked={f.tentative} onChange={v => set("tentative", v)}>Tentative</CheckTile>
+                  <CheckTile checked={f.exact} onChange={v => set("exact", v)} title="Họ / Tên phải khớp đúng từng chữ">Khớp chính xác</CheckTile>
                 </div>
               </fieldset>
             </div>
@@ -232,24 +226,23 @@ export function SearchTab() {
       <Card className="overflow-hidden">
         <div className="px-5 py-3 border-b border-line-soft flex items-center justify-between">
           <span className="text-[13px] font-semibold flex items-center gap-1.5" aria-live="polite"><Search size={14} aria-hidden="true" />{results.length} kết quả</span>
-          <span className="text-[12px] text-muted">Bấm vào một dòng để xem hồ sơ khách và thao tác</span>
+          <span className="text-[12px] text-muted">Bấm vào một dòng để mở hồ sơ khách</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left" style={{ minWidth: 1320 }}>
             <thead><tr className="border-b border-line bg-sunken">
               {th("Trạng thái")}{th("Xác nhận")}{th("Họ", "last")}{th("Tên")}{th("Quốc tịch")}{th("Giấy tờ (ID)")}{th("Phòng", "room")}{th("Loại")}
-              {th("Đến", "arrival")}{th("Đi")}{th("Đêm")}{th("Khách")}{th("Nguồn")}{th("Số dư", undefined, true)}
+              {th("Đến", "arrival")}{th("Đi")}{th("Đêm")}{th("Khách")}{th("Nguồn")}{th("Số dư", undefined, true)}<th scope="col" className="w-8" aria-label="Mở hồ sơ" />
             </tr></thead>
             <tbody>
-              {results.length === 0 && <EmptyRow cols={14} text="Không có đặt phòng phù hợp. Thử bỏ bớt bộ lọc hoặc bấm Xóa bộ lọc." />}
+              {results.length === 0 && <EmptyRow cols={15} text="Không có đặt phòng phù hợp. Thử bỏ bớt bộ lọc hoặc bấm Xóa bộ lọc." />}
               {results.map(r => {
                 const g = guestById(state, r.guestId); const room = roomById(state, r.roomId); const folio = folioOfReservation(state, r.id);
                 const bal = folio ? folioTotals(state, folio.id).balance : 0;
                 const { last, first } = splitName(g?.fullName ?? "");
-                const isSel = r.id === selected;
                 return (
-                  <tr key={r.id} tabIndex={0} aria-selected={isSel} onClick={() => setSelected(r.id)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelected(r.id); } }}
-                    className={`border-b border-line-soft cursor-pointer outline-none focus-visible:bg-accent-soft ${isSel ? "bg-accent-soft" : "hover:bg-sunken"}`}>
+                  <tr key={r.id} tabIndex={0} onClick={() => openProfile(r.id)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openProfile(r.id); } }}
+                    className="group border-b border-line-soft cursor-pointer outline-none hover:bg-sunken focus-visible:bg-accent-soft">
                     <td className="px-3 py-2.5"><ResBadge status={r.status} /></td>
                     <td className="px-3 py-2.5 mono text-[12px] text-ink-2">#{r.confirmationNo}</td>
                     <td className="px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap">{last}</td>
@@ -264,6 +257,7 @@ export function SearchTab() {
                     <td className="px-3 py-2.5 mono text-[12px] text-muted">{r.adults}/{r.children}</td>
                     <td className="px-3 py-2.5 text-[12px] text-ink-2 whitespace-nowrap">{r.source}</td>
                     <td className={`px-3 py-2.5 mono text-[12px] text-right font-semibold ${bal > 0 ? "text-dirty" : "text-clean"}`}>{money(bal)}</td>
+                    <td className="pr-3 py-2.5 text-faint group-hover:text-ink"><ChevronRight size={14} aria-hidden="true" /></td>
                   </tr>
                 );
               })}
@@ -272,45 +266,6 @@ export function SearchTab() {
         </div>
       </Card>
 
-      <AnimatePresence>
-        {sel && <GuestDrawer key={sel.id} reservation={sel} onClose={() => setSelected(null)}
-          onCheckIn={() => { setSelected(null); openOverlay({ kind: "checkin", reservationId: sel.id }); }}
-          onCheckOut={() => { setSelected(null); openOverlay({ kind: "checkout", reservationId: sel.id }); }}
-          onFolio={() => { setSelected(null); openOverlay({ kind: "folio", reservationId: sel.id }); }} />}
-      </AnimatePresence>
     </div>
-  );
-}
-
-/** Ngăn chi tiết bên phải: hồ sơ khách đầy đủ + nút thao tác theo trạng thái */
-function GuestDrawer({ reservation: r, onClose, onCheckIn, onCheckOut, onFolio }: { reservation: Reservation; onClose: () => void; onCheckIn: () => void; onCheckOut: () => void; onFolio: () => void }) {
-  const { state } = usePms();
-  const g = guestById(state, r.guestId);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-  const canCheckIn = r.status === "confirmed" || r.status === "tentative";
-  return (
-    <>
-      <motion.div className="fixed inset-0 z-30 bg-night/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} aria-hidden="true" />
-      <motion.aside role="dialog" aria-modal="true" aria-label={`Hồ sơ khách ${g?.fullName ?? ""}`}
-        initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", duration: 0.35, bounce: 0 }}
-        className="fixed top-0 right-0 bottom-0 z-40 w-[560px] max-w-full bg-surface border-l border-line flex flex-col">
-        <div className="flex items-center justify-between gap-3 px-6 h-14 border-b border-line shrink-0">
-          <h2 className="text-[15px] font-semibold text-ink truncate">{g?.fullName}</h2>
-          <button onClick={onClose} aria-label="Đóng hồ sơ" className="w-8 h-8 flex items-center justify-center rounded-ctl text-muted hover:text-ink hover:bg-line-soft"><X size={18} aria-hidden="true" /></button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-6 py-5 overscroll-contain">
-          <GuestStayDetails reservationId={r.id} compact />
-        </div>
-        <div className="px-6 py-4 border-t border-line flex gap-2 justify-end shrink-0">
-          <button onClick={onFolio} className="pms-btn-secondary"><DollarSign size={14} aria-hidden="true" /> Folio</button>
-          {canCheckIn && <button onClick={onCheckIn} className="pms-btn-primary"><LogIn size={14} aria-hidden="true" /> Check-in</button>}
-          {r.status === "checked_in" && <button onClick={onCheckOut} className="pms-btn-danger"><LogOut size={14} aria-hidden="true" /> Check-out</button>}
-        </div>
-      </motion.aside>
-    </>
   );
 }

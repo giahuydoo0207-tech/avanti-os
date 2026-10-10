@@ -1,6 +1,6 @@
 # Avanti OS — ERD (Supabase)
 
-Schema đầy đủ: [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql). API nghiệp vụ: [`0002_rpc.sql`](../supabase/migrations/0002_rpc.sql), mô tả ở [api.md](api.md).
+Schema đầy đủ: [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql). API nghiệp vụ: [`0002_rpc.sql`](../supabase/migrations/0002_rpc.sql), mô tả ở [api.md](api.md). Lịch sử sửa hồ sơ khách: bảng `guest_changes` ghi bằng trigger trong [`0003_guest_changes.sql`](../supabase/migrations/0003_guest_changes.sql).
 Kiểu dữ liệu frontend tương ứng: [`lib/pms/types.ts`](../lib/pms/types.ts) (camelCase ↔ snake_case).
 
 ```mermaid
