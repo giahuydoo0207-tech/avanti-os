@@ -37,7 +37,6 @@ export function GuestStayDetails({ reservationId, compact }: { reservationId: st
   const { last, first } = splitName(g?.fullName ?? "");
   const age = ageOn(g?.dob ?? null, today);
   const nights = diffDays(r.arrivalDate, r.departureDate);
-  const foreign = g?.guestType === "foreign";
 
   return (
     <div className={compact ? "" : "grid grid-cols-2 gap-x-10"}>
@@ -57,15 +56,6 @@ export function GuestStayDetails({ reservationId, compact }: { reservationId: st
           <Item label="Công ty / TA" value={g?.company} />
           <Item label="Địa chỉ" value={g?.address} />
         </Group>
-        {foreign && (
-          <Group title="Khai báo tạm trú (PC06)">
-            <Item label="Loại visa" value={g?.visaType} />
-            <Item label="Số visa" value={g?.visaNumber} mono />
-            <Item label="Hạn visa" value={g?.visaExpiry ? fmtDate(g.visaExpiry) : ""} mono />
-            <Item label="Ngày nhập cảnh" value={g?.entryDate ? fmtDate(g.entryDate) : ""} mono />
-            <Item label="Cửa khẩu" value={g?.portOfEntry} wide />
-          </Group>
-        )}
       </div>
       <div>
         <Group title="Lưu trú">

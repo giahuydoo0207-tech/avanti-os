@@ -1,7 +1,7 @@
 "use client";
 import type { GuestInput } from "@/lib/pms/store";
 import type { Gender, Guest, GuestType } from "@/lib/pms/types";
-import { FieldRow, inputCls, SectionTitle, selectCls } from "./ui";
+import { FieldRow, inputCls, selectCls } from "./ui";
 
 export const COUNTRIES = [
   { code: "VN", name: "Việt Nam" }, { code: "JP", name: "Japan" }, { code: "KR", name: "South Korea" }, { code: "CN", name: "China" },
@@ -11,8 +11,6 @@ export const COUNTRIES = [
   { code: "IT", name: "Italy" }, { code: "ES", name: "Spain" }, { code: "CA", name: "Canada" }, { code: "OTHER", name: "Khác" },
 ];
 export const countryLabel = (code: string) => { const c = COUNTRIES.find(x => x.code === code); return c ? c.name : code; };
-const VISA_TYPES = ["E-visa (30 ngày)", "E-visa (90 ngày)", "Visa on Arrival", "Miễn thị thực (15 ngày)", "Miễn thị thực (45 ngày)", "Business visa", "Tourist visa", "Diplomatic visa"];
-const PORTS = ["Tân Sơn Nhất (SGN)", "Nội Bài (HAN)", "Đà Nẵng (DAD)", "Cam Ranh (CXR)", "Phú Quốc (PQC)", "Cửa khẩu đường bộ"];
 
 export function emptyGuest(type: GuestType = "vietnamese"): GuestInput {
   return {
@@ -51,18 +49,6 @@ export function GuestFields({ value, onChange, disabled }: { value: GuestInput; 
       <FieldRow label="Email"><input disabled={disabled} className={inputCls} value={value.email} onChange={e => set("email", e.target.value)} /></FieldRow>
       {vn && <FieldRow label="Địa chỉ"><input disabled={disabled} className={inputCls} value={value.address} onChange={e => set("address", e.target.value)} placeholder="Quận, TP…" /></FieldRow>}
       <FieldRow label="Công ty / TA"><input disabled={disabled} className={inputCls} value={value.company} onChange={e => set("company", e.target.value)} /></FieldRow>
-      {!vn && (
-        <div className="pt-2">
-          <SectionTitle>Khai báo tạm trú (PC06)</SectionTitle>
-          <div className="space-y-3">
-            <FieldRow label="Loại visa"><select disabled={disabled} className={selectCls} value={value.visaType} onChange={e => set("visaType", e.target.value)}><option value="">—</option>{VISA_TYPES.map(v => <option key={v}>{v}</option>)}</select></FieldRow>
-            <FieldRow label="Số visa"><input disabled={disabled} className={inputCls} value={value.visaNumber} onChange={e => set("visaNumber", e.target.value)} /></FieldRow>
-            <FieldRow label="Visa hết hạn"><input disabled={disabled} type="date" className={inputCls} value={value.visaExpiry ?? ""} onChange={e => set("visaExpiry", d(e.target.value))} /></FieldRow>
-            <FieldRow label="Ngày nhập cảnh"><input disabled={disabled} type="date" className={inputCls} value={value.entryDate ?? ""} onChange={e => set("entryDate", d(e.target.value))} /></FieldRow>
-            <FieldRow label="Cửa khẩu"><select disabled={disabled} className={selectCls} value={value.portOfEntry} onChange={e => set("portOfEntry", e.target.value)}><option value="">—</option>{PORTS.map(p => <option key={p}>{p}</option>)}</select></FieldRow>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
