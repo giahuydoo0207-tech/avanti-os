@@ -2,7 +2,7 @@
  *  Chuyển động bằng CSS (lớp .ls-* trong app/globals.css), tự dừng khi bật "giảm chuyển động". */
 export function LoginScene() {
   return (
-    <svg viewBox="0 0 320 290" className="w-full max-w-[340px] h-auto" role="img" aria-label="Lễ tân làm việc tại quầy và trao thẻ phòng cho khách">
+    <svg viewBox="0 0 320 290" className="w-full max-w-[340px] h-auto max-h-full" role="img" aria-label="Lễ tân làm việc tại quầy và trao thẻ phòng cho khách">
       <rect x="96" y="18" width="80" height="22" rx="4" fill="#201d19" stroke="#34302a" strokeWidth="2" />
       <text x="136" y="33" textAnchor="middle" fontFamily="'Be Vietnam Pro', sans-serif" fontSize="10" fontWeight="700" letterSpacing="1.5" fill="#e2b35f">LỄ TÂN</text>
 
