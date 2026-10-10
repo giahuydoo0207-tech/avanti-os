@@ -65,12 +65,11 @@ function Shell() {
   return (
     <NavContext.Provider value={nav}>
       <MotionConfig reducedMotion="user">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] pms-btn-accent">Bỏ qua tới nội dung</a>
+      <a href="#main" className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-3 focus-visible:left-3 focus-visible:z-[70] focus-visible:px-3 focus-visible:py-2 focus-visible:rounded-ctl focus-visible:bg-accent focus-visible:text-white focus-visible:text-[13px] focus-visible:font-semibold">Bỏ qua tới nội dung</a>
       <div className="flex min-h-screen bg-paper text-ink">
         <aside className="w-56 shrink-0 flex flex-col bg-night text-white sticky top-0 h-screen">
           <div className="px-5 pt-5 pb-4 border-b border-night-line">
             <div className="flex items-center gap-2.5">
-              <div aria-hidden="true" className="w-8 h-8 rounded-ctl bg-accent flex items-center justify-center text-[13px] font-bold text-white">A</div>
               <div className="min-w-0">
                 <div className="text-[14px] font-semibold tracking-tight leading-tight truncate">{branch?.name}</div>
                 <div className="text-[11px] text-night-muted leading-tight mt-0.5">{st.total} phòng · <span className="text-accent-bright" aria-label={`${branch?.stars ?? 0} sao`}>{"★".repeat(branch?.stars ?? 0)}</span></div>

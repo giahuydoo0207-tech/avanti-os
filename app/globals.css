@@ -137,3 +137,22 @@ h1, h2, h3 { text-wrap: balance; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* ── Hình động màn hình đăng nhập (components/login-scene.tsx) ── */
+@keyframes ls-guest { 0% { transform: translateX(150px); opacity: 0 } 18%, 80% { transform: translateX(0); opacity: 1 } 96%, 100% { transform: translateX(150px); opacity: 0 } }
+@keyframes ls-hand-l { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-3px) } }
+@keyframes ls-hand-r { 0%, 100% { transform: translateY(-3px) } 50% { transform: translateY(0) } }
+@keyframes ls-head { 0%, 38%, 62%, 100% { transform: rotate(0) } 44% { transform: rotate(6deg) } 52% { transform: rotate(0) } }
+@keyframes ls-card { 0%, 44% { opacity: 0; transform: translateX(0) } 48% { opacity: 1; transform: translateX(0) } 62%, 76% { opacity: 1; transform: translateX(70px) } 82%, 100% { opacity: 0; transform: translateX(70px) } }
+@keyframes ls-ring { 0%, 20% { opacity: 0; transform: scale(.6) } 24% { opacity: .9 } 34%, 100% { opacity: 0; transform: scale(1.5) } }
+@keyframes ls-glow { 0%, 100% { opacity: .5 } 50% { opacity: 1 } }
+.ls-guest { animation: ls-guest 6s ease-in-out infinite; }
+.ls-hand-l { animation: ls-hand-l .34s ease-in-out infinite; }
+.ls-hand-r { animation: ls-hand-r .34s ease-in-out infinite; }
+.ls-head { animation: ls-head 6s ease-in-out infinite; transform-box: view-box; transform-origin: 120px 122px; }
+.ls-card { animation: ls-card 6s ease-in-out infinite; }
+.ls-ring { animation: ls-ring 6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.ls-glow { animation: ls-glow 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ls-guest, .ls-hand-l, .ls-hand-r, .ls-head, .ls-card, .ls-ring, .ls-glow { animation: none !important; }
+}
