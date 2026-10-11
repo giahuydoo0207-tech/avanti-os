@@ -72,8 +72,10 @@ function Shell() {
         <aside className="w-56 shrink-0 flex flex-col bg-night text-white sticky top-0 h-screen">
           <div className="px-5 pt-5 pb-4 border-b border-night-line">
             <div className="flex items-center gap-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={branch?.code === "BOUTIQUE" ? "/brand/avanti-boutique-mark-dark.svg" : "/brand/avanti-hotel-mark-dark.svg"} alt="" aria-hidden="true" width={34} height={39} className="w-[34px] h-[39px] shrink-0" />
               <div className="min-w-0">
-                <div className="text-[14px] font-semibold tracking-tight leading-tight truncate">{branch?.name}</div>
+                <div className="text-[14px] font-semibold tracking-tight leading-tight whitespace-nowrap truncate">{branch?.name}</div>
                 <div className="text-[11px] text-night-muted leading-tight mt-0.5">{st.total} phòng · <span className="text-accent-bright" aria-label={`${branch?.stars ?? 0} sao`}>{"★".repeat(branch?.stars ?? 0)}</span></div>
               </div>
             </div>
