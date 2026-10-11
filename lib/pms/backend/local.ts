@@ -60,7 +60,7 @@ function makeActions(get: () => PmsState, set: (s: PmsState) => void, session: S
         guests = [...guests, g]; guestId = g.id;
       }
       const confirmationNo = String(s.seq.confirmation + 1);
-      const folioNo = String(s.seq.folio + 1);
+      const folioNo = confirmationNo; // một số chung cho đặt phòng và folio
       const r: Reservation = {
         id: uid("r"), branchId: session.branchId, confirmationNo, guestId: guestId!, roomTypeId: rt.id, roomId: input.roomId,
         arrivalDate: input.arrivalDate, departureDate: input.departureDate, adults: input.adults, children: input.children, rate: Math.round(input.rate),

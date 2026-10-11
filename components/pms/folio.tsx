@@ -42,8 +42,7 @@ export function FolioPanel({ folioId, showHeader = true }: { folioId: string; sh
       {showHeader && (
         <Card className="px-6 py-4 flex items-center gap-8 flex-wrap">
           <Stat label="Khách" value={guest?.fullName ?? "—"} />
-          <Stat label="Folio" value={`#${folio.folioNo}`} />
-          <Stat label="Đặt phòng" value={`#${res.confirmationNo}`} />
+          <Stat label="Số đặt phòng / Folio" value={`#${folio.folioNo}`} />
           <Stat label="Phòng" value={room ? `${room.number} · ${rt?.code}` : `Chưa gán · ${rt?.code}`} />
           <Stat label="Đến" value={fmtDate(res.arrivalDate)} />
           <Stat label="Đi" value={fmtDate(res.departureDate)} />

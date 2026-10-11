@@ -60,7 +60,7 @@ export function GuestStayDetails({ reservationId, compact }: { reservationId: st
       <div>
         <Group title="Lưu trú">
           <Item label="Trạng thái" value={<ResBadge status={r.status} />} />
-          <Item label="Số xác nhận" value={`#${r.confirmationNo}`} mono />
+          <Item label="Số đặt phòng / Folio" value={`#${r.confirmationNo}`} mono />
           <Item label="Ngày đến" value={fmtDate(r.arrivalDate)} mono />
           <Item label="Ngày đi" value={fmtDate(r.departureDate)} mono />
           <Item label="Số đêm" value={`${nights} đêm`} />
@@ -70,7 +70,6 @@ export function GuestStayDetails({ reservationId, compact }: { reservationId: st
           <Item label="Giá / đêm" value={`${money(r.rate)} ₫`} mono />
           <Item label="Gói ăn" value={MEAL_PLAN_LABEL[r.mealPlan]} />
           <Item label="Nguồn đặt" value={r.source} />
-          <Item label="Folio" value={folio ? `#${folio.folioNo}` : ""} mono />
           <Item label="Giờ nhận phòng" value={r.checkedInAt ? `${fmtTime(r.checkedInAt)} ${fmtDate(localDateOf(r.checkedInAt))}` : ""} mono />
           <Item label="Số dư folio" value={<span className={bal > 0 ? "text-dirty" : "text-clean"}>{money(bal)} ₫</span>} mono />
           <Item label="Ghi chú" value={r.note} wide />

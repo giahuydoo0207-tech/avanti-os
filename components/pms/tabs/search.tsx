@@ -32,7 +32,7 @@ const DEFAULT_SET: FolioSet = { ...NONE, reserved: true, arrivalToday: true, inH
 interface Filters {
   guest: string; room: string; roomType: string; company: string;
   last: string; first: string; country: string; source: string; meal: string;
-  idType: "" | "cccd" | "passport"; idNo: string;
+  idType: "" | "cccd" | "passport"; idNo: string; folioNo: string;
   arrivalOn: boolean; arrFrom: string; arrTo: string;
   departOn: boolean; depFrom: string; depTo: string;
   stayOver: string; exact: boolean;
@@ -58,7 +58,7 @@ export function SearchTab() {
   const types = state.roomTypes.filter(t => t.branchId === session.branchId);
 
   const blank = useCallback((): Filters => ({
-    guest: "", room: "", roomType: "", company: "", last: "", first: "", country: "", source: "", meal: "", idType: "", idNo: "",
+    guest: "", room: "", roomType: "", company: "", last: "", first: "", country: "", source: "", meal: "", idType: "", idNo: "", folioNo: "",
     arrivalOn: false, arrFrom: today, arrTo: today, departOn: false, depFrom: today, depTo: today,
     stayOver: "", exact: false, folio: DEFAULT_SET, definite: true, tentative: true,
   }), [today]);
@@ -114,6 +114,7 @@ export function SearchTab() {
       if (f.company && !fold(g?.company ?? "").includes(fold(f.company))) return false;
       if (f.idType && g?.idType !== f.idType) return false;
       if (f.idNo && !(g?.idNumber ?? "").replace(/\s/g, "").toUpperCase().includes(f.idNo.replace(/\s/g, "").toUpperCase())) return false;
+      if (f.folioNo && !(folio?.folioNo ?? r.confirmationNo).includes(f.folioNo.replace(/\D/g, ""))) return false;
       if (f.country && g?.nationality !== f.country) return false;
       if (f.source && r.source !== f.source) return false;
       if (f.meal && r.mealPlan !== f.meal) return false;
@@ -155,7 +156,7 @@ export function SearchTab() {
             <SectionTitle>Thông tin tìm kiếm</SectionTitle>
             <div className="grid grid-cols-12 gap-x-4 gap-y-3">
               <label className="col-span-5 space-y-1"><span className={lbl}>Thông tin khách</span>
-                <input className={ctl} value={f.guest} onChange={e => set("guest", e.target.value)} placeholder="Tên, số xác nhận, folio, SĐT, giấy tờ, email…" autoComplete="off" /></label>
+                <input className={ctl} value={f.guest} onChange={e => set("guest", e.target.value)} placeholder="Tên, số đặt phòng / folio, SĐT, giấy tờ, email…" autoComplete="off" /></label>
               <label className="col-span-2 space-y-1"><span className={lbl}>Số phòng</span>
                 <input className={`${ctl} mono`} value={f.room} onChange={e => set("room", e.target.value)} placeholder="vd: 305" inputMode="numeric" autoComplete="off" /></label>
               <label className="col-span-2 space-y-1"><span className={lbl}>Loại phòng</span>
@@ -184,7 +185,9 @@ export function SearchTab() {
                 <select className={ctl} value={f.idType} onChange={e => set("idType", e.target.value as Filters["idType"])}><option value="">Tất cả</option><option value="cccd">Căn cước công dân (CCCD)</option><option value="passport">Hộ chiếu (Passport)</option></select></label>
               <label className="col-span-3 space-y-1"><span className={lbl}>{f.idType === "passport" ? "Số hộ chiếu" : f.idType === "cccd" ? "Số CCCD (12 số)" : "Số CCCD / Hộ chiếu"}</span>
                 <input className={`${ctl} mono uppercase`} value={f.idNo} onChange={e => set("idNo", e.target.value)} placeholder={f.idType === "passport" ? "vd: TK1234567" : "vd: 079203001234"} inputMode={f.idType === "cccd" ? "numeric" : "text"} autoComplete="off" spellCheck={false} /></label>
-              <div className="col-span-6" aria-hidden="true" />
+              <label className="col-span-3 space-y-1"><span className={lbl}>Số đặt phòng / Folio</span>
+                <input className={`${ctl} mono`} value={f.folioNo} onChange={e => set("folioNo", e.target.value.replace(/[^\d#]/g, ""))} placeholder="vd: 1090040" inputMode="numeric" autoComplete="off" /></label>
+              <div className="col-span-3" aria-hidden="true" />
 
               <div className="col-span-5 space-y-1">
                 <label className="flex items-center gap-2 h-5 cursor-pointer"><input type="checkbox" checked={f.arrivalOn} onChange={e => set("arrivalOn", e.target.checked)} className="w-4 h-4 accent-accent" /><span className={lbl}>Lọc theo ngày đến</span></label>
@@ -231,7 +234,7 @@ export function SearchTab() {
         <div className="overflow-x-auto">
           <table className="w-full text-left" style={{ minWidth: 1320 }}>
             <thead><tr className="border-b border-line bg-sunken">
-              {th("Trạng thái")}{th("Xác nhận")}{th("Họ", "last")}{th("Tên")}{th("Quốc tịch")}{th("Giấy tờ (ID)")}{th("Phòng", "room")}{th("Loại")}
+              {th("Trạng thái")}{th("Số ĐP / Folio")}{th("Họ", "last")}{th("Tên")}{th("Quốc tịch")}{th("Giấy tờ (ID)")}{th("Phòng", "room")}{th("Loại")}
               {th("Đến", "arrival")}{th("Đi")}{th("Đêm")}{th("Khách")}{th("Nguồn")}{th("Số dư", undefined, true)}<th scope="col" className="w-8" aria-label="Mở hồ sơ" />
             </tr></thead>
             <tbody>

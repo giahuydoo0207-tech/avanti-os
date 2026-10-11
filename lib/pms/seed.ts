@@ -5,7 +5,7 @@ import type {
   ActivityLog, Branch, Folio, FolioTransaction, Guest, ISODate, PmsState, Reservation, Room, RoomType, ShiftReport, ShiftTask,
 } from "./types";
 
-export const STATE_VERSION = 4;
+export const STATE_VERSION = 5;
 
 function prng(seed: number) {
   let a = seed;
@@ -83,7 +83,7 @@ export function createSeedState(today: ISODate): PmsState {
   const reservations: Reservation[] = [];
   const folios: Folio[] = [];
   const transactions: FolioTransaction[] = [];
-  let conf = 1090000, folioNo = 250000, gid = 0, rid = 0, tid = 0;
+  let conf = 1090000, gid = 0, rid = 0, tid = 0;
 
   const usedNames = new Set<string>();
   const makeName = (foreign: boolean): [string, string] => {
@@ -126,7 +126,7 @@ export function createSeedState(today: ISODate): PmsState {
       createdBy: "HỆ THỐNG", createdAt: now,
     };
     reservations.push(r);
-    const f: Folio = { id: `f-${r.id}`, branchId, reservationId: r.id, folioNo: String(++folioNo), status: status === "checked_out" ? "closed" : "open", openedAt: now, closedAt: status === "checked_out" ? now : null };
+    const f: Folio = { id: `f-${r.id}`, branchId, reservationId: r.id, folioNo: r.confirmationNo, status: status === "checked_out" ? "closed" : "open", openedAt: now, closedAt: status === "checked_out" ? now : null };
     folios.push(f);
     if (status === "checked_in" || status === "checked_out") {
       stayNights(arrival, departure).forEach(night => {
@@ -203,7 +203,7 @@ export function createSeedState(today: ISODate): PmsState {
   }));
 
   return {
-    version: STATE_VERSION, seededFor: today, seq: { confirmation: conf, folio: folioNo },
+    version: STATE_VERSION, seededFor: today, seq: { confirmation: conf, folio: conf } /* số folio = số đặt phòng */,
     branches: BRANCHES, roomTypes, rooms, guests, reservations, folios, transactions, hkLogs: [], shiftReports, shiftTasks, activities, guestChanges: [],
   };
 }

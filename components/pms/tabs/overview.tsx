@@ -42,7 +42,7 @@ export function OverviewTab() {
       <div className="flex gap-2 items-center">
         <form role="search" className="flex-1 flex items-center gap-2.5 bg-surface border border-line rounded-ctl px-3.5 hover:border-line-strong focus-within:border-accent focus-within:ring-3 focus-within:ring-accent/15 transition-[border-color,box-shadow]" onSubmit={e => { e.preventDefault(); goTo("Tìm kiếm", { search: { query: q } }); }}>
           <Search size={15} strokeWidth={1.75} className="text-faint" aria-hidden="true" />
-          <input aria-label="Tìm khách" name="q" autoComplete="off" value={q} onChange={e => setQ(e.target.value)} className="flex-1 py-2.5 text-[13px] font-medium outline-none bg-transparent placeholder:text-faint" placeholder="Tên khách, số phòng, số xác nhận, folio… (Enter)" />
+          <input aria-label="Tìm khách" name="q" autoComplete="off" value={q} onChange={e => setQ(e.target.value)} className="flex-1 py-2.5 text-[13px] font-medium outline-none bg-transparent placeholder:text-faint" placeholder="Tên khách, số phòng, số đặt phòng / folio… (Enter)" />
         </form>
         <button onClick={() => goTo("Đặt phòng", { reservation: { walkIn: true } })} className="pms-btn-secondary py-2.5"><User size={14} strokeWidth={1.75} aria-hidden="true" /> Walk In</button>
         <button onClick={() => goTo("Đặt phòng")} className="pms-btn-accent py-2.5"><BedDouble size={14} strokeWidth={1.75} aria-hidden="true" /> Đặt phòng mới</button>

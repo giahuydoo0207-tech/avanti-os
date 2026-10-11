@@ -74,7 +74,7 @@ export function CheckInOverlay({ reservationId, onClose }: { reservationId: stri
     onClose();
   };
 
-  if (done) return <Shell><Done title="Check-in thành công" lines={[["Khách", g.fullName], ["Phòng", `${selected?.number} · ${roomTypeById(state, selected?.roomTypeId ?? "")?.code}`], ["Đến", fmtDate(from)], ["Đi", fmtDate(res.departureDate)], ["Folio", `#${folioOfReservation(state, res.id)?.folioNo}`]]}
+  if (done) return <Shell><Done title="Check-in thành công" lines={[["Khách", g.fullName], ["Phòng", `${selected?.number} · ${roomTypeById(state, selected?.roomTypeId ?? "")?.code}`], ["Đến", fmtDate(from)], ["Đi", fmtDate(res.departureDate)], ["Số đặt phòng / Folio", `#${folioOfReservation(state, res.id)?.folioNo}`]]}
     actions={<><button onClick={() => window.print()} className="pms-btn-secondary"><Printer size={13} strokeWidth={1.5} /> In Reg Card</button><button onClick={() => openOverlay({ kind: "folio", reservationId: res.id })} className="pms-btn-secondary"><DollarSign size={13} strokeWidth={1.5} /> Xem folio</button><button onClick={onClose} className="pms-btn-primary">Đóng</button></>} /></Shell>;
 
   return (
@@ -183,7 +183,7 @@ export function CheckOutOverlay({ reservationId, onClose }: { reservationId: str
       <div className="p-7 max-w-5xl mx-auto w-full space-y-5">
         <Card className="px-6 py-4 flex items-center gap-8 flex-wrap">
           <Stat label="Phòng" value={room?.number} /><Stat label="Đến" value={fmtDate(res.arrivalDate)} /><Stat label="Đi" value={fmtDate(res.departureDate)} />
-          <Stat label="Folio" value={`#${folio.folioNo}`} /><Stat label="Nguồn" value={res.source} />
+          <Stat label="Số đặt phòng / Folio" value={`#${folio.folioNo}`} /><Stat label="Nguồn" value={res.source} />
         </Card>
         {early && <div className="border border-occ-line bg-occ-soft rounded-ctl px-4 py-2.5 text-[12px] font-semibold text-occ-ink">Trả phòng sớm: tiền phòng từ đêm {fmtDate(earlyVoidFrom(res.arrivalDate, today))} trở đi sẽ được void tự động (luôn tính đêm đầu).</div>}
         <div className="grid grid-cols-3 gap-5">

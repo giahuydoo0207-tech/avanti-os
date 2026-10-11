@@ -205,7 +205,7 @@ export function GuestProfileTab() {
               </p>
             </div>
             <Group title="" cols={3}>
-              <Item label="Số xác nhận" value={`#${r.confirmationNo}`} mono />
+              <Item label="Số đặt phòng / Folio" value={`#${r.confirmationNo}`} mono />
               <Item label="Ngày đến" value={fmtDate(r.arrivalDate)} mono />
               <Item label="Ngày đi" value={fmtDate(r.departureDate)} mono />
               <Item label="Số đêm" value={`${nights} đêm`} />
@@ -213,7 +213,6 @@ export function GuestProfileTab() {
               <Item label="Giá / đêm" value={`${money(r.rate)} ₫`} mono />
               <Item label="Gói ăn" value={MEAL_PLAN_LABEL[r.mealPlan]} />
               <Item label="Nguồn đặt" value={r.source} />
-              <Item label="Folio" value={folio ? `#${folio.folioNo}` : ""} mono />
               <Item label="Số dư folio" value={<span className={bal > 0 ? "text-dirty" : "text-clean"}>{money(bal)} ₫</span>} mono />
               <Item label="Giờ nhận phòng" value={r.checkedInAt ? fmtStamp(r.checkedInAt) : ""} mono />
               <Item label="Giờ trả phòng" value={r.checkedOutAt ? fmtStamp(r.checkedOutAt) : ""} mono />
@@ -236,7 +235,7 @@ export function GuestProfileTab() {
               <div className="px-6 pt-5"><SectionTitle>Các lần lưu trú ({stays.length})</SectionTitle></div>
               <table className="w-full text-left">
                 <thead><tr className="border-y border-line bg-sunken text-[11px] font-semibold text-ink-2">
-                  <th scope="col" className="px-6 py-2">Xác nhận</th><th scope="col" className="px-3 py-2">Đến</th><th scope="col" className="px-3 py-2">Đi</th><th scope="col" className="px-3 py-2">Phòng</th><th scope="col" className="px-3 py-2">Trạng thái</th>
+                  <th scope="col" className="px-6 py-2">Số ĐP / Folio</th><th scope="col" className="px-3 py-2">Đến</th><th scope="col" className="px-3 py-2">Đi</th><th scope="col" className="px-3 py-2">Phòng</th><th scope="col" className="px-3 py-2">Trạng thái</th>
                 </tr></thead>
                 <tbody>
                   {stays.map(x => (
