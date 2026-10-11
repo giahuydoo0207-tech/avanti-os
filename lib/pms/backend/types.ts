@@ -8,6 +8,10 @@ export interface NewReservationInput {
   status: "confirmed" | "tentative"; note: string;
   deposit?: { amount: number; method: PaymentMethod };
 }
+export interface ReservationPatch {
+  roomTypeId: string; roomId: string | null; arrivalDate: ISODate; departureDate: ISODate;
+  adults: number; children: number; rate: number; mealPlan: MealPlan; source: BookingSource; note: string;
+}
 export interface ChargeInput { code: TxnCode; description: string; amount: number; paymentMethod?: PaymentMethod | null }
 export interface ShiftReportInput {
   businessDate: ISODate; shift: ShiftName; handoverToName: string; cashBalance: number; generalNote: string; incidentNote: string;
@@ -22,6 +26,8 @@ export interface PmsActions {
   assignRoom(reservationId: string, roomId: string | null): Promise<Result>;
   /** Đổi loại phòng / số phòng từ Hồ sơ khách (kể cả đổi phòng cho khách đang ở) */
   updateStay(reservationId: string, roomTypeId: string, roomId: string | null): Promise<Result>;
+  /** Sửa đặt phòng từ Hồ sơ khách: phòng/loại phòng, ngày, số khách, giá, gói ăn, nguồn, ghi chú */
+  updateReservation(reservationId: string, patch: ReservationPatch): Promise<Result>;
   moveReservation(reservationId: string, roomId: string, arrivalDate: ISODate): Promise<Result>;
   cancelReservation(reservationId: string): Promise<Result>;
   checkIn(reservationId: string, deposit?: { amount: number; method: PaymentMethod }): Promise<Result>;

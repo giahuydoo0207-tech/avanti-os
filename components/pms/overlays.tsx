@@ -9,6 +9,7 @@ import type { PaymentMethod } from "@/lib/pms/types";
 import { FolioPanel } from "./folio";
 import { GuestFields, guestToInput } from "./guest-form";
 import { GuestStayDetails } from "./guest-profile";
+import { printRegistrationCard } from "./registration-card";
 import { useNav } from "./nav";
 import { Card, ErrorBox, FieldRow, inputCls, OverlayHeader, ResBadge, SectionTitle, selectCls, Stat } from "./ui";
 
@@ -75,11 +76,12 @@ export function CheckInOverlay({ reservationId, onClose }: { reservationId: stri
   };
 
   if (done) return <Shell><Done title="Check-in thành công" lines={[["Khách", g.fullName], ["Phòng", `${selected?.number} · ${roomTypeById(state, selected?.roomTypeId ?? "")?.code}`], ["Đến", fmtDate(from)], ["Đi", fmtDate(res.departureDate)], ["Số đặt phòng / Folio", `#${folioOfReservation(state, res.id)?.folioNo}`]]}
-    actions={<><button onClick={() => window.print()} className="pms-btn-secondary"><Printer size={13} strokeWidth={1.5} /> In Reg Card</button><button onClick={() => openOverlay({ kind: "folio", reservationId: res.id })} className="pms-btn-secondary"><DollarSign size={13} strokeWidth={1.5} /> Xem folio</button><button onClick={onClose} className="pms-btn-primary">Đóng</button></>} /></Shell>;
+    actions={<><button onClick={() => printRegistrationCard(res.id)} className="pms-btn-primary"><Printer size={13} strokeWidth={1.5} /> In phiếu đăng ký (ký tên)</button><button onClick={() => openOverlay({ kind: "folio", reservationId: res.id })} className="pms-btn-secondary"><DollarSign size={13} strokeWidth={1.5} /> Xem folio</button><button onClick={onClose} className="pms-btn-secondary">Đóng</button></>} /></Shell>;
 
   return (
     <Shell>
       <OverlayHeader title={`Check-in · ${guest.fullName} · #${res.confirmationNo}`} onBack={onClose}>
+        <button onClick={() => printRegistrationCard(res.id)} className="pms-btn-secondary"><Printer size={12} strokeWidth={1.5} /> In phiếu đăng ký</button>
         <button onClick={() => openOverlay({ kind: "folio", reservationId: res.id })} className="pms-btn-secondary"><DollarSign size={12} strokeWidth={1.5} /> Folio</button>
         {canCheckIn && <button onClick={confirm} className="pms-btn-primary">✓ Xác nhận check-in</button>}
       </OverlayHeader>

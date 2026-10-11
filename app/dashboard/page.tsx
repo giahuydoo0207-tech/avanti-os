@@ -20,6 +20,7 @@ import { ShiftReportTab } from "@/components/pms/tabs/shift-report";
 import { CashierTab } from "@/components/pms/tabs/cashier";
 import { AvailabilityTab } from "@/components/pms/tabs/availability";
 import { GuestProfileTab } from "@/components/pms/tabs/guest-profile";
+import { RegistrationCardHost } from "@/components/pms/registration-card";
 
 const MENU: Array<{ name: TabName; icon: React.ElementType }> = [
   { name: "Tổng quan", icon: Home }, { name: "Tìm kiếm", icon: Search }, { name: "Sơ đồ phòng", icon: LayoutGrid },
@@ -142,6 +143,7 @@ function Shell() {
             className="flex items-center gap-2 bg-night text-white text-[13px] font-medium pl-3 pr-4 py-2.5 rounded-ctl"><CheckCircle2 size={15} className="text-accent-bright" aria-hidden="true" />{toastMsg}</motion.div>}
         </AnimatePresence>
       </div>
+      <RegistrationCardHost />
       </MotionConfig>
     </NavContext.Provider>
   );

@@ -5,7 +5,7 @@ import { addDays, CREDIT_CODES, diffDays, earlyVoidFrom, stayNights, VAT_RATE } 
 import { createSeedState, STATE_VERSION } from "../seed";
 import { folioOfReservation, folioTotals, roomById, roomConflict, roomTypeById } from "../selectors";
 import type { ActivityLog, FolioTransaction, Guest, GuestChange, HkStatus, ISODate, PaymentMethod, PmsState, Reservation, Result, Session, ShiftTask } from "../types";
-import type { ChargeInput, GuestInput, NewReservationInput, PmsActions, PmsBackend, ShiftReportInput } from "./types";
+import type { ChargeInput, GuestInput, NewReservationInput, PmsActions, PmsBackend, ReservationPatch, ShiftReportInput } from "./types";
 
 const STORAGE_KEY = "avanti-pms-state";
 const uid = (p: string) => `${p}-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10)}`;
@@ -142,6 +142,78 @@ function makeActions(get: () => PmsState, set: (s: PmsState) => void, session: S
         rooms: moveOut ? s.rooms.map(x => (x.id === moveOut ? { ...x, hkStatus: "dirty" as HkStatus } : x)) : s.rooms,
         reservations: s.reservations.map(x => (x.id === r.id ? { ...x, roomTypeId: t.id, roomId } : x)),
         activities: log(s, { action: "reservation.update_stay", entityType: "reservation", entityId: r.id, message: `Đổi phòng #${r.confirmationNo}: ${oldLabel} → ${room?.number ?? "chưa gán"} · ${t.code}` }),
+      });
+      return ok(undefined);
+    },
+
+    /** Giống RPC update_reservation (migration 0006) */
+    updateReservation(reservationId: string, x: ReservationPatch): Result {
+      const s = get();
+      const r = s.reservations.find(v => v.id === reservationId);
+      if (!r) return fail("Không tìm thấy đặt phòng");
+      if (r.status !== "confirmed" && r.status !== "tentative" && r.status !== "checked_in") return fail("Đặt phòng đã kết thúc — không sửa được");
+      const rt = roomTypeById(s, x.roomTypeId);
+      if (!rt || rt.branchId !== session.branchId) return fail("Loại phòng không tồn tại");
+      const inHouse = r.status === "checked_in";
+      if (inHouse) {
+        if (x.arrivalDate !== r.arrivalDate) return fail("Khách đã nhận phòng — không đổi được ngày đến");
+        if (x.departureDate !== r.departureDate && x.departureDate <= today) return fail("Ngày đi phải sau hôm nay — trả phòng hôm nay thì dùng Check-out");
+        if (!x.roomId) return fail("Khách đang ở phải có phòng");
+      } else if (x.arrivalDate !== r.arrivalDate && x.arrivalDate < today) return fail("Ngày đến không được trước hôm nay");
+      if (diffDays(x.arrivalDate, x.departureDate) < 1) return fail("Ngày đi phải sau ngày đến ít nhất 1 đêm");
+      if (x.adults < 1) return fail("Phải có ít nhất 1 người lớn");
+      if (x.children < 0) return fail("Số trẻ em không hợp lệ");
+      if (x.adults + x.children > rt.maxPax + 1) return fail(`Loại ${rt.code} tối đa ${rt.maxPax} khách (+1 giường phụ)`);
+      if (!(x.rate > 0)) return fail("Giá phòng phải lớn hơn 0");
+      const rate = Math.round(x.rate);
+      const room = x.roomId ? roomById(s, x.roomId) : undefined;
+      if (x.roomId) {
+        if (!room || room.branchId !== session.branchId) return fail("Phòng không tồn tại");
+        const moved = x.roomId !== r.roomId || x.arrivalDate !== r.arrivalDate || x.departureDate !== r.departureDate;
+        if (moved) {
+          if (room.hkStatus === "out_of_order") return fail(`Phòng ${room.number} đang hỏng (OOO)`);
+          const c = roomConflict(s, room.id, x.arrivalDate, x.departureDate, r.id);
+          if (c) return fail(`Phòng ${room.number} đã có đặt phòng #${c.confirmationNo} trùng ngày`);
+        }
+        if (room.roomTypeId !== rt.id) return fail(`Phòng ${room.number} không thuộc loại ${rt.code}`);
+        if (inHouse && x.roomId !== r.roomId && room.hkStatus === "dirty") return fail(`Phòng ${room.number} chưa dọn — chọn phòng sạch để chuyển khách`);
+      }
+      const dm = (d: ISODate) => `${d.slice(8)}/${d.slice(5, 7)}`;
+      const vnd = (n: number) => n.toLocaleString("vi-VN");
+      const c: string[] = [];
+      if (rt.id !== r.roomTypeId) c.push(`Loại phòng ${roomTypeById(s, r.roomTypeId)?.code} → ${rt.code}`);
+      if ((x.roomId ?? null) !== r.roomId) c.push(`Phòng ${roomById(s, r.roomId)?.number ?? "chưa gán"} → ${room?.number ?? "chưa gán"}`);
+      if (x.arrivalDate !== r.arrivalDate) c.push(`Ngày đến ${dm(r.arrivalDate)} → ${dm(x.arrivalDate)}`);
+      if (x.departureDate !== r.departureDate) c.push(`Ngày đi ${dm(r.departureDate)} → ${dm(x.departureDate)}`);
+      if (x.adults !== r.adults || x.children !== r.children) c.push(`Khách ${r.adults}+${r.children} → ${x.adults}+${x.children}`);
+      if (rate !== r.rate) c.push(`Giá ${vnd(r.rate)} → ${vnd(rate)}`);
+      if (x.mealPlan !== r.mealPlan) c.push(`Gói ăn ${r.mealPlan} → ${x.mealPlan}`);
+      if (x.source !== r.source) c.push(`Nguồn ${r.source} → ${x.source}`);
+      if (x.note !== r.note) c.push("Ghi chú");
+      if (c.length === 0) return ok(undefined);
+
+      let transactions = s.transactions;
+      let rooms = s.rooms;
+      if (inHouse) {
+        const folio = folioOfReservation(s, r.id);
+        if (!folio) return fail("Không tìm thấy folio");
+        const voidFrom = (d: ISODate) => { transactions = transactions.map(t => (t.folioId === folio.id && !t.voided && (t.code === "ROOM" || t.code === "TAX") && t.businessDate >= d ? { ...t, voided: true, voidedAt: now() } : t)); };
+        let postFrom: ISODate | null = null;
+        if (rate !== r.rate) { postFrom = r.arrivalDate > today ? r.arrivalDate : today; voidFrom(postFrom); }
+        else if (x.departureDate < r.departureDate) voidFrom(x.departureDate);
+        else if (x.departureDate > r.departureDate) postFrom = r.departureDate;
+        if (postFrom) {
+          transactions = [...transactions, ...stayNights(postFrom, x.departureDate).flatMap(night => [
+            txn(folio.id, { businessDate: night, code: "ROOM", kind: "debit", description: `Tiền phòng ${rt.code} đêm ${dm(night)}`, amount: rate, paymentMethod: null, ref: room?.number ?? "" }),
+            txn(folio.id, { businessDate: night, code: "TAX", kind: "debit", description: "VAT 8%", amount: Math.round(rate * VAT_RATE), paymentMethod: null, ref: "AUTO" }),
+          ])];
+        }
+        if (x.roomId !== r.roomId && r.roomId) rooms = rooms.map(v => (v.id === r.roomId ? { ...v, hkStatus: "dirty" as HkStatus } : v));
+      }
+      commit({
+        ...s, rooms, transactions,
+        reservations: s.reservations.map(v => (v.id === r.id ? { ...v, roomTypeId: rt.id, roomId: x.roomId, arrivalDate: x.arrivalDate, departureDate: x.departureDate, adults: x.adults, children: x.children, rate, mealPlan: x.mealPlan, source: x.source, note: x.note } : v)),
+        activities: log(s, { action: "reservation.update", entityType: "reservation", entityId: r.id, message: `Sửa đặt phòng #${r.confirmationNo}: ${c.join("; ")}` }),
       });
       return ok(undefined);
     },

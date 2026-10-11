@@ -2,12 +2,13 @@
 // Tab Hồ sơ khách: mở khi bấm một dòng ở Tìm kiếm. Xem và sửa luôn trên cùng một màn hình
 // (thông tin khách + loại phòng/số phòng), một nút Lưu cho tất cả, kèm lịch sử thay đổi.
 import { useState } from "react";
-import { ArrowLeft, DollarSign, History, LogIn, LogOut, RotateCcw, Save } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, DollarSign, History, LogIn, LogOut, Printer, RotateCcw, Save } from "lucide-react";
+import { printRegistrationCard } from "../registration-card";
 import { usePms } from "@/lib/pms/store";
 import type { GuestInput } from "@/lib/pms/store";
 import { ageOn, diffDays, fmtDate, fmtTime, GENDER_LABEL, localDateOf, MEAL_PLAN_LABEL, money, splitName } from "@/lib/pms/format";
 import { branchReservations, folioOfReservation, folioTotals, guestById, roomById, roomConflict, roomTypeById } from "@/lib/pms/selectors";
-import type { Gender, IdType } from "@/lib/pms/types";
+import type { BookingSource, Gender, IdType, MealPlan } from "@/lib/pms/types";
 import { COUNTRIES, countryLabel, guestToInput } from "../guest-form";
 import { Group, Item } from "../guest-profile";
 import { useNav } from "../nav";
@@ -31,10 +32,16 @@ function fmtValue(field: string, v: string | null): string {
   return v;
 }
 const fmtStamp = (iso: string) => `${fmtTime(iso)} · ${fmtDate(localDateOf(iso))}`;
-const STAY_ACTIONS = new Set(["reservation.update_stay", "reservation.assign_room", "reservation.move"]);
+const STAY_ACTIONS = new Set(["reservation.update", "reservation.update_stay", "reservation.assign_room", "reservation.move"]);
 const GUEST_KEYS = ["last", "first", "nationality", "guestType", "gender", "dob", "idType", "idNumber", "idIssuedDate", "idIssuedPlace", "idExpiryDate", "phone", "email", "company", "address"] as const;
 
-type Draft = GuestInput & { last: string; first: string; roomTypeId: string; roomId: string };
+type Draft = GuestInput & {
+  last: string; first: string; roomTypeId: string; roomId: string;
+  arrivalDate: string; departureDate: string; adults: number; children: number; rate: number; mealPlan: MealPlan; source: BookingSource; note: string;
+};
+const STAY_KEYS = ["roomTypeId", "roomId", "arrivalDate", "departureDate", "adults", "children", "rate", "mealPlan", "source", "note"] as const;
+const SOURCES: BookingSource[] = ["Direct", "Walk-in", "Booking.com", "Agoda", "Expedia", "Traveloka", "Travel Agent"];
+const MEALS: MealPlan[] = ["RO", "BB", "HB", "FB"];
 type HistoryEntry = { key: string; at: string; by: string; lines: React.ReactNode[] };
 
 export function GuestProfileTab() {
@@ -60,10 +67,13 @@ export function GuestProfileTab() {
   }
 
   const { last, first } = splitName(g.fullName);
-  const base: Draft = { ...guestToInput(g), last, first, roomTypeId: r.roomTypeId, roomId: r.roomId ?? "" };
+  const base: Draft = {
+    ...guestToInput(g), last, first, roomTypeId: r.roomTypeId, roomId: r.roomId ?? "",
+    arrivalDate: r.arrivalDate, departureDate: r.departureDate, adults: r.adults, children: r.children, rate: r.rate, mealPlan: r.mealPlan, source: r.source, note: r.note ?? "",
+  };
   const form = draft ?? base;
   const guestDirty = GUEST_KEYS.some(k => (form[k] ?? "") !== (base[k] ?? ""));
-  const stayDirty = form.roomTypeId !== base.roomTypeId || form.roomId !== base.roomId;
+  const stayDirty = STAY_KEYS.some(k => form[k] !== base[k]);
   const dirty = guestDirty || stayDirty;
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => { setError(null); setDraft(d => ({ ...(d ?? base), [k]: v })); };
   const reset = () => { setDraft(null); setError(null); };
@@ -73,7 +83,7 @@ export function GuestProfileTab() {
   const types = state.roomTypes.filter(t => t.branchId === r.branchId);
   const roomOptions = state.rooms
     .filter(x => x.branchId === r.branchId && x.roomTypeId === form.roomTypeId)
-    .filter(x => x.id === r.roomId || (x.hkStatus !== "out_of_order" && !roomConflict(state, x.id, r.arrivalDate, r.departureDate, r.id) && !(r.status === "checked_in" && x.hkStatus === "dirty")))
+    .filter(x => (x.id === r.roomId && form.arrivalDate === r.arrivalDate && form.departureDate === r.departureDate) || (x.hkStatus !== "out_of_order" && !roomConflict(state, x.id, form.arrivalDate, form.departureDate, r.id) && !(r.status === "checked_in" && x.id !== r.roomId && x.hkStatus === "dirty")))
     .sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }));
 
   const save = async () => {
@@ -84,12 +94,15 @@ export function GuestProfileTab() {
     if (r.status === "checked_in" && !form.roomId) return setError("Khách đang ở phải có phòng");
     setSaving(true);
     if (guestDirty) {
-      const { last: _l, first: _f, roomTypeId: _t, roomId: _r, ...guest } = form; void _l; void _f; void _t; void _r;
+      const guest = Object.fromEntries(Object.entries(form).filter(([k]) => k !== "last" && k !== "first" && !(STAY_KEYS as readonly string[]).includes(k))) as GuestInput;
       const res = await actions.updateGuest(g.id, { ...guest, fullName: `${lastName} ${firstName}`.trim() });
       if (!res.ok) { setSaving(false); return setError(res.error); }
     }
     if (stayDirty) {
-      const res = await actions.updateStay(r.id, form.roomTypeId, form.roomId || null);
+      const res = await actions.updateReservation(r.id, {
+        roomTypeId: form.roomTypeId, roomId: form.roomId || null, arrivalDate: form.arrivalDate, departureDate: form.departureDate,
+        adults: Number(form.adults) || 0, children: Number(form.children) || 0, rate: Number(form.rate) || 0, mealPlan: form.mealPlan, source: form.source, note: form.note,
+      });
       if (!res.ok) { setSaving(false); return setError(res.error); }
     }
     setSaving(false); setDraft(null); toast("Đã lưu thay đổi");
@@ -119,9 +132,16 @@ export function GuestProfileTab() {
   const folio = folioOfReservation(state, r.id);
   const bal = folio ? folioTotals(state, folio.id).balance : 0;
   const age = ageOn(form.dob, today);
-  const nights = diffDays(r.arrivalDate, r.departureDate);
+  const nights = diffDays(form.arrivalDate, form.departureDate);
   const canCheckIn = r.status === "confirmed" || r.status === "tentative";
   const stays = branchReservations(state, r.branchId).filter(x => x.guestId === g.id).sort((a, b) => b.arrivalDate.localeCompare(a.arrivalDate));
+  const newType = roomTypeById(state, form.roomTypeId);
+  const newRoom = roomById(state, form.roomId || null);
+  const typeChanged = form.roomTypeId !== r.roomTypeId; const roomChanged = (form.roomId || null) !== r.roomId;
+  const stayMoved = typeChanged || roomChanged;
+  const upgrade = typeChanged && (newType?.baseRate ?? 0) > (type?.baseRate ?? 0);
+  const moveLabel = !stayMoved ? "Upgrade / đổi phòng: chọn bên dưới"
+    : `${typeChanged ? `${upgrade ? "Upgrade" : "Đổi loại"} ${type?.code} → ${newType?.code}` : ""}${typeChanged && roomChanged ? " · " : ""}${roomChanged ? `Phòng ${room?.number ?? "chưa gán"} → ${newRoom?.number ?? "chưa gán"}` : ""}`;
   const lbl = "text-[12px] font-medium text-ink-2";
   const d = (v: string) => (v ? v : null);
   const changed = (k: keyof Draft) => ((form[k] ?? "") !== (base[k] ?? "") ? "!border-accent !bg-accent-soft/40" : "");
@@ -189,35 +209,72 @@ export function GuestProfileTab() {
           </Card>
 
           <Card className="p-6">
-            <SectionTitle>Lưu trú</SectionTitle>
-            <div className="grid grid-cols-3 gap-x-4 gap-y-3 pb-1">
-              <label className="space-y-1"><span className={lbl}>Loại phòng</span>
-                <select className={`${selectCls} ${changed("roomTypeId")}`} disabled={!editableStay} value={form.roomTypeId}
-                  onChange={e => { const v = e.target.value; setError(null); setDraft(x => { const cur = x ?? base; const keep = state.rooms.find(rm => rm.id === cur.roomId)?.roomTypeId === v; return { ...cur, roomTypeId: v, roomId: keep ? cur.roomId : "" }; }); }}>
-                  {types.map(t => <option key={t.id} value={t.id}>{t.code} · {t.name}</option>)}</select></label>
-              <label className="space-y-1"><span className={lbl}>Số phòng</span>
-                <select className={`${selectCls} mono ${changed("roomId")}`} disabled={!editableStay} value={form.roomId} onChange={e => set("roomId", e.target.value)}>
-                  {(r.status !== "checked_in" || !form.roomId) && <option value="">{r.status === "checked_in" ? "Chọn phòng…" : "Chưa gán"}</option>}
-                  {roomOptions.map(x => <option key={x.id} value={x.id}>{x.number}{x.id === r.roomId ? " (hiện tại)" : x.hkStatus === "dirty" ? " · chờ dọn" : ""}</option>)}
-                </select></label>
-              <p className="text-[12px] text-muted self-end pb-2 leading-snug">
-                {!editableStay ? "Đặt phòng đã kết thúc, không đổi phòng được." : r.status === "checked_in" ? "Đổi phòng cho khách đang ở: phòng cũ chuyển sang chờ dọn." : `${roomOptions.length} phòng trống đúng loại cho ${nights} đêm.`}
-              </p>
+            <div className="flex items-center justify-between gap-3">
+              <SectionTitle>Lưu trú</SectionTitle>
+              <button type="button" onClick={() => printRegistrationCard(r.id)} className="pms-btn-secondary -mt-4"><Printer size={14} aria-hidden="true" /> In phiếu đăng ký</button>
             </div>
+
+            {/* Phòng hiện tại ⇅ Đổi sang: upgrade loại phòng, đổi phòng, hoặc cả hai */}
+            <div className="rounded-ctl border border-line bg-sunken/60 p-4">
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-x-4 gap-y-1 items-end">
+                <div className="space-y-1"><span className={lbl}>Loại phòng hiện tại</span>
+                  <div className="h-[38px] px-3 flex items-center rounded-ctl border border-line bg-surface text-[13px] font-medium text-ink truncate">{type ? `${type.code} · ${type.name}` : "—"}</div></div>
+                <div className="space-y-1"><span className={lbl}>Số phòng hiện tại</span>
+                  <div className="h-[38px] px-3 flex items-center rounded-ctl border border-line bg-surface mono text-[13px] font-semibold text-ink">{room?.number ?? "Chưa gán"}</div></div>
+                <div className="w-[120px]" />
+              </div>
+              <div className="flex items-center gap-3 my-2.5" aria-hidden="true">
+                <span className={`w-8 h-8 rounded-full border flex items-center justify-center ${stayMoved ? "border-accent bg-accent-soft text-accent-strong" : "border-line bg-surface text-muted"}`}><ArrowUpDown size={15} /></span>
+                <span className="text-[12px] font-medium text-muted">{moveLabel}</span>
+                <span className="flex-1 border-t border-dashed border-line" />
+              </div>
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-x-4 gap-y-1 items-end">
+                <label className="space-y-1"><span className={lbl}>Đổi sang loại phòng</span>
+                  <select className={`${selectCls} ${changed("roomTypeId")}`} disabled={!editableStay} value={form.roomTypeId}
+                    onChange={e => { const v = e.target.value; setError(null); setDraft(x => { const cur = x ?? base; const keep = state.rooms.find(rm => rm.id === cur.roomId)?.roomTypeId === v; return { ...cur, roomTypeId: v, roomId: keep ? cur.roomId : v === r.roomTypeId ? (r.roomId ?? "") : "" }; }); }}>
+                    {types.map(t => <option key={t.id} value={t.id}>{t.code} · {t.name}{t.id === r.roomTypeId ? " (giữ nguyên)" : ""}</option>)}</select></label>
+                <label className="space-y-1"><span className={lbl}>Đổi sang số phòng</span>
+                  <select className={`${selectCls} mono ${changed("roomId")}`} disabled={!editableStay} value={form.roomId} onChange={e => set("roomId", e.target.value)}>
+                    {(r.status !== "checked_in" || !form.roomId) && <option value="">{r.status === "checked_in" ? "Chọn phòng…" : "Chưa gán"}</option>}
+                    {roomOptions.map(x => <option key={x.id} value={x.id}>{x.number}{x.id === r.roomId ? " (giữ nguyên)" : x.hkStatus === "dirty" ? " · chờ dọn" : ""}</option>)}
+                    {form.roomId && !roomOptions.some(x => x.id === form.roomId) && <option value={form.roomId}>{newRoom?.number} · không trống các ngày đã chọn</option>}
+                  </select></label>
+                <p className="w-[120px] text-[11px] text-muted leading-snug pb-1">{!editableStay ? "Đặt phòng đã kết thúc." : `${roomOptions.length} phòng trống đúng loại`}</p>
+              </div>
+              {r.status === "checked_in" && <p className="text-[11px] text-muted mt-2">Khách đang ở: phòng cũ tự chuyển sang chờ dọn sau khi đổi.</p>}
+            </div>
+
+            <div className="grid grid-cols-3 gap-x-4 gap-y-3 mt-5">
+              <label className="space-y-1"><span className={lbl}>Ngày đến</span>
+                <input type="date" className={`${inputCls} mono ${changed("arrivalDate")}`} disabled={!editableStay || r.status === "checked_in"} value={form.arrivalDate} onChange={e => e.target.value && set("arrivalDate", e.target.value)} /></label>
+              <label className="space-y-1"><span className={lbl}>Ngày đi</span>
+                <input type="date" className={`${inputCls} mono ${changed("departureDate")}`} disabled={!editableStay} min={form.arrivalDate} value={form.departureDate} onChange={e => e.target.value && set("departureDate", e.target.value)} /></label>
+              <div className="space-y-1"><span className={lbl}>Số đêm</span>
+                <div className="h-[38px] px-3 flex items-center text-[13px] font-semibold text-ink">{nights > 0 ? `${nights} đêm` : "—"}</div></div>
+              <label className="space-y-1"><span className={lbl}>Người lớn</span>
+                <input type="number" min={1} className={`${inputCls} mono ${changed("adults")}`} disabled={!editableStay} value={form.adults} onChange={e => set("adults", Number(e.target.value))} /></label>
+              <label className="space-y-1"><span className={lbl}>Trẻ em</span>
+                <input type="number" min={0} className={`${inputCls} mono ${changed("children")}`} disabled={!editableStay} value={form.children} onChange={e => set("children", Number(e.target.value))} /></label>
+              <label className="space-y-1"><span className={lbl}>Giá / đêm (₫)</span>
+                <input inputMode="numeric" className={`${inputCls} mono ${changed("rate")}`} disabled={!editableStay} value={form.rate ? money(form.rate) : ""} onChange={e => set("rate", Number(e.target.value.replace(/\D/g, "")))} /></label>
+              <label className="space-y-1"><span className={lbl}>Gói ăn</span>
+                <select className={`${selectCls} ${changed("mealPlan")}`} disabled={!editableStay} value={form.mealPlan} onChange={e => set("mealPlan", e.target.value as MealPlan)}>{MEALS.map(m => <option key={m} value={m}>{MEAL_PLAN_LABEL[m]}</option>)}</select></label>
+              <label className="space-y-1"><span className={lbl}>Nguồn đặt</span>
+                <select className={`${selectCls} ${changed("source")}`} disabled={!editableStay} value={form.source} onChange={e => set("source", e.target.value as BookingSource)}>{SOURCES.map(x => <option key={x}>{x}</option>)}</select></label>
+              <div className="space-y-1"><span className={lbl}>Số dư folio</span>
+                <div className={`h-[38px] px-3 flex items-center mono text-[13px] font-semibold ${bal > 0 ? "text-dirty" : "text-clean"}`}>{money(bal)} ₫</div></div>
+              <label className="space-y-1 col-span-3"><span className={lbl}>Ghi chú / yêu cầu đặc biệt</span>
+                <input className={`${inputCls} ${changed("note")}`} disabled={!editableStay} value={form.note} onChange={e => set("note", e.target.value)} placeholder="Chưa có" /></label>
+            </div>
+            {r.status === "checked_in" && (form.rate !== base.rate || form.departureDate !== base.departureDate) && (
+              <p className="text-[12px] text-occ-ink bg-occ-soft border border-occ-line rounded-ctl px-3 py-2 mt-3">Khách đang ở: khi lưu, tiền phòng trên folio được điều chỉnh theo ngày đi / giá mới (void đêm bỏ, post thêm đêm mới).</p>
+            )}
+
             <Group title="" cols={3}>
               <Item label="Số đặt phòng / Folio" value={`#${r.confirmationNo}`} mono />
-              <Item label="Ngày đến" value={fmtDate(r.arrivalDate)} mono />
-              <Item label="Ngày đi" value={fmtDate(r.departureDate)} mono />
-              <Item label="Số đêm" value={`${nights} đêm`} />
-              <Item label="Khách" value={`${r.adults} người lớn${r.children ? `, ${r.children} trẻ em` : ""}`} />
-              <Item label="Giá / đêm" value={`${money(r.rate)} ₫`} mono />
-              <Item label="Gói ăn" value={MEAL_PLAN_LABEL[r.mealPlan]} />
-              <Item label="Nguồn đặt" value={r.source} />
-              <Item label="Số dư folio" value={<span className={bal > 0 ? "text-dirty" : "text-clean"}>{money(bal)} ₫</span>} mono />
               <Item label="Giờ nhận phòng" value={r.checkedInAt ? fmtStamp(r.checkedInAt) : ""} mono />
               <Item label="Giờ trả phòng" value={r.checkedOutAt ? fmtStamp(r.checkedOutAt) : ""} mono />
               <Item label="Người tạo đặt phòng" value={r.createdBy} />
-              <Item label="Ghi chú" value={r.note} wide />
             </Group>
           </Card>
 
