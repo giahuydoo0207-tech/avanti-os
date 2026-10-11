@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePms } from "@/lib/pms/store";
 import { fmtDate, fmtTime, localDateOf, money, splitName } from "@/lib/pms/format";
-import { folioOfReservation, guestById, roomById, roomTypeById } from "@/lib/pms/selectors";
+import { extraBedOf, folioOfReservation, guestById, roomById, roomTypeById } from "@/lib/pms/selectors";
 import { countryLabel } from "./guest-form";
 
 const EVENT = "avanti:print-registration";
@@ -50,7 +50,7 @@ function CardSheet({ reservationId }: { reservationId: string }) {
   const methods = new Set(credits.map(t => t.paymentMethod));
   const cash = methods.has("cash_vnd") || methods.has("cash_usd");
   const other = methods.has("bank_transfer") || methods.has("city_ledger");
-  const extraBed = type && r.adults + r.children > type.maxPax ? 1 : 0;
+  const extraBed = extraBedOf(state, r);
   const now = new Date().toISOString();
   const isMain = branch?.code === "AVANTI";
 
@@ -88,7 +88,7 @@ function CardSheet({ reservationId }: { reservationId: string }) {
           <tr><td className="rc-l">Mobile :</td><td className="rc-v">{g?.phone}</td>
             <td className="rc-sep" colSpan={2}><span className="rc-opts"><span className="rc-l">Purpose:</span><span><Box /> Meeting, Conference</span><span><Box on={r.mealPlan !== "RO"} /> Breakfast</span></span></td></tr>
           <tr><td className="rc-l">Arrival Date :</td><td className="rc-v">{fmtDate(r.arrivalDate)}</td><td className="rc-l rc-sep">Departure Date :</td><td className="rc-v">{fmtDate(r.departureDate)}</td></tr>
-          <tr><td className="rc-l">Mode of Payment :</td><td colSpan={3}><span className="rc-opts rc-wide"><span><Box on={cash} /> Cash</span><span><Box /> Visacard</span><span><Box /> Mastercard</span><span><Box /> American Express</span><span><Box on={other} /> Other</span></span></td></tr>
+          <tr><td className="rc-l">Mode of Payment :</td><td colSpan={3}><span className="rc-opts rc-wide"><span><Box on={cash} /> Cash/Tiền mặt</span><span><Box /> Visacard</span><span><Box /> Mastercard</span><span><Box /> American Express</span><span><Box on={other} /> Other</span></span></td></tr>
           <tr className="rc-sm"><td className="rc-l">Card Holder :</td><td className="rc-v" colSpan={3} /></tr>
           <tr className="rc-sm rc-solid"><td className="rc-l">Credit Card No :</td><td className="rc-v" /><td className="rc-l rc-right" colSpan={2}>Expiry Date : __/__</td></tr>
           <tr className="rc-solid"><td colSpan={4} className="rc-center rc-bold">Hotel Use:</td></tr>

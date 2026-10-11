@@ -7,7 +7,7 @@ import { printRegistrationCard } from "../registration-card";
 import { usePms } from "@/lib/pms/store";
 import type { GuestInput } from "@/lib/pms/store";
 import { ageOn, diffDays, fmtDate, fmtTime, GENDER_LABEL, localDateOf, MEAL_PLAN_LABEL, money, splitName } from "@/lib/pms/format";
-import { branchReservations, folioOfReservation, folioTotals, guestById, roomById, roomConflict, roomTypeById } from "@/lib/pms/selectors";
+import { branchReservations, extraBedOf, folioOfReservation, folioTotals, guestById, roomById, roomConflict, roomTypeById } from "@/lib/pms/selectors";
 import type { BookingSource, Gender, IdType, MealPlan } from "@/lib/pms/types";
 import { COUNTRIES, countryLabel, guestToInput } from "../guest-form";
 import { Group, Item } from "../guest-profile";
@@ -37,9 +37,9 @@ const GUEST_KEYS = ["last", "first", "nationality", "guestType", "gender", "dob"
 
 type Draft = GuestInput & {
   last: string; first: string; roomTypeId: string; roomId: string;
-  arrivalDate: string; departureDate: string; adults: number; children: number; rate: number; mealPlan: MealPlan; source: BookingSource; note: string;
+  arrivalDate: string; departureDate: string; adults: number; children: number; extraBed: number; rate: number; mealPlan: MealPlan; source: BookingSource; note: string;
 };
-const STAY_KEYS = ["roomTypeId", "roomId", "arrivalDate", "departureDate", "adults", "children", "rate", "mealPlan", "source", "note"] as const;
+const STAY_KEYS = ["roomTypeId", "roomId", "arrivalDate", "departureDate", "adults", "children", "extraBed", "rate", "mealPlan", "source", "note"] as const;
 const SOURCES: BookingSource[] = ["Direct", "Walk-in", "Booking.com", "Agoda", "Expedia", "Traveloka", "Travel Agent"];
 const MEALS: MealPlan[] = ["RO", "BB", "HB", "FB"];
 type HistoryEntry = { key: string; at: string; by: string; lines: React.ReactNode[] };
@@ -69,7 +69,7 @@ export function GuestProfileTab() {
   const { last, first } = splitName(g.fullName);
   const base: Draft = {
     ...guestToInput(g), last, first, roomTypeId: r.roomTypeId, roomId: r.roomId ?? "",
-    arrivalDate: r.arrivalDate, departureDate: r.departureDate, adults: r.adults, children: r.children, rate: r.rate, mealPlan: r.mealPlan, source: r.source, note: r.note ?? "",
+    arrivalDate: r.arrivalDate, departureDate: r.departureDate, adults: r.adults, children: r.children, extraBed: extraBedOf(state, r), rate: r.rate, mealPlan: r.mealPlan, source: r.source, note: r.note ?? "",
   };
   const form = draft ?? base;
   const guestDirty = GUEST_KEYS.some(k => (form[k] ?? "") !== (base[k] ?? ""));
@@ -101,7 +101,7 @@ export function GuestProfileTab() {
     if (stayDirty) {
       const res = await actions.updateReservation(r.id, {
         roomTypeId: form.roomTypeId, roomId: form.roomId || null, arrivalDate: form.arrivalDate, departureDate: form.departureDate,
-        adults: Number(form.adults) || 0, children: Number(form.children) || 0, rate: Number(form.rate) || 0, mealPlan: form.mealPlan, source: form.source, note: form.note,
+        adults: Number(form.adults) || 0, children: Number(form.children) || 0, extraBed: Number(form.extraBed) || 0, rate: Number(form.rate) || 0, mealPlan: form.mealPlan, source: form.source, note: form.note,
       });
       if (!res.ok) { setSaving(false); return setError(res.error); }
     }
@@ -251,18 +251,23 @@ export function GuestProfileTab() {
                 <input type="date" className={`${inputCls} mono ${changed("departureDate")}`} disabled={!editableStay} min={form.arrivalDate} value={form.departureDate} onChange={e => e.target.value && set("departureDate", e.target.value)} /></label>
               <div className="space-y-1"><span className={lbl}>Số đêm</span>
                 <div className="h-[38px] px-3 flex items-center text-[13px] font-semibold text-ink">{nights > 0 ? `${nights} đêm` : "—"}</div></div>
-              <label className="space-y-1"><span className={lbl}>Người lớn</span>
-                <input type="number" min={1} className={`${inputCls} mono ${changed("adults")}`} disabled={!editableStay} value={form.adults} onChange={e => set("adults", Number(e.target.value))} /></label>
-              <label className="space-y-1"><span className={lbl}>Trẻ em</span>
-                <input type="number" min={0} className={`${inputCls} mono ${changed("children")}`} disabled={!editableStay} value={form.children} onChange={e => set("children", Number(e.target.value))} /></label>
               <label className="space-y-1"><span className={lbl}>Giá / đêm (₫)</span>
                 <input inputMode="numeric" className={`${inputCls} mono ${changed("rate")}`} disabled={!editableStay} value={form.rate ? money(form.rate) : ""} onChange={e => set("rate", Number(e.target.value.replace(/\D/g, "")))} /></label>
+              <div className="space-y-1"><span className={lbl}>Số dư folio</span>
+                <div className={`h-[38px] px-3 flex items-center rounded-ctl border border-line-soft bg-sunken/50 mono text-[13px] font-semibold ${bal > 0 ? "text-dirty" : "text-clean"}`}>{money(bal)} ₫</div></div>
+              <div className="space-y-1"><span className={lbl}>Tiền phòng cả kỳ (chưa VAT)</span>
+                <div className="h-[38px] px-3 flex items-center mono text-[13px] font-semibold text-ink-2">{nights > 0 && form.rate ? `${money(nights * form.rate)} ₫` : "—"}</div></div>
+              <label className="space-y-1"><span className={lbl}>Người lớn (Adults)</span>
+                <input type="number" min={1} className={`${inputCls} mono ${changed("adults")}`} disabled={!editableStay} value={form.adults} onChange={e => set("adults", Number(e.target.value))} /></label>
+              <label className="space-y-1"><span className={lbl}>Trẻ em (Children)</span>
+                <input type="number" min={0} className={`${inputCls} mono ${changed("children")}`} disabled={!editableStay} value={form.children} onChange={e => set("children", Number(e.target.value))} /></label>
+              <label className="space-y-1"><span className={lbl}>Giường phụ (Extra bed)</span>
+                <input type="number" min={0} max={2} className={`${inputCls} mono ${changed("extraBed")}`} disabled={!editableStay} value={form.extraBed} onChange={e => set("extraBed", Math.max(0, Math.min(2, Number(e.target.value) || 0)))} /></label>
               <label className="space-y-1"><span className={lbl}>Gói ăn</span>
                 <select className={`${selectCls} ${changed("mealPlan")}`} disabled={!editableStay} value={form.mealPlan} onChange={e => set("mealPlan", e.target.value as MealPlan)}>{MEALS.map(m => <option key={m} value={m}>{MEAL_PLAN_LABEL[m]}</option>)}</select></label>
               <label className="space-y-1"><span className={lbl}>Nguồn đặt</span>
                 <select className={`${selectCls} ${changed("source")}`} disabled={!editableStay} value={form.source} onChange={e => set("source", e.target.value as BookingSource)}>{SOURCES.map(x => <option key={x}>{x}</option>)}</select></label>
-              <div className="space-y-1"><span className={lbl}>Số dư folio</span>
-                <div className={`h-[38px] px-3 flex items-center mono text-[13px] font-semibold ${bal > 0 ? "text-dirty" : "text-clean"}`}>{money(bal)} ₫</div></div>
+              <div aria-hidden="true" />
               <label className="space-y-1 col-span-3"><span className={lbl}>Ghi chú / yêu cầu đặc biệt</span>
                 <input className={`${inputCls} ${changed("note")}`} disabled={!editableStay} value={form.note} onChange={e => set("note", e.target.value)} placeholder="Chưa có" /></label>
             </div>

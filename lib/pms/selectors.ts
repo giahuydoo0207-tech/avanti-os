@@ -49,6 +49,13 @@ export function freeRooms(s: PmsState, branchId: string, arrival: ISODate, depar
 }
 
 /** Đặt phòng khác đang chiếm phòng này trong khoảng ngày (nếu có) */
+/** Số giường phụ: lấy từ đặt phòng; dữ liệu cũ chưa có cột thì suy ra từ số khách vượt sức chứa */
+export function extraBedOf(s: PmsState, r: Reservation): number {
+  if (typeof r.extraBed === "number") return r.extraBed;
+  const t = s.roomTypes.find(x => x.id === r.roomTypeId);
+  return t && r.adults + r.children > t.maxPax ? 1 : 0;
+}
+
 export function roomConflict(s: PmsState, roomId: string, arrival: ISODate, departure: ISODate, excludeReservationId?: string) {
   return s.reservations.find(r => r.roomId === roomId && r.id !== excludeReservationId && isActive(r) && overlaps(r.arrivalDate, r.departureDate, arrival, departure));
 }

@@ -60,7 +60,7 @@ export interface Reservation {
   id: string; branchId: string; confirmationNo: string;
   guestId: string; roomTypeId: string; roomId: string | null;
   arrivalDate: ISODate; departureDate: ISODate; // đêm cuối = departureDate - 1
-  adults: number; children: number; rate: number; mealPlan: MealPlan; source: BookingSource;
+  adults: number; children: number; extraBed?: number; rate: number; mealPlan: MealPlan; source: BookingSource;
   status: ReservationStatus; note: string;
   checkedInAt: ISODateTime | null; checkedOutAt: ISODateTime | null;
   createdBy: string; createdAt: ISODateTime;

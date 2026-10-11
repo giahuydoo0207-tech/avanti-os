@@ -98,7 +98,7 @@ export function createSupabaseBackend(sb: SupabaseClient, session: Session, toda
     updateStay: (id, roomTypeId, roomId) => call("update_stay", { p_reservation_id: id, p_room_type_id: roomTypeId, p_room_id: roomId }),
     updateReservation: (id, x) => call("update_reservation", { p_reservation_id: id, p: {
       room_type_id: x.roomTypeId, room_id: x.roomId ?? "", arrival_date: x.arrivalDate, departure_date: x.departureDate,
-      adults: x.adults, children: x.children, rate: Math.round(x.rate), meal_plan: x.mealPlan, source: x.source, note: x.note,
+      adults: x.adults, children: x.children, extra_bed: x.extraBed, rate: Math.round(x.rate), meal_plan: x.mealPlan, source: x.source, note: x.note,
     } }),
     moveReservation: (id, roomId, arrival) => call("move_reservation", { p_reservation_id: id, p_room_id: roomId, p_arrival: arrival }),
     cancelReservation: id => call("cancel_reservation", { p_reservation_id: id }),

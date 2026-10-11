@@ -3,7 +3,7 @@
 // các RPC trong supabase/migrations/0002_rpc.sql để hai chế độ cho cùng kết quả.
 import { addDays, CREDIT_CODES, diffDays, earlyVoidFrom, stayNights, VAT_RATE } from "../format";
 import { createSeedState, STATE_VERSION } from "../seed";
-import { folioOfReservation, folioTotals, roomById, roomConflict, roomTypeById } from "../selectors";
+import { extraBedOf, folioOfReservation, folioTotals, roomById, roomConflict, roomTypeById } from "../selectors";
 import type { ActivityLog, FolioTransaction, Guest, GuestChange, HkStatus, ISODate, PaymentMethod, PmsState, Reservation, Result, Session, ShiftTask } from "../types";
 import type { ChargeInput, GuestInput, NewReservationInput, PmsActions, PmsBackend, ReservationPatch, ShiftReportInput } from "./types";
 
@@ -63,7 +63,7 @@ function makeActions(get: () => PmsState, set: (s: PmsState) => void, session: S
       const folioNo = confirmationNo; // một số chung cho đặt phòng và folio
       const r: Reservation = {
         id: uid("r"), branchId: session.branchId, confirmationNo, guestId: guestId!, roomTypeId: rt.id, roomId: input.roomId,
-        arrivalDate: input.arrivalDate, departureDate: input.departureDate, adults: input.adults, children: input.children, rate: Math.round(input.rate),
+        arrivalDate: input.arrivalDate, departureDate: input.departureDate, adults: input.adults, children: input.children, extraBed: input.adults + input.children > rt.maxPax ? 1 : 0, rate: Math.round(input.rate),
         mealPlan: input.mealPlan, source: input.source, status: input.status, note: input.note.trim(),
         checkedInAt: null, checkedOutAt: null, createdBy: actor, createdAt: now(),
       };
@@ -164,6 +164,7 @@ function makeActions(get: () => PmsState, set: (s: PmsState) => void, session: S
       if (x.adults < 1) return fail("Phải có ít nhất 1 người lớn");
       if (x.children < 0) return fail("Số trẻ em không hợp lệ");
       if (x.adults + x.children > rt.maxPax + 1) return fail(`Loại ${rt.code} tối đa ${rt.maxPax} khách (+1 giường phụ)`);
+      if (!(x.extraBed >= 0 && x.extraBed <= 2)) return fail("Giường phụ tối đa 2");
       if (!(x.rate > 0)) return fail("Giá phòng phải lớn hơn 0");
       const rate = Math.round(x.rate);
       const room = x.roomId ? roomById(s, x.roomId) : undefined;
@@ -186,6 +187,8 @@ function makeActions(get: () => PmsState, set: (s: PmsState) => void, session: S
       if (x.arrivalDate !== r.arrivalDate) c.push(`Ngày đến ${dm(r.arrivalDate)} → ${dm(x.arrivalDate)}`);
       if (x.departureDate !== r.departureDate) c.push(`Ngày đi ${dm(r.departureDate)} → ${dm(x.departureDate)}`);
       if (x.adults !== r.adults || x.children !== r.children) c.push(`Khách ${r.adults}+${r.children} → ${x.adults}+${x.children}`);
+      const oldBed = extraBedOf(s, r);
+      if (x.extraBed !== oldBed) c.push(`Giường phụ ${oldBed} → ${x.extraBed}`);
       if (rate !== r.rate) c.push(`Giá ${vnd(r.rate)} → ${vnd(rate)}`);
       if (x.mealPlan !== r.mealPlan) c.push(`Gói ăn ${r.mealPlan} → ${x.mealPlan}`);
       if (x.source !== r.source) c.push(`Nguồn ${r.source} → ${x.source}`);
@@ -212,7 +215,7 @@ function makeActions(get: () => PmsState, set: (s: PmsState) => void, session: S
       }
       commit({
         ...s, rooms, transactions,
-        reservations: s.reservations.map(v => (v.id === r.id ? { ...v, roomTypeId: rt.id, roomId: x.roomId, arrivalDate: x.arrivalDate, departureDate: x.departureDate, adults: x.adults, children: x.children, rate, mealPlan: x.mealPlan, source: x.source, note: x.note } : v)),
+        reservations: s.reservations.map(v => (v.id === r.id ? { ...v, roomTypeId: rt.id, roomId: x.roomId, arrivalDate: x.arrivalDate, departureDate: x.departureDate, adults: x.adults, children: x.children, extraBed: x.extraBed, rate, mealPlan: x.mealPlan, source: x.source, note: x.note } : v)),
         activities: log(s, { action: "reservation.update", entityType: "reservation", entityId: r.id, message: `Sửa đặt phòng #${r.confirmationNo}: ${c.join("; ")}` }),
       });
       return ok(undefined);

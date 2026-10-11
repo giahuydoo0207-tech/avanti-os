@@ -5,7 +5,7 @@ import type {
   ActivityLog, Branch, Folio, FolioTransaction, Guest, ISODate, PmsState, Reservation, Room, RoomType, ShiftReport, ShiftTask,
 } from "./types";
 
-export const STATE_VERSION = 5;
+export const STATE_VERSION = 6;
 
 function prng(seed: number) {
   let a = seed;
@@ -120,7 +120,7 @@ export function createSeedState(today: ISODate): PmsState {
     const rt = typeOf(roomTypeId);
     const r: Reservation = {
       id: `r-${++rid}`, branchId, confirmationNo: String(++conf), guestId: g.id, roomTypeId, roomId: room?.id ?? null,
-      arrivalDate: arrival, departureDate: departure, adults: Math.min(rt.maxPax, int(1, 2)), children: 0, rate: rt.baseRate,
+      arrivalDate: arrival, departureDate: departure, adults: Math.min(rt.maxPax, int(1, 2)), children: 0, extraBed: 0, rate: rt.baseRate,
       mealPlan: pick(["RO", "BB", "BB", "HB"] as const), source: pick(SOURCES), status, note: "",
       checkedInAt: status === "checked_in" || status === "checked_out" ? at(arrival) : null, checkedOutAt: status === "checked_out" ? at(departure) : null,
       createdBy: "HỆ THỐNG", createdAt: now,

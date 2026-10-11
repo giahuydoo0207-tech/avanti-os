@@ -10,7 +10,7 @@ export interface NewReservationInput {
 }
 export interface ReservationPatch {
   roomTypeId: string; roomId: string | null; arrivalDate: ISODate; departureDate: ISODate;
-  adults: number; children: number; rate: number; mealPlan: MealPlan; source: BookingSource; note: string;
+  adults: number; children: number; extraBed: number; rate: number; mealPlan: MealPlan; source: BookingSource; note: string;
 }
 export interface ChargeInput { code: TxnCode; description: string; amount: number; paymentMethod?: PaymentMethod | null }
 export interface ShiftReportInput {

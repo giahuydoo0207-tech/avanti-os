@@ -14,7 +14,7 @@ npm run dev        # http://localhost:3000 — nhập tên bất kỳ để vào
 
 ## Chạy với Supabase thật
 1. Tạo project tại supabase.com (region Singapore).
-2. **SQL Editor** → chạy lần lượt `supabase/migrations/0001_init.sql`, `0002_rpc.sql`, `0003_guest_changes.sql`, `0004_update_stay.sql`, `0005_unify_folio_no.sql` rồi `0006_update_reservation.sql`.
+2. **SQL Editor** → chạy lần lượt `supabase/migrations/0001_init.sql`, `0002_rpc.sql`, `0003_guest_changes.sql`, `0004_update_stay.sql`, `0005_unify_folio_no.sql`, `0006_update_reservation.sql` rồi `0007_extra_bed.sql`.
 3. **Project Settings → API**: sao chép `.env.example` thành `.env.local`, điền URL, `anon` key và `service_role` key (dùng mục *Legacy API keys* nếu có).
 4. Nạp dữ liệu mẫu và tạo tài khoản lễ tân:
    ```bash
@@ -47,6 +47,7 @@ supabase/migrations/0003_guest_changes.sql   Lịch sử thay đổi hồ sơ kh
 supabase/migrations/0004_update_stay.sql     Đổi loại phòng / số phòng từ Hồ sơ khách (RPC update_stay)
 supabase/migrations/0005_unify_folio_no.sql  Số folio = số đặt phòng (một số chung)
 supabase/migrations/0006_update_reservation.sql  Sửa đặt phòng từ Hồ sơ khách (upgrade/đổi phòng, ngày, giá…)
+supabase/migrations/0007_extra_bed.sql      Giường phụ (Extra bed) cho đặt phòng
 scripts/seed-supabase.ts           Dữ liệu mẫu + tài khoản
 lib/pms/backend/supabase.ts        Đọc bảng, gọi RPC, Realtime
 ```
