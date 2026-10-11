@@ -58,7 +58,7 @@ function CardSheet({ reservationId }: { reservationId: string }) {
     <div className="rc-sheet">
       <header className="rc-head">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/avanti-logo.png" alt="Avanti Hotel" className="rc-logo" />
+        <img src={isMain ? "/brand/avanti-hotel-light.svg" : "/brand/avanti-boutique-light.svg"} alt={isMain ? "Avanti Hotel" : "Avanti Boutique"} className="rc-logo" />
         <div className="rc-addr">
           {isMain ? <>
             <div>186 Le Thanh Ton, ST., Ben Thanh, Dist.1, HCM</div>
