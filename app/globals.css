@@ -160,12 +160,15 @@ h1, h2, h3 { text-wrap: balance; }
 /* ── Phiếu đăng ký lưu trú (Guest Registration Card) — chỉ hiện khi in ─────────── */
 .print-root { display: none; }
 @media print {
-  @page { size: A4; margin: 9mm 10mm; }
-  html, body { background: #fff !important; }
+  /* margin 0: trình duyệt không in ngày giờ / đường dẫn ở mép giấy; lề thật nằm trong .rc-sheet */
+  @page { size: A4; margin: 0; }
+  html, body { background: #fff !important; width: auto !important; min-width: 0 !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
   body > *:not(.print-root) { display: none !important; }
   .print-root { display: block; }
 }
-.rc-sheet { color: #000; font-family: Arial, "Helvetica Neue", sans-serif; font-size: 10.5px; line-height: 1.3; width: 100%; }
+.rc-sheet { color: #000; font-family: Arial, "Helvetica Neue", sans-serif; font-size: 10.5px; line-height: 1.3;
+  box-sizing: border-box; width: 186mm; margin: 0 auto; padding: 9mm 0 0; }
+.rc-sheet *, .rc-sheet *::before, .rc-sheet *::after { box-sizing: border-box; }
 .rc-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
 .rc-logo { height: 52px; width: auto; }
 .rc-addr { text-align: right; font-family: "Times New Roman", Times, serif; font-style: italic; font-size: 11px; line-height: 1.55; }
